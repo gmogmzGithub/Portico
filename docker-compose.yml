@@ -1,0 +1,455 @@
+name: portico
+
+services:
+  llm-gateway:
+    build:
+      context: .
+      dockerfile: ${LLM_GATEWAY_DOCKERFILE:-Dockerfile.bifrost-bridge}
+    image: ${LLM_GATEWAY_IMAGE:-portico-bifrost-bridge:latest}
+    container_name: llm-gateway
+    expose:
+      - "4000"
+    ports:
+      - "127.0.0.1:4583:4000"
+    volumes:
+      - ./model_catalog.yaml:/app/model_catalog.yaml:ro
+      - bifrost-data:/app/data
+      - "${PORTICO_COST_REPORTING_HOST_DIR:-./open-webui-data/reporting}:/app/reporting"
+    environment:
+      - TZ=${TZ:-UTC}
+      - NO_PROXY=${NO_PROXY:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - no_proxy=${no_proxy:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - PORTICO_LLM_API_KEY_FILE=/run/secrets/portico_llm_api_key
+      - PORTICO_USER_ID=${PORTICO_USER_ID:-local-user}
+      - PORTICO_REDACT_ALLOW=${PORTICO_REDACT_ALLOW:-false}
+      - PORTICO_BUILD_TRACK=${PORTICO_BUILD_TRACK:-dev-build}
+      - PROMPT_CACHE_ATLAS_ENABLED=${PROMPT_CACHE_ATLAS_ENABLED:-true}
+      # Tool-spec slimming for Atlas/Gemini (tool-compaction parity).
+      # Unset = per-alias `tool_slimming` flag in model_catalog.yaml decides;
+      # "on"/"off" force fleet-wide. MODE: parity (default) drops parameter
+      # descriptions like the GPT path; retain-param-descriptions keeps them
+      # trimmed to 120 chars (fallback if evals show argument regressions).
+      - BRIDGE_TOOL_SLIMMING=${BRIDGE_TOOL_SLIMMING:-}
+      - BRIDGE_TOOL_SLIMMING_MODE=${BRIDGE_TOOL_SLIMMING_MODE:-}
+      - BIFROST_BASE_URL=http://127.0.0.1:8080
+      - BIFROST_CONFIG_OUTPUT=/app/data/config.json
+      - BIFROST_BRIDGE_STREAM_IDLE_TIMEOUT_SECONDS=${BIFROST_BRIDGE_STREAM_IDLE_TIMEOUT_SECONDS:-90}
+      - BIFROST_BRIDGE_STREAM_TOTAL_TIMEOUT_SECONDS=${BIFROST_BRIDGE_STREAM_TOTAL_TIMEOUT_SECONDS:-0}
+      - BIFROST_BRIDGE_LOCAL_API_KEY_FILE=/run/secrets/bifrost_bridge_local_api_key
+      - ULTRA_MULTI_AGENT_SIGNING_SECRET_FILE=/run/secrets/ultra_multi_agent_signing_secret
+      - MODEL_CATALOG_PATH=/app/model_catalog.yaml
+      - LLM_PROXY_BASE_URL=${LLM_PROXY_BASE_URL:-https://api.openai.com/v1}
+      - GPT_OPENAI_ROUTE_MODE=${GPT_OPENAI_ROUTE_MODE:-direct}
+      # Fleet default for OpenAI fast mode on GPT Responses models. Unset/"off"
+      # = standard processing; "priority" is the recommended opt-in value
+      # The per-chat lightning toggle always wins when the configured provider
+      # supports service-tier routing.
+      - GPT_SERVICE_TIER=${GPT_SERVICE_TIER:-}
+      - PORTICO_COST_REPORTING_DIR=/app/reporting
+    secrets:
+      - portico_llm_api_key
+      - bifrost_bridge_local_api_key
+      - ultra_multi_agent_signing_secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      default:
+        aliases:
+          - llm-gateway
+    restart: unless-stopped
+
+  docker-socket-proxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    container_name: docker-socket-proxy
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - INFO=1
+      - VERSION=1
+      - PING=1
+      - POST=1
+      - BUILD=1
+      - EXEC=1
+      - SYSTEM=1
+      - AUTH=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/docker-socket-proxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg.template:ro
+    expose:
+      - "2375"
+    networks:
+      docker-proxy:
+        aliases:
+          - docker-socket-proxy
+    restart: unless-stopped
+
+  mcpo-core:
+    build:
+      context: .
+      dockerfile: ${MCPO_CORE_DOCKERFILE:-Dockerfile.mcp-orc-rust}
+    image: ${MCPO_CORE_IMAGE:-portico-mcp-orc-rust:latest}
+    container_name: mcpo-core
+    ports:
+      - "127.0.0.1:8766:8000"
+    volumes:
+      - ./mcp_config_core.json:/app/mcp_config_core.json
+      # System-delivered MCP configs (read-only for MCP Assistant)
+      - ./mcp-configs:/app/mcp-configs:ro
+      # User-installed MCP configs (read-write for MCP Assistant)
+      - ./mcp-configs-user:/app/mcp-configs-user:rw
+      # Toggle state (read-write for MCP Assistant user-server auto-enable)
+      - ./mcp_toggles.json:/app/mcp_toggles.json:rw
+      # PORTICO-410 hard-disable sidecar (read-only; Electron main is sole writer).
+      # The health-status dir carries the rename-safe snapshot the shared
+      # loader prefers (individual file binds pin inodes across renames).
+      - ./mcp_disable_modes.json:/app/mcp_disable_modes.json:ro
+      - ./health-status:/app/health-status:ro
+      # Agent VM workspaces (per-chat sandboxed file storage)
+      - ./workspaces:/app/workspaces:rw
+      # Skills directories (system and user)
+      - ./skills:/app/skills:ro
+      - ./skills-user:/app/skills-user:rw
+      # Artifact snapshots for versioning
+      - ./artifact-snapshots:/app/artifact-snapshots:rw
+      # Workspace selection metadata only
+      - ${PORTICO_WORKSPACE_CFG_DIR:-./open-webui-data/workspace-cfg}:/app/workspace-cfg:rw
+      # Host Application Support for scheduling and skill env metadata
+      - ${PORTICO_APP_SUPPORT_DIR:-./open-webui-data/app-support}:/app/app-support:rw
+    environment:
+      - TZ=${TZ:-UTC}
+      - NO_PROXY=${NO_PROXY:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - no_proxy=${no_proxy:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - CONFIG_FILE=mcp_config_core.json
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OWUI_AUTH_BRIDGE_SECRET_FILE=/run/secrets/owui_auth_bridge_secret
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+      - PORTICO_WORKSPACE_CFG_DIR=/app/workspace-cfg
+      - PORTICO_APP_SUPPORT_DIR=/app/app-support
+    secrets:
+      - owui_auth_bridge_secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - docker-socket-proxy
+      - llm-gateway
+      - redis
+    networks:
+      - default
+      - docker-proxy
+    restart: unless-stopped
+
+  # Shared MCP control-plane / proxy
+  mcpo:
+    build:
+      context: .
+      dockerfile: ${MCPO_CONTROL_PLANE_DOCKERFILE:-Dockerfile.mcpo-control-plane-rust}
+    image: ${MCPO_CONTROL_PLANE_IMAGE:-portico-mcpo-control-plane-rust:latest}
+    container_name: mcpo
+    ports:
+      - "127.0.0.1:8765:8000"
+      - "127.0.0.1:8767:8767"
+      - "127.0.0.1:3834:3834"
+    volumes:
+      - ./mcp_config_advanced.json:/app/mcp_config_advanced.json
+      # Workspace selection metadata only
+      - ${PORTICO_WORKSPACE_CFG_DIR:-./open-webui-data/workspace-cfg}:/app/workspace-cfg:rw
+    environment:
+      - TZ=${TZ:-UTC}
+      - NO_PROXY=${NO_PROXY:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - no_proxy=${no_proxy:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - CONFIG_FILE=mcp_config_advanced.json
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+      - PORTICO_WORKSPACE_CFG_DIR=/app/workspace-cfg
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - docker-socket-proxy
+      - llm-gateway
+      - redis
+    networks:
+      - default
+      - docker-proxy
+    restart: unless-stopped
+
+  open-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile.open-webui-patched
+      args:
+        OPENWEBUI_VERSION: v0.6.43
+    container_name: portico-open-webui
+    ports:
+      - "127.0.0.1:3789:8080"
+    volumes:
+      - ./open-webui-data:/app/backend/data
+      - ./src/patches/patch-openwebui-entrypoint.sh:/patch-entrypoint.sh:ro
+      - ./src/patches/backend:/app/patches/backend:ro
+      # Mount managers directory for skills_loader filter to import SkillManager
+      - ./src/managers:/app/src/managers:ro
+      # Mount event_publisher for LLM Debug Monitor events
+      - ./src/event_publisher.py:/app/src/event_publisher.py:ro
+      # Mount skills directories for SkillManager to discover skills
+      - ./skills:/app/skills:ro
+      - ./skills-user:/app/skills-user:rw
+      - ./skills-marketplace:/app/skills-marketplace:rw
+      # Workspace directory for auto-copy files to Agent VM workspace
+      - ./workspaces:/app/workspaces:rw
+      # Chat workspace bindings (chat-workspaces.json) so unified_context can
+      # render custom/inherited/shared <chat_workspace> blocks per prompt.
+      - ${PORTICO_WORKSPACE_CFG_DIR:-./open-webui-data/workspace-cfg}:/app/workspace-cfg:ro
+      # Agent configurations (base system prompt for custom agents)
+      - ./agents:/app/agents:ro
+      # MCP toggle state (for filter to check if servers are enabled)
+      - ./mcp_toggles.json:/app/mcp_toggles.json:ro
+      # PORTICO-410 hard-disable sidecar (fallback read; the filter prefers the
+      # snapshot in ./health-status, whose directory bind follows renames)
+      - ./mcp_disable_modes.json:/app/mcp_disable_modes.json:ro
+      # Periodic health-check snapshot for prompt-time MCP classification.
+      - ./health-status:/app/health-status:ro
+      # MCP server configs (for icon serving)
+      - ./mcp-configs:/app/mcp-configs:ro
+      - ./mcp-configs-user:/app/mcp-configs-user:ro
+      # PORTICO-68 / N-012: destructive-tools registry consumed by
+      # tool_confirmation_gate.py. Without this mount the gate cannot resolve
+      # `mcp-policy/destructive-tools.json` and silently falls back to a
+      # narrow hardcoded regex that misses common verbs like `add` / `share` /
+      # `dispatch` — bypassing the per-action chip. Read-only is intentional.
+      - ./mcp-policy:/app/mcp-policy:ro
+      # PORTICO PATCH: runtime-readable optimization flags. The middleware
+      # path resolver checks ``/app/optimization_flags.json`` first
+      # (see ``_optimization_flags_path`` in middleware.py); without
+      # this mount the gate / allowlist toggles silently fall back to
+      # the in-code default of ``True`` and the feature stays on no
+      # matter what the host file says. Read-only because the flag
+      # file is host-managed.
+      - ./optimization_flags.json:/app/optimization_flags.json:ro
+    entrypoint: ["/bin/bash", "/patch-entrypoint.sh"]
+    environment:
+      - TZ=${TZ:-UTC}
+      - NO_PROXY=${NO_PROXY:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - no_proxy=${no_proxy:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - HF_HUB_OFFLINE=1
+      - WEBUI_AUTH=True
+      # Portico owns its release/update experience. Never surface
+      # upstream Open WebUI release checks or update notices to users.
+      - ENABLE_VERSION_UPDATE_CHECK=False
+      - ENABLE_PASSWORD_AUTH=False
+      - ENABLE_LOGIN_FORM=False
+      - ENABLE_SIGNUP=False
+      - OWUI_AUTH_BRIDGE_SECRET_FILE=/run/secrets/owui_auth_bridge_secret
+      - WEBUI_SECRET_KEY_FILE=/run/secrets/webui_secret_key
+      - PORTICO_USER_ID=${PORTICO_USER_ID:-}
+      - PORTICO_USER_NAME=${PORTICO_USER_NAME:-}
+      - GLOBAL_LOG_LEVEL=INFO
+      - ENABLE_OLLAMA_API=False
+      - OPENAI_API_BASE_URL=http://llm-gateway:4000/v1
+      - OPENAI_API_KEY_FILE=/run/secrets/bifrost_bridge_local_api_key
+      # PORTICO-156: the upstream Jupiter LLM routing service rejects image/audio/
+      # video content on its OpenAI and Gemini routes ("not supported in the
+      # current MVP") but accepts images on the Bedrock/Atlas route. With
+      # this off, non-Atlas gateway models stop advertising vision so image
+      # turns degrade cleanly instead of dying; Atlas keeps working vision.
+      # Flip to true (or export the host env var) once the upstream supports
+      # multimodal input on all routes.
+      - LLM_GATEWAY_MULTIMODAL_INPUT=${LLM_GATEWAY_MULTIMODAL_INPUT:-false}
+      - MCP_PROXY_URL=http://localhost:8765
+      - ULTRA_MULTI_AGENT_SIGNING_SECRET_FILE=/run/secrets/ultra_multi_agent_signing_secret
+      - TASK_MODEL_EXTERNAL=Atlas Haiku 4.5
+      - AIOHTTP_CLIENT_TIMEOUT=
+      - REDIS_URL=redis://redis:6379
+      - WEBSOCKET_REDIS_LOCK_TIMEOUT=300
+      - CHAT_RESPONSE_MAX_TOOL_CALL_RETRIES=999
+      - ENABLE_REALTIME_CHAT_SAVE=True
+      - ENABLE_EVALUATION_ARENA_MODELS=False
+      - BYPASS_EMBEDDING_AND_RETRIEVAL=True
+      - VECTOR_DB=disabled
+      - STORAGE_PROVIDER=local
+      - ENABLE_CODE_EXECUTION=False
+      - ENABLE_CODE_INTERPRETER=False
+      - USER_PERMISSIONS_FEATURES_CODE_INTERPRETER=False
+      - USER_PERMISSIONS_CHAT_STT=False
+      # Prompts is the only OWUI workspace management surface exposed by PORTICO.
+      # Keep its full library workflow available to normal authenticated users.
+      - USER_PERMISSIONS_WORKSPACE_PROMPTS_ACCESS=True
+      - USER_PERMISSIONS_WORKSPACE_PROMPTS_IMPORT=True
+      - USER_PERMISSIONS_WORKSPACE_PROMPTS_EXPORT=True
+      - ENABLE_TITLE_GENERATION=True
+      - ENABLE_TAGS_GENERATION=False
+      - ENABLE_FOLLOW_UP_GENERATION=False
+      - OWUI_RATE_LIMIT_TEST_RATE=${OWUI_RATE_LIMIT_TEST_RATE:-0}
+      - OWUI_OVERFLOW_AGENT_VM_TIMEOUT_HOURS=${OWUI_OVERFLOW_AGENT_VM_TIMEOUT_HOURS:-1.0}
+      - GPT_OPENAI_ROUTE_MODE=${GPT_OPENAI_ROUTE_MODE:-direct}
+      - PORTICO_MCP_LOGREPO_URL=${PORTICO_MCP_LOGREPO_URL:-}
+      - 'DEFAULT_PROMPT_SUGGESTIONS=[{"title": ["It''s my first time using Portico...", "What can you do?"], "content": "It''s my first time using Portico. What can you do?"}, {"title": ["Help me enable some...", "new integrations!"], "content": "Help me enable some new integrations!"}, {"title": ["What are my most important meetings...", "this week?"], "content": "What are my most important meetings this week?"}, {"title": ["What''s going on at Portico...", "this week?"], "content": "What''s going on at Portico this week?"}]'
+    secrets:
+      - bifrost_bridge_local_api_key
+      - ultra_multi_agent_signing_secret
+      - owui_auth_bridge_secret
+      - webui_secret_key
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - llm-gateway
+      - mcpo
+    networks:
+      - default
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: portico-redis
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - default
+    restart: unless-stopped
+    # AOF persistence: writes every operation to disk (appendfsync everysec)
+    # RDB persistence: saves snapshots every 60s if at least 1 key changed
+    # volatile-lru: only evict keys with TTL set, preserving permanent data
+    command:
+      - redis-server
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - volatile-lru
+      - --client-output-buffer-limit
+      - normal 0 0 0 slave 268435456 67108864 60 pubsub 134217728 33554432 60
+      - --appendonly
+      - yes
+      - --appendfsync
+      - everysec
+      - --save
+      - "60"
+      - "1"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mongodb:
+    image: mongo:7
+    container_name: portico-mongodb
+    expose:
+      - "27017"
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=portico_chat_state
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--norc", "--eval", "db.adminCommand({ ping: 1 }).ok"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+  chat-state-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.chat-state-api
+    container_name: chat-state-api
+    ports:
+      - "127.0.0.1:3835:8000"
+    environment:
+      - NO_PROXY=${NO_PROXY:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - no_proxy=${no_proxy:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DB=portico_chat_state
+      - OPENWEBUI_BASE_URL=http://open-webui:8080
+      - CHAT_STATE_ALLOWED_ORIGINS=http://localhost:3789,http://127.0.0.1:3789,http://localhost:8080,http://127.0.0.1:8080
+    networks:
+      - default
+    restart: unless-stopped
+
+  health-check:
+    build:
+      context: .
+      dockerfile: Dockerfile.health-check
+    container_name: open-webui-health-check
+    environment:
+      - TZ=${TZ:-UTC}
+      - NO_PROXY=${NO_PROXY:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - no_proxy=${no_proxy:-},${PORTICO_INTERNAL_NO_PROXY:-localhost,127.0.0.1,::1,open-webui,portico-open-webui,llm-gateway,mcpo,mcpo-core,redis,portico-redis,mongodb,portico-mongodb,chat-state-api,open-webui-health-check,host.docker.internal}
+      - WRITE_API_LOGS=false
+      - PORTICO_KONAMI_UNLOCK_GPT54_PRO=${PORTICO_KONAMI_UNLOCK_GPT54_PRO:-0}
+      - PORTICO_APP_SUPPORT_DIR=/app/app-support
+      - OWUI_AUTH_BRIDGE_SECRET_FILE=/run/secrets/owui_auth_bridge_secret
+      - MCP_TOGGLE_SNAPSHOT_FILE=/app/health-status/mcp_toggles_snapshot.json
+    volumes:
+      - ./src/managers:/app/src/managers:ro
+      - ./src/filters:/app/src/filters:ro
+      - ./src/migrate_tool_server_ids.py:/app/src/migrate_tool_server_ids.py
+      - ./electron-app/assets/atlas.png:/app/atlas.png:ro
+      - ./electron-app/assets/gpt.png:/app/gpt.png:ro
+      - ./electron-app/assets/gemini.png:/app/gemini.png:ro
+      - ./electron-app/assets/sol.png:/app/sol.png:ro
+      - ./electron-app/assets/terra.png:/app/terra.png:ro
+      - ./electron-app/assets/luna.png:/app/luna.png:ro
+      - ./HOST_MODE:/app/HOST_MODE:ro
+      - ./backup:/app/backup:rw
+      - ./health-status:/app/health-status:rw
+      - ${PORTICO_APP_SUPPORT_DIR:-./open-webui-data/app-support}:/app/app-support:rw
+      # MCP server configurations (needed for scan_configured_servers())
+      - ./mcp-configs:/app/mcp-configs:ro
+      - ./mcp-configs-user:/app/mcp-configs-user:ro
+      - ./mcpo-configs-generated:/app/mcpo-configs-generated:ro
+      # Agent configurations (needed for agent_manager.py)
+      - ./agents:/app/agents:ro
+      # Gateway config (needed for base model detection)
+      - ./model_catalog.yaml:/app/model_catalog.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - llm-gateway
+      - mcpo
+      - open-webui
+      - redis
+    secrets:
+      - owui_auth_bridge_secret
+    networks:
+      - default
+    restart: "no" # Run once and stop
+
+volumes:
+  bifrost-data:
+  redis-data:
+  mongodb-data:
+  # Identity-scoped Slack MCP caches survive ordinary container recreation.
+  slack-mcp-cache:
+
+# Runtime secrets materialized on host by src/scripts/docker-compose.sh
+# (prepare_optional_file_secret_ingress), consumed by containers via tmpfs at
+# /run/secrets/<name>. File paths are injected through environment variables
+# that the ingress helper exports for each compose invocation. The `:?` default
+# keeps read-only compose operations working before the ingress helper runs.
+# Start paths go through src/scripts/docker-compose.sh, which points these at
+# per-session files containing the required secrets.
+secrets:
+  portico_llm_api_key:
+    file: ${PORTICO_LLM_API_KEY_FILE:-/dev/null}
+  bifrost_bridge_local_api_key:
+    file: ${BIFROST_BRIDGE_LOCAL_API_KEY_FILE:-/dev/null}
+  ultra_multi_agent_signing_secret:
+    file: ${ULTRA_MULTI_AGENT_SIGNING_SECRET_FILE:-/dev/null}
+  owui_auth_bridge_secret:
+    file: ${OWUI_AUTH_BRIDGE_SECRET_FILE:-/dev/null}
+  webui_secret_key:
+    file: ${WEBUI_SECRET_KEY_FILE:-/dev/null}
+
+networks:
+  default:
+    name: portico-network
+  docker-proxy:
+    name: portico-docker-proxy-network
+    internal: true
+  agent-vm:
+    name: ${CORE_MCP_AGENT_VM_NETWORK:-portico-agent-vm-network}
+    ipam:
+      config:
+        - subnet: ${CORE_MCP_AGENT_VM_SUBNET:-172.31.0.0/16}

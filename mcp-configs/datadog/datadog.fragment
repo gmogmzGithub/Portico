@@ -1,0 +1,7 @@
+{
+  "type": "streamable-http",
+  "url": "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp",
+  "oauth": {
+    "server_url": "https://mcp.datadoghq.com"
+  }
+}

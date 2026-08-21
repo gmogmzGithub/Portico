@@ -1,0 +1,347 @@
+[
+  {
+    "name": "create_artifact",
+    "title": null,
+    "description": "Create an artifact preview from the chat workspace mounted at /work. The tool snapshots the selected Agent VM workspace when vm_id is provided, otherwise the resolved chat workspace root, then starts the preview server inside an Agent VM Docker container and displays it in the Electron panel only after startup validation succeeds.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID that will own this artifact"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the artifact (e.g., 'Calculator App')"
+        },
+        "start_command": {
+          "type": "string",
+          "description": "Command to start the web server (e.g., 'npm run dev', 'python -m http.server 5173')"
+        },
+        "container_port": {
+          "type": "integer",
+          "description": "Port the server runs on inside the container (default: 5173 for Vite)",
+          "default": 5173
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the artifact",
+          "default": ""
+        },
+        "working_directory": {
+          "type": "string",
+          "description": "Working directory for start_command (default: /work)",
+          "default": "/work"
+        },
+        "version_note": {
+          "type": "string",
+          "description": "Note for the initial version",
+          "default": "Initial version"
+        },
+        "vm_id": {
+          "type": "string",
+          "description": "Optional source Agent VM GUID to snapshot from. If omitted, snapshots the resolved chat workspace root."
+        }
+      },
+      "required": [
+        "chat_id",
+        "name",
+        "start_command"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "create_artifact_version",
+    "title": null,
+    "description": "Create a new version of an artifact by snapshotting the selected Agent VM /work workspace, then restart the artifact preview inside an Agent VM Docker container.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID (for verification)"
+        },
+        "source_vm_id": {
+          "type": "string",
+          "description": "VM ID to snapshot from (use your development VM from agent_vm_create)"
+        },
+        "version_note": {
+          "type": "string",
+          "description": "Short description of changes (max 50 chars, e.g., 'Added dark mode', 'Fixed layout')",
+          "default": "",
+          "maxLength": 50
+        }
+      },
+      "required": [
+        "artifact_id",
+        "chat_id",
+        "source_vm_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "open_artifact",
+    "title": null,
+    "description": "Open an artifact in the Electron panel. Starts the server if needed and signals Electron to display the preview. Always auto-opens when called.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID to open"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Specific version to view (default: current version)"
+        },
+        "detached": {
+          "type": "boolean",
+          "description": "Open in a separate window instead of side panel",
+          "default": false
+        },
+        "force_restart": {
+          "type": "boolean",
+          "description": "Restart the artifact runtime even when its container still appears healthy",
+          "default": false
+        }
+      },
+      "required": [
+        "artifact_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "switch_artifact_version",
+    "title": null,
+    "description": "Switch a running artifact to a different version. Restores the snapshot for that version and restarts the server.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID"
+        },
+        "version": {
+          "type": "integer",
+          "description": "The version number to switch to"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "version"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "list_artifacts",
+    "title": null,
+    "description": "List all artifacts for a chat session.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID"
+        },
+        "include_all_versions": {
+          "type": "boolean",
+          "description": "Include full version history for each artifact",
+          "default": false
+        }
+      },
+      "required": [
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_artifact_status",
+    "title": null,
+    "description": "Get detailed status of an artifact including preview URL, version info, and running state.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID"
+        }
+      },
+      "required": [
+        "artifact_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "close_artifact",
+    "title": null,
+    "description": "Close the artifact panel and stop the server. Releases resources but preserves the artifact and its versions.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID to close"
+        }
+      },
+      "required": [
+        "artifact_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "delete_artifact",
+    "title": null,
+    "description": "Permanently delete an artifact and all its versions. This cannot be undone.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID to delete"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID (for verification)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be true to confirm deletion"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "chat_id",
+        "confirm"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "restore_artifact_version",
+    "title": null,
+    "description": "Restore an artifact to a previous version. This replaces the current working state with the snapshot from the specified version.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Version number to restore"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID (for verification)"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "version",
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "download_artifact",
+    "title": null,
+    "description": "Export an artifact version as a .tar.gz archive into the resolved chat workspace for download.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Version to export (default: current version)"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_artifact_running_versions",
+    "title": null,
+    "description": "Get all running versions and their ports for an artifact. Returns the server pool status including which versions are hot (instantly switchable) and which would require cold restoration.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "description": "The artifact ID"
+        }
+      },
+      "required": [
+        "artifact_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  }
+]

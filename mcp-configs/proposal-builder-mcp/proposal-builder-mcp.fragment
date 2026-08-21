@@ -1,0 +1,7 @@
+{
+  "oauth": {
+    "server_url": "https://mcp.example.invalid/proposal-builder"
+  },
+  "type": "streamable-http",
+  "url": "https://mcp.example.invalid/proposal-builder/mcp/"
+}

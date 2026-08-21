@@ -1,0 +1,18 @@
+deployment_type: docker
+description: Portico Design System MCP - components, design tokens, icons, and styling guidance via aix-mcp-gateway (OAuth)
+display_name: Design System MCP
+id: design-system-mcp
+is_core: false
+name: Design System MCP
+required_env_vars: []
+user_installed: false
+tool_rename_mapping:
+  lookupComponents: "Lookup Components"
+  lookupIcons: "Lookup Icons"
+  lookupTokens: "Lookup Tokens"
+  searchDesignSystem: "Search Design System"
+
+oauth:
+  type: dcr
+  provider: design-system-mcp
+  requires_user_authorization: true

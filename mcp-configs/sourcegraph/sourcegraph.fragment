@@ -1,0 +1,17 @@
+{
+  "command": "docker",
+  "args": [
+    "run",
+    "-i",
+    "--rm",
+    "--init",
+    "-e",
+    "SOURCEGRAPH_TOKEN",
+    "-e",
+    "SOURCEGRAPH_URL",
+    "registry.example.invalid/sourcegraph-mcp-server:latest",
+    "serve",
+    "--transport",
+    "stdio"
+  ]
+}

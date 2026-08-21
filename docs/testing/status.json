@@ -1,0 +1,1084 @@
+{
+  "version": 1,
+  "updated_at": "2026-05-07T08:52:42.554Z",
+  "scenarios": {
+    "A-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:11.667Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/docker-mcp-regressions.test.js -- 0s"
+    },
+    "A-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:09.203Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/host-mode-state.test.js -- 1s"
+    },
+    "A-16": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:58.478Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/tests/updates-cloudsmith.test.js -- 0s"
+    },
+    "A-18": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:08.741Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/screen-finalize.unit.test.js -- 0s"
+    },
+    "B-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.537Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.603Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:59.428Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/update-preparation.test.js -- 1s"
+    },
+    "B-10": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:06.843Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-12": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:06.915Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-13": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:06.982Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-14": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.103Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-15": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.267Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-20": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.330Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "B-21": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.401Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "B-22": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.389Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-23": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:04.945Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/setup-copy.unit.test.js -- 0s"
+    },
+    "B-24": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.472Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "B-32": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:42.725Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-hover-title.unit.test.js -- 0s"
+    },
+    "B-33": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:42.797Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-hover-title.unit.test.js -- 0s"
+    },
+    "B-35": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:05.784Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/detached-chat-window-policy.test.js -- 0s"
+    },
+    "B-36": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:05.854Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/detached-chat-window-policy.test.js -- 0s"
+    },
+    "B-39": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:05.912Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/detached-chat-window-policy.test.js -- 0s"
+    },
+    "B-40": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:43.352Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-header-layout.test.js -- 0s"
+    },
+    "B-50": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.180Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "B-51": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.258Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "B-52": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:03.063Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/control-plane-oauth-regressions.test.js -- 0s"
+    },
+    "C-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:56.655Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-theme-toggle.test.js -- 0s"
+    },
+    "C-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:56.733Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-theme-toggle.test.js -- 0s"
+    },
+    "C-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:56.802Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-theme-toggle.test.js -- 0s"
+    },
+    "C-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:43.425Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-header-layout.test.js -- 0s"
+    },
+    "C-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:07.667Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "C-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:57.289Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/owui-sidebar-preferences.unit.test.js -- 0s"
+    },
+    "C-09": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:57.794Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/font-migration.unit.test.js -- 0s"
+    },
+    "D-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:42.648Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-hover-title.unit.test.js -- 0s"
+    },
+    "D-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:04.797Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/setup-copy.unit.test.js -- 0s"
+    },
+    "D-09": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:04.871Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/setup-copy.unit.test.js -- 0s"
+    },
+    "E-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:31.650Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_chat_search_fts_reliability.py -- 4s"
+    },
+    "E-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:31.727Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_chat_search_fts_reliability.py -- 4s"
+    },
+    "E-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:34.944Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_chat_search_fts_security.py -- 2s"
+    },
+    "E-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:35.023Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_chat_search_fts_security.py -- 2s"
+    },
+    "E-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:31.804Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_chat_search_fts_reliability.py -- 4s"
+    },
+    "E-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:35.956Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "E-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.038Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "E-09": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.108Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "E-10": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-11": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-12": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-13": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-14": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-15": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-16": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-17": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-18": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "E-19": {
+      "status": "Pass",
+      "date": "2026-05-01T08:38:13.000Z",
+      "build": "pre-beta-tabs-and-search-fixes @ 2cd19449",
+      "executor": "odubo",
+      "notes": "Live-app validation against the running Electron build."
+    },
+    "F-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:05.580Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/detached-chat-window-policy.test.js -- 0s"
+    },
+    "F-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:05.651Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/detached-chat-window-policy.test.js -- 0s"
+    },
+    "F-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:06.753Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-window-close-regressions.test.js -- 0s"
+    },
+    "F-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:08.179Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/artifact-panel-layout.unit.test.js -- 1s"
+    },
+    "F-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:05.721Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/detached-chat-window-policy.test.js -- 0s"
+    },
+    "G-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:21.296Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-toggle-persistence.test.js -- 0s"
+    },
+    "G-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:21.746Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/api-toggle-readiness-regressions.test.js -- 0s"
+    },
+    "G-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:02.430Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/oauth-flow-lifecycle.test.js -- 1s"
+    },
+    "G-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:22.261Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-bulk-toggle-ipc-regressions.test.js -- 0s"
+    },
+    "G-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:23.031Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-infra-regeneration.test.js -- 0s"
+    },
+    "G-10": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:15.060Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/marketplace-ootb.test.js -- 0s"
+    },
+    "G-11": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:19.640Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/gitlab-marketplace-auth.test.js -- 4s"
+    },
+    "G-12": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:20.770Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/marketplace-service.test.js -- 1s"
+    },
+    "G-14": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:44.017Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/skill-frontmatter.test.js -- 0s"
+    },
+    "G-20": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:23.799Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-server-logs.test.js -- 0s"
+    },
+    "G-21": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:23.186Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-infra-regeneration.test.js -- 0s"
+    },
+    "G-22": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:24.391Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-server-delete.test.js -- 0s"
+    },
+    "G-23": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:24.895Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-startup-failures.test.js -- 0s"
+    },
+    "G-24": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:25.780Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-badge-tooltip-focus.test.js -- 0s"
+    },
+    "H-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:50:59.711Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/setup-auth.test.js -- 4s"
+    },
+    "H-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:00.357Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/vault-llm-key.test.js -- 0s"
+    },
+    "H-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:00.921Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/screen-vpn-check.unit.test.js -- 0s"
+    },
+    "H-10": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:01.541Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/oauth-wizard-modal.test.js -- 0s"
+    },
+    "H-11": {
+      "status": "Pass",
+      "date": "2026-05-05T12:44:20.687Z",
+      "build": "pre-beta-fix-message-sending @ a1e1f70f",
+      "executor": "odubo",
+      "notes": "manual: Slack OAuth — browser shows valid lock, security find-certificate returns localhost cert with trustRoot ssl+basic"
+    },
+    "H-12": {
+      "status": "Pass",
+      "date": "2026-05-05T12:44:20.851Z",
+      "build": "pre-beta-fix-message-sending @ a1e1f70f-dirty",
+      "executor": "odubo",
+      "notes": "manual: Slack tool call (list channels) succeeded; no xoxp/xoxb token-type strings surfaced to user"
+    },
+    "H-13": {
+      "status": "Pass",
+      "date": "2026-05-05T12:44:21.016Z",
+      "build": "pre-beta-fix-message-sending @ a1e1f70f-dirty",
+      "executor": "odubo",
+      "notes": "manual: Google Workspace OAuth completed; agent listed calendar events and recent emails"
+    },
+    "H-14": {
+      "status": "Pass",
+      "date": "2026-05-05T12:44:21.172Z",
+      "build": "pre-beta-fix-message-sending @ a1e1f70f-dirty",
+      "executor": "odubo",
+      "notes": "manual: Glean OAuth completed; search tool returned results"
+    },
+    "H-15": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:02.232Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/oauth-flow-lifecycle.test.js -- 1s"
+    },
+    "H-16": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:02.342Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/oauth-flow-lifecycle.test.js -- 1s"
+    },
+    "H-17": {
+      "status": "Pass",
+      "date": "2026-05-05T12:44:21.317Z",
+      "build": "pre-beta-fix-message-sending @ a1e1f70f-dirty",
+      "executor": "odubo",
+      "notes": "manual: dismissed OAuth modal mid-flow; assistant acknowledged 'dismissed' and offered retry"
+    },
+    "H-18": {
+      "status": "NotApplicable",
+      "date": "2026-05-06T07:55:39.228Z",
+      "build": "pre-beta-fix-message-sending @ 6644c592-dirty",
+      "executor": "odubo",
+      "notes": "Per prior thread decision: scenario assumes a clock-based fast-fail that we've intentionally chosen NOT to implement. Recovery is strictly user-driven (Stuck?Retry, modal X, 10-min outer budget, contractor+data-plat-mcp 4xx auth-URL probe). Rationale documented next to WIZARD_OAUTH_FLOW_TIMEOUT_MS in oauth-wizard-modal.js and atop oauth-flow-lifecycle.js."
+    },
+    "H-19": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:02.997Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/control-plane-oauth-regressions.test.js -- 0s"
+    },
+    "H-20": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:03.561Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/oauth-token-storage.test.js -- 0s"
+    },
+    "H-21": {
+      "status": "Pass",
+      "date": "2026-05-06T08:42:45.418Z",
+      "build": "pre-beta-fix-message-sending @ 7233568a-dirty",
+      "executor": "odubo",
+      "notes": "manual: revoked/expired token triggered 401; assistant prompted user to re-authenticate before re-entering guided setup"
+    },
+    "H-30": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:04.098Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-config-modal.test.js -- 0s"
+    },
+    "H-31": {
+      "status": "Pass",
+      "date": "2026-05-06T08:23:29.104Z",
+      "build": "pre-beta-fix-message-sending @ 7233568a",
+      "executor": "odubo",
+      "notes": "manual: GitLab npx install completed within 180s; container reached healthy without premature timeout"
+    },
+    "H-32": {
+      "status": "Pass",
+      "date": "2026-05-06T08:27:34.992Z",
+      "build": "pre-beta-fix-message-sending @ 7233568a-dirty",
+      "executor": "odubo",
+      "notes": "manual: GitLab guided setup (PAT entry) merged all 6 preset env vars into .env (GITLAB_API_URL=https://example.invalid/api/v4, GITLAB_IS_OLD=true, GITLAB_READ_ONLY_MODE=false, USE_GITLAB_WIKI=false, USE_MILESTONE=false, USE_PIPELINE=false) plus the user PAT; no gitlab.com leak"
+    },
+    "H-33": {
+      "status": "Pass",
+      "date": "2026-05-06T08:23:29.251Z",
+      "build": "pre-beta-fix-message-sending @ 7233568a-dirty",
+      "executor": "odubo",
+      "notes": "manual: cancelled GitLab config modal; assistant acknowledged 'cancelled' reason and offered retry"
+    },
+    "I-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:11.766Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/docker-mcp-regressions.test.js -- 0s"
+    },
+    "I-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:12.390Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-hardening.unit.test.js -- 0s"
+    },
+    "I-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:13.258Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-config.test.js -- 1s"
+    },
+    "I-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:13.975Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/cost-dashboard.unit.test.js -- 0s"
+    },
+    "I-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:14.502Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test tests/llm-debug-monitor-cache-breakpoints.unit.test.js -- 0s"
+    },
+    "J-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:44.102Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/skill-frontmatter.test.js -- 0s"
+    },
+    "J-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:46.723Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> src/core-mcp-rust Cargo smoke tests -- 2s"
+    },
+    "J-04": {
+      "status": "Skipped",
+      "date": "2026-04-28T14:51:49.766Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_code_execution_pdf_script.py -- pytest collected 0 tests (exit 5)"
+    },
+    "J-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:50.276Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/agent-vm-startup-cleanup.unit.test.js -- 0s"
+    },
+    "J-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:52.885Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_run_subagents_parallel_chat_consistency.py -- 2s"
+    },
+    "J-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:55.631Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_subagent_budget_guard.py -- 2s"
+    },
+    "J-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:56.111Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/agent-skills-image-viewer.unit.test.js -- 1s"
+    },
+    "J-09": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:08.258Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/artifact-panel-layout.unit.test.js -- 1s"
+    },
+    "K-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:58.551Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/tests/updates-cloudsmith.test.js -- 0s"
+    },
+    "K-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:58.624Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/tests/updates-cloudsmith.test.js -- 0s"
+    },
+    "K-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:59.506Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/update-preparation.test.js -- 1s"
+    },
+    "K-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:59.581Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/update-preparation.test.js -- 1s"
+    },
+    "K-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:59.664Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/update-preparation.test.js -- 1s"
+    },
+    "K-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:59.739Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/update-preparation.test.js -- 1s"
+    },
+    "K-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:52:00.247Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/update-failure-message.test.js -- 0s"
+    },
+    "K-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:58.704Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/tests/updates-cloudsmith.test.js -- 0s"
+    },
+    "K-10": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:38.743Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/cloudsmith-config.test.js -- 0s"
+    },
+    "L-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:00.442Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/vault-llm-key.test.js -- 0s"
+    },
+    "L-02": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.417Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "cargo test in src/bifrost-bridge-rust/ -- 106 passed; 0 failed; src/main.rs uses subtle::ConstantTimeEq for bearer compare"
+    },
+    "L-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:12.536Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-hardening.unit.test.js -- 0s"
+    },
+    "L-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:36.878Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/shell-open.test.js -- 0s"
+    },
+    "L-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:13.338Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-config.test.js -- 1s"
+    },
+    "L-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:13.502Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-config.test.js -- 1s"
+    },
+    "L-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:35.102Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "uv run --python /opt/homebrew/bin/python3 --with pytest --with pytest-asyncio --with docker --with pypdf --with-requirements <REPO_ROOT>/requirements-open-webui-slim.txt python -m pytest --rootdir <REPO_ROOT> tests/test_chat_search_fts_security.py -- 2s"
+    },
+    "L-08": {
+      "status": "Pass",
+      "date": "2026-05-07T08:42:38.638Z",
+      "build": "pre-beta-tmp @ 5512efe2",
+      "executor": "odubo",
+      "notes": "bash tests/test_docker_compose_runtime_secrets.sh -- All docker-compose runtime-secret regressions passed. Runtime secret cache dir is 0700; infrastructure secret files are 0600. Slack OAuth client-secret files are no longer generated because Slack uses PKCE public-client OAuth."
+    },
+    "L-09": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:12.633Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-hardening.unit.test.js -- 0s"
+    },
+    "L-10": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:38.641Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/cloudsmith-config.test.js -- 0s"
+    },
+    "L-11": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:13.420Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-config.test.js -- 1s"
+    },
+    "L-12": {
+      "status": "Pass",
+      "date": "2026-05-07T08:45:43.066Z",
+      "build": "pre-beta-tmp @ dba0c0e9",
+      "executor": "odubo",
+      "notes": "Cert at ~/Library/Caches/portico/single-server-ssl/oauth.crt (user cache, 0644 file in 0700 dir). EKU narrow: 'TLS Web Server Authentication' only; KU: critical Digital Signature + Key Encipherment; SAN: localhost + 127.0.0.1; basicConstraints CA:FALSE. Idempotent re-trust verified: only one CN=localhost cert in login.keychain-db, SHA-1 8f3c8bd5e85096caf6cd51d961921d84fb62fa8b matches both .cert.sha1 and openssl fingerprint; ensure_single_server_https_cert sets need_generate=0 when cert exists, only re-runs add-trusted-cert (idempotent no-op). Loopback bind verified via start-single-mcp-server.sh: 127.0.0.1:3838:3838, 127.0.0.1:HOST_PORT:80, 127.0.0.1:CALLBACK_HOST_PORT:3834 (PORTICO-68 / F6 comments). add-trusted-cert uses -k login.keychain-db (user, never system) and -p ssl -p basic (TLS server only)."
+    },
+    "L-13": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.460Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "cargo test --package mcp-orc session::tests:: in src/mcp-orc-rust/ -- 25 passed; includes best_effort_zeroize_and_remove_overwrites_before_unlink"
+    },
+    "L-14": {
+      "status": "Pass",
+      "date": "2026-05-15T00:00:00.000Z",
+      "build": "legacy-stack-removal cleanup",
+      "executor": "workbench",
+      "notes": "Rust mcp-orc OAuth tests cover canonical callback ports, redirect URI sanitization, persisted client redirect cleanup, callback HTML rendering, and loopback-only generated compose bindings."
+    },
+    "L-15": {
+      "status": "Pass",
+      "date": "2026-05-07T08:48:58.197Z",
+      "build": "pre-beta-tmp @ 8741a351",
+      "executor": "odubo",
+      "notes": "Historical pre-PKCE cleanup run: clean_full.sh removed app Keychain entries, cache/log/Application Support dirs, localhost certs, and Slack token state. Current Slack OAuth no longer creates localhost certs or Slack client-secret Keychain entries; legacy Slack client credential accounts remain cleanup-only."
+    },
+    "L-16": {
+      "status": "Pass",
+      "date": "2026-05-07T08:42:38.698Z",
+      "build": "pre-beta-tmp @ 5512efe2",
+      "executor": "odubo",
+      "notes": "find ~/Library/Caches/portico/runtime-secrets -type f -perm +066 returns empty. grep for PORTICO_LLM_API_KEY=/SLACK_OAUTH_CLIENT_SECRET=/GITLAB_PERSONAL_ACCESS_TOKEN=/SOURCEGRAPH_TOKEN=/N8N_API_KEY= in project-root env files (.env, .env.runtime, cloudsmith.env) returns empty."
+    },
+    "L-17": {
+      "status": "Pass",
+      "date": "2026-05-07T08:52:42.503Z",
+      "build": "pre-beta-tmp @ 8741a351-dirty",
+      "executor": "odubo",
+      "notes": "After patching clean_full.sh step 5 to also sweep 'portico Safe Storage' Keychain entries (Electron safeStorage encryption keys), security dump-keychain ~/Library/Keychains/login.keychain-db | grep -c portico now returns 0."
+    },
+    "L-18": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.502Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "pytest tests/test_tool_confirmation_gate.py tests/test_tool_confirmation_gate_end_to_end.py -- 94/94 passed"
+    },
+    "L-19": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.546Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "pytest tests/test_tool_confirmation_gate_end_to_end.py::test_yes_after_propose_results_in_one_dispatch -- passed (within 94/94 batch)"
+    },
+    "L-20": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.590Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "pytest tests/test_tool_confirmation_gate.py -k 'arg_drift or tool_drift or different_payload or different_destination' -- passed (within 94/94 batch)"
+    },
+    "L-21": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.634Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "pytest tests/test_tool_confirmation_gate*.py -k 'stale or planning_yes or multiple_pending' -- passed (within 94/94 batch)"
+    },
+    "L-22": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.679Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "node --test tests/test_tool_confirmation_chip.node.test.js -- 51/51 passed; pytest test_utils_router_exposes_chip_resolve_endpoint -- passed; required _toolConfirmationBatchSend rename in Chat.svelte sendMessage/sendMessageSocket"
+    },
+    "L-23": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.728Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "pytest tests/test_tool_confirmation_gate.py -k 'unknown_token or single_use or per_chat' -- passed (within 94/94 batch)"
+    },
+    "L-24": {
+      "status": "Pass",
+      "date": "2026-05-07T08:38:17.776Z",
+      "build": "pre-beta-tmp @ 2ea7155d-dirty",
+      "executor": "odubo",
+      "notes": "pytest tests/test_tool_confirmation_gate.py + node chip test auto-fire scheduler tests -- all passed"
+    },
+    "M-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:26.270Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/user-question-modal-regressions.test.js -- 0s"
+    },
+    "M-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:26.745Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/user-question-flows.test.js -- 0s"
+    },
+    "M-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:04.172Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-config-modal.test.js -- 0s"
+    },
+    "M-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:20.851Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/marketplace-service.test.js -- 1s"
+    },
+    "M-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:27.228Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/main-chat-loading-overlay.test.js -- 0s"
+    },
+    "M-07": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:27.711Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/current-user.test.js -- 0s"
+    },
+    "N-01": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:09.880Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-unlock.test.js -- 0s"
+    },
+    "N-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:10.588Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-startup-reconcile.unit.test.js -- 0s"
+    },
+    "N-03": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:11.130Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-logger.test.js -- 1s"
+    },
+    "N-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:09.963Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/konami-unlock.test.js -- 0s"
+    },
+    "O-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:22.385Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-bulk-toggle-ipc-regressions.test.js -- 0s"
+    },
+    "P0-02": {
+      "status": "Pass",
+      "date": "2026-04-28T14:50:59.801Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/setup-auth.test.js -- 4s"
+    },
+    "P0-04": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:01.629Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/oauth-wizard-modal.test.js -- 0s"
+    },
+    "P0-05": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:04.246Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/mcp-config-modal.test.js -- 0s"
+    },
+    "P0-06": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:35.881Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/services/tab-search-regressions.test.js -- 0s"
+    },
+    "P0-08": {
+      "status": "Pass",
+      "date": "2026-04-28T14:51:12.466Z",
+      "build": "pre-beta-tmp @ fc4efce1-dirty",
+      "executor": "bshor",
+      "notes": "/usr/local/lib/nodejs/node-v20.19.0-darwin-arm64/bin/node --test electron-app/src/config/runtime-secrets-hardening.unit.test.js -- 0s"
+    }
+  }
+}

@@ -1,0 +1,211 @@
+# Multi-stage Dockerfile to build Open WebUI with patched frontend
+# This allows distribution without requiring users to have open-webui source
+
+# Global ARG must be declared before FROM to be available across stages
+ARG OPENWEBUI_VERSION=v0.6.43
+
+# Stage 1: Build frontend with patches
+FROM node:20-slim AS frontend-builder
+
+# Copy npm configuration with Portico registry auth
+COPY .npmrc /etc/npmrc
+
+# Configure npm and nvm to point to Cloudsmith
+ENV NPM_CONFIG_GLOBALCONFIG=/etc/npmrc
+ENV NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+
+# Install curl so the upstream source can be fetched as a tagged tarball with retries.
+# Keep git in the throwaway builder stage because the upstream Svelte build probes
+# for it and otherwise emits a noisy warning.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /build
+
+# Download Open WebUI at a specific version.
+# Using the codeload tarball endpoint is more reliable in CI/local Docker builds
+# than a live git clone, and the retry loop handles transient GitHub TLS resets.
+ARG OPENWEBUI_VERSION=v0.6.43
+RUN set -eux; \
+    archive_url="https://codeload.github.com/open-webui/open-webui/tar.gz/refs/tags/${OPENWEBUI_VERSION}"; \
+    for attempt in 1 2 3 4 5; do \
+        if curl --fail --location --retry 5 --retry-all-errors --connect-timeout 20 --max-time 300 "$archive_url" \
+            | tar -xz --strip-components=1; then \
+            break; \
+        fi; \
+        if [ "$attempt" -eq 5 ]; then \
+            echo "Failed to download Open WebUI source archive from $archive_url" >&2; \
+            exit 1; \
+        fi; \
+        rm -rf /build/* /build/.[!.]* /build/..?* 2>/dev/null || true; \
+        sleep $((attempt * 3)); \
+    done
+
+RUN git init /build && \
+    git -C /build config user.email "open-webui-build@example.invalid" && \
+    git -C /build config user.name "Open WebUI Builder" && \
+    git -C /build add . && \
+    git -C /build commit -qm "Build snapshot"
+
+# --- PORTICO-205 layer-cache contract ---------------------------------------
+# Every npm dependency layer below is keyed ONLY on: the .npmrc copied at
+# the top of this stage, the upstream tarball snapshot, and the tiny
+# package.json mutator script. The frequently edited inputs
+# (model_catalog.yaml, the generator/slimmer scripts, src/patches/frontend/)
+# are copied AFTER the dependency layers, so catalog/patch edits re-run only
+# the frontend build — not `npm ci` (~2GB of node_modules per platform).
+# Do not move any of those COPYs above the dependency layers.
+
+# Install js-yaml for the model-config generation that runs after the patch
+# COPYs below (keeping this install first preserves the historical
+# package.json/lockfile trajectory ahead of `npm ci`).
+# Use --legacy-peer-deps to avoid tiptap peer dependency conflicts from open-webui's package.json
+RUN npm install --legacy-peer-deps js-yaml
+
+# Rewrite package.json scripts.build before `npm ci`, preserving the exact
+# manifest trajectory this build always had (js-yaml install -> build-script
+# rewrite -> npm ci -> y-protocols install -> npm run build).
+COPY src/scripts/slim-openwebui-package-json.cjs /build/src/scripts/
+RUN node /build/src/scripts/slim-openwebui-package-json.cjs /build
+
+# Install dependencies (the heavyweight cached layer)
+# Use --legacy-peer-deps to handle tiptap version conflicts in open-webui v0.6.41
+# Note: Cannot use --omit=dev because build needs devDependencies like @sveltejs/adapter-static
+# Install y-protocols to fix y-prosemirror peer dependency issue
+# Set NODE_OPTIONS to increase heap memory to 4GB to prevent OOM errors during install
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm ci --legacy-peer-deps && \
+    npm install --legacy-peer-deps y-protocols
+
+# Copy model_catalog.yaml and model config generator script for build-time processing
+COPY model_catalog.yaml /build/
+COPY src/scripts/generate-model-config.cjs /build/src/scripts/
+COPY src/scripts/slim-openwebui-frontend.cjs /build/src/scripts/
+
+# Copy our patched frontend files
+COPY src/patches/frontend/ /build/
+
+# Re-generate model capabilities after patch copy so generated data is never
+# overwritten by the patched frontend source tree.
+RUN node /build/src/scripts/generate-model-config.cjs
+
+# This deployment does not use Open WebUI's built-in code execution, so strip
+# the remaining frontend Pyodide imports (package.json's build script was
+# already rewritten before `npm ci` by slim-openwebui-package-json.cjs).
+RUN node /build/src/scripts/slim-openwebui-frontend.cjs /build
+
+# Verify patched files were copied
+RUN echo "=== Verifying patched files ===" && \
+    ls -la /build/src/lib/utils/marked/extension.ts && \
+    grep -q "PATCHED_MARKER_v2" /build/src/lib/utils/marked/extension.ts && \
+    echo "✓ extension.ts patch verified (PATCHED_MARKER_v2 found)" || (echo "✗ extension.ts patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/chat/Chat.svelte && \
+    grep -q "contentBlocks.*contentBlocks.*Preserve contentBlocks for Phoenix" /build/src/lib/components/chat/Chat.svelte && \
+    echo "✓ Chat.svelte patch verified (contentBlocks preservation found)" || (echo "✗ Chat.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/chat/MessageInput.svelte && \
+    grep -q "PORTICO PATCHED FILE" /build/src/lib/components/chat/MessageInput.svelte && \
+    echo "✓ MessageInput.svelte patch verified (reasoning/context widgets)" || (echo "✗ MessageInput.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/NotificationToast.svelte && \
+    grep -Fq "portico-chat-completion-toast" /build/src/lib/components/NotificationToast.svelte && \
+    echo "✓ NotificationToast.svelte patch verified (native Electron chat notifications)" || (echo "✗ NotificationToast.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/config/model-capabilities.ts && \
+    grep -q "MODEL_CAPABILITIES" /build/src/lib/config/model-capabilities.ts && \
+    echo "✓ model-capabilities.ts generated (from model_catalog.yaml)" || (echo "✗ model-capabilities.ts NOT found" && exit 1) && \
+    ls -la /build/src/lib/apis/chatCapabilities.ts && \
+    grep -q "ChatCapabilities" /build/src/lib/apis/chatCapabilities.ts && \
+    echo "✓ chatCapabilities.ts found (Active Capabilities API)" || (echo "✗ chatCapabilities.ts NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/chat/ActiveCapabilities.svelte && \
+    grep -q "ActiveCapabilities" /build/src/lib/components/chat/ActiveCapabilities.svelte && \
+    echo "✓ ActiveCapabilities.svelte found (Active Capabilities UI)" || (echo "✗ ActiveCapabilities.svelte NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/chat/Messages/ResponseMessage.svelte && \
+    grep -q "PORTICO_PATCH" /build/src/lib/components/chat/Messages/ResponseMessage.svelte && \
+    echo "✓ ResponseMessage.svelte patch verified (inline MCP images)" || (echo "✗ ResponseMessage.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/utils/index.ts && \
+    grep -q "PORTICO_PATCH: Prefer the Electron host bridge" /build/src/lib/utils/index.ts && \
+    echo "✓ utils/index.ts patch verified (clipboard bridge + browser fallback)" || (echo "✗ utils/index.ts patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/layout/Sidebar.svelte && \
+    grep -Fq "const DEFAULT_WIDTH = 360;" /build/src/lib/components/layout/Sidebar.svelte && \
+    echo "✓ Sidebar.svelte patch verified (360px default width + light drawer surfaces)" || (echo "✗ Sidebar.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/layout/Sidebar/ChatMenu.svelte && \
+    grep -Fq "portico-menu-surface" /build/src/lib/components/layout/Sidebar/ChatMenu.svelte && \
+    echo "✓ Sidebar/ChatMenu.svelte patch verified (shared collision-safe menu surfaces)" || (echo "✗ Sidebar/ChatMenu.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/layout/Sidebar/ChatItem.svelte && \
+    grep -q "PORTICO PATCHED FILE" /build/src/lib/components/layout/Sidebar/ChatItem.svelte && \
+    echo "✓ Sidebar/ChatItem.svelte patch verified (light chat-row ellipsis surfaces)" || (echo "✗ Sidebar/ChatItem.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/layout/Navbar/Menu.svelte && \
+    grep -Fq "chat-open-workspace-button" /build/src/lib/components/layout/Navbar/Menu.svelte && \
+    echo "✓ Navbar/Menu.svelte patch verified (Open Workspace action)" || (echo "✗ Navbar/Menu.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/stores/index.ts && \
+    grep -Fq "export const sidebarWidth = writable(360);" /build/src/lib/stores/index.ts && \
+    echo "✓ stores/index.ts patch verified (360px sidebar store default)" || (echo "✗ stores/index.ts patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/utils/text-scale.ts && \
+    grep -Fq "const COMPACT_BASE_SCALE = 0.9;" /build/src/lib/utils/text-scale.ts && \
+    echo "✓ text-scale.ts patch verified (0.9 compact scale baseline)" || (echo "✗ text-scale.ts patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/chat/Messages/Markdown.svelte && \
+    grep -q "PORTICO_PATCH" /build/src/lib/components/chat/Messages/Markdown.svelte && \
+    echo "✓ Markdown.svelte patch verified (incremental streaming renderer)" || (echo "✗ Markdown.svelte patch NOT found" && exit 1) && \
+    ls -la /build/src/lib/components/chat/MessageInput/FastModeToggle.svelte && \
+    grep -Fq "fast-mode-toggle" /build/src/lib/components/chat/MessageInput/FastModeToggle.svelte && \
+    echo "✓ FastModeToggle.svelte found (lightning fast-mode toggle)" || (echo "✗ FastModeToggle.svelte NOT found" && exit 1) && \
+    ls -la /build/src/lib/utils/chatFastModeState.ts && \
+    grep -Fq "deriveServiceTierParam" /build/src/lib/utils/chatFastModeState.ts && \
+    echo "✓ chatFastModeState.ts found (fast-mode state helpers)" || (echo "✗ chatFastModeState.ts NOT found" && exit 1) && \
+    ls -la /build/src/lib/utils/chatFork.ts && \
+    grep -Fq "buildForkedChatPayload" /build/src/lib/utils/chatFork.ts && \
+    echo "✓ chatFork.ts found (fork-chat helpers)" || (echo "✗ chatFork.ts NOT found" && exit 1) && \
+    grep -Fq "composer-fast-mode" /build/src/app.css && \
+    echo "✓ app.css patch verified (fast-mode static purple treatment)" || (echo "✗ app.css composer-fast-mode styles NOT found" && exit 1)
+
+# Build the patched frontend (dependencies were installed before the patch
+# COPYs — see the PORTICO-205 layer-cache contract above).
+# Set NODE_OPTIONS to increase heap memory to 4GB to prevent OOM errors during build
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
+
+# Code interpreter is disabled in this stack, so drop the bundled pyodide assets.
+RUN rm -rf /build/build/pyodide
+
+# Stage 2: Create final image with patched frontend on a slim Python runtime
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    ENV=prod \
+    PORT=8080 \
+    DOCKER=true \
+    HF_HUB_OFFLINE=1
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends bash ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements-open-webui-slim.txt /tmp/requirements-open-webui-slim.txt
+RUN pip install --no-cache-dir --no-compile --prefer-binary -r /tmp/requirements-open-webui-slim.txt && \
+    rm -f /tmp/requirements-open-webui-slim.txt
+COPY src/scripts/assert-openwebui-runtime.py /tmp/assert-openwebui-runtime.py
+
+# Copy the upstream backend source and metadata files used by env.py.
+COPY --from=frontend-builder /build/backend /app/backend
+COPY --from=frontend-builder /build/package.json /app/package.json
+COPY --from=frontend-builder /build/CHANGELOG.md /app/CHANGELOG.md
+
+# Copy the patched frontend build
+COPY --from=frontend-builder /build/build /app/build
+
+# Copy custom static assets (portico-logo.png, etc.) for backend to serve
+COPY src/patches/backend/open_webui/static/ /app/backend/open_webui/static/
+
+RUN rm -rf /app/backend/open_webui/test && \
+    python /tmp/assert-openwebui-runtime.py /app && \
+    rm -f /tmp/assert-openwebui-runtime.py
+
+WORKDIR /app/backend
+
+CMD ["bash", "start.sh"]
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true" \
+      com.portico.ai-chat.image-role="open-webui-patched"

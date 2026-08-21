@@ -1,0 +1,4150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <base href="../.." />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; connect-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; object-src 'none';"
+    />
+    <title>Portico</title>
+    <!-- CRITICAL: Set theme BEFORE CSS loads to prevent flash -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="renderer/lib/prism/prism-tomorrow.min.css" />
+    <link rel="stylesheet" href="renderer/components/model-logo-badge.css" />
+    <style>
+      /* Force pointer cursor on all log buttons - NUCLEAR OPTION */
+      .service-logs-btn,
+      .service-logs-btn:hover,
+      .service-logs-btn:active,
+      .service-logs-btn:focus {
+        cursor: pointer !important;
+        pointer-events: auto !important;
+      }
+
+      .service-logs-control-btn,
+      .service-logs-control-btn:hover,
+      .service-logs-control-btn:active,
+      .service-logs-control-btn:focus,
+      .service-config-btn-compact,
+      .service-config-btn-compact:hover,
+      .service-config-btn-compact:active,
+      .service-config-btn-compact:focus {
+        cursor: pointer !important;
+        pointer-events: auto !important;
+      }
+
+      /* Kill ALL pointer events on children */
+      .service-logs-btn > *,
+      .service-logs-btn svg,
+      .service-logs-btn svg *,
+      .service-logs-btn path,
+      .service-logs-btn line,
+      .service-logs-btn rect,
+      .service-logs-btn circle,
+      .service-logs-btn polyline,
+      .service-logs-control-btn > *,
+      .service-logs-control-btn svg,
+      .service-logs-control-btn svg *,
+      .service-logs-control-btn path,
+      .service-logs-control-btn line,
+      .service-logs-control-btn rect,
+      .service-config-btn-compact > *,
+      .service-config-btn-compact svg,
+      .service-config-btn-compact svg *,
+      .service-config-btn-compact path,
+      .service-config-btn-compact line,
+      .service-config-btn-compact circle {
+        pointer-events: none !important;
+      }
+
+      /* Light mode MCP Servers badge gradient (darker green, normal + hover) */
+      [data-theme='light'] .header .mcp-badge {
+        background: #dbeafe !important;
+      }
+
+      [data-theme='light'] .header .mcp-badge:hover {
+        background: #cfe3ff !important;
+      }
+
+      .mcp-operation-banner {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-width: 0;
+        max-width: 30rem;
+        min-height: var(--header-control-height);
+        padding: 0 0.7rem;
+        border: 1px solid rgba(var(--accent-primary-rgb), 0.22);
+        border-radius: 0.375rem;
+        background: rgba(var(--accent-primary-rgb), 0.1);
+        color: var(--text-primary);
+        cursor: pointer;
+        text-align: left;
+        -webkit-app-region: no-drag;
+      }
+
+      .mcp-operation-banner.hidden {
+        display: none;
+      }
+
+      .mcp-operation-banner:hover {
+        background: rgba(var(--accent-primary-rgb), 0.16);
+      }
+
+      .mcp-operation-banner:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+      }
+
+      .mcp-operation-banner-dot {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
+      }
+
+      .mcp-operation-banner-dot.is-running {
+        animation: mcp-operation-pulse 1.4s ease-in-out infinite;
+      }
+
+      .mcp-operation-banner.needs-attention {
+        border-color: rgba(251, 191, 36, 0.28);
+        background: rgba(251, 191, 36, 0.11);
+      }
+
+      .mcp-operation-banner.needs-attention .mcp-operation-banner-dot {
+        background: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.13);
+      }
+
+      .mcp-operation-banner-copy {
+        min-width: 0;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.45rem;
+      }
+
+      .mcp-operation-banner-title,
+      .mcp-operation-banner-subtitle {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .mcp-operation-banner-title {
+        flex: 0 0 auto;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .mcp-operation-banner-subtitle {
+        flex: 0 1 auto;
+        min-width: 0;
+        color: var(--text-secondary);
+        font-size: 0.65rem;
+      }
+
+      .mcp-operation-banner-action {
+        flex: 0 0 auto;
+        color: var(--accent-primary);
+        font-size: 0.68rem;
+        font-weight: 700;
+      }
+
+      @keyframes mcp-operation-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.58; transform: scale(0.82); }
+      }
+
+      [data-theme='light'] .mcp-operation-banner {
+        border-color: rgba(var(--accent-primary-rgb), 0.22);
+        background: rgba(var(--accent-primary-rgb), 0.09);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <div class="window-drag-strip" aria-hidden="true"></div>
+      <!-- Header with tabs -->
+      <header class="header">
+        <div class="header-content">
+          <div class="header-left">
+            <button
+              class="mcp-badge"
+              id="mcp-badge"
+              type="button"
+              aria-label="Open Control Plane Integrations"
+            >
+              <span class="mcp-badge-dot"></span>
+              <span class="mcp-badge-text"
+                ><span class="mcp-badge-count">0</span> MCPs</span
+              >
+            </button>
+            <button
+              class="mcp-operation-banner hidden"
+              id="mcp-operation-banner"
+              type="button"
+              aria-hidden="true"
+              aria-label="Open MCP operation progress"
+              title="Open MCP operation progress"
+            >
+              <span
+                class="mcp-operation-banner-dot"
+                id="mcp-operation-banner-dot"
+                aria-hidden="true"
+              ></span>
+              <span class="mcp-operation-banner-copy">
+                <span
+                  class="mcp-operation-banner-title"
+                  id="mcp-operation-banner-title"
+                >Updating MCP servers</span>
+                <span
+                  class="mcp-operation-banner-subtitle"
+                  id="mcp-operation-banner-subtitle"
+                >Operation continues in background</span>
+              </span>
+              <span class="mcp-operation-banner-action">View</span>
+            </button>
+          </div>
+
+          <!-- Browser-style tab bar -->
+          <div class="tab-bar-container">
+            <button class="tab-scroll-btn tab-scroll-left hidden" aria-label="Scroll tabs left">&#x25C0;</button>
+            <div class="tab-strip" id="tab-strip">
+              <!-- Tab 0: Chat Home (permanent) -->
+              <button class="tab-btn permanent active" data-tab="chat" data-permanent="true" draggable="false" title="Chat" aria-label="Chat">
+                <span class="tab-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span class="tab-busy-blocks" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                </span>
+                <span class="tab-label" title="Chat">Chat</span>
+                <span class="tab-status-indicator hidden" aria-hidden="true"></span>
+                <span class="tab-close-spacer" aria-hidden="true"></span>
+              </button>
+              <!-- Dynamic tabs inserted here by tab-bar.js -->
+            </div>
+            <button class="tab-scroll-btn tab-scroll-right hidden" aria-label="Scroll tabs right">&#x25B6;</button>
+            <button class="tab-new-btn" id="new-tab-btn" title="New chat (&#8984;N)" aria-label="New tab">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div class="header-actions">
+            <div class="header-right-controls">
+              <div class="update-button-shell hidden">
+                <button
+                  id="update-button"
+                  class="update-button pulsing-glow hidden"
+                  type="button"
+                  title="Update status"
+                  aria-label="Update status"
+                >
+                  <span class="update-button-content">
+                    <span id="update-prep-spinner" class="update-prep-spinner hidden" aria-hidden="true"></span>
+                    <svg
+                      id="update-button-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path
+                        d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                      ></path>
+                    </svg>
+                    <span id="update-button-label">New Update Available!</span>
+                  </span>
+                </button>
+              </div>
+              <button
+                class="control-plane-toggle"
+                id="control-plane-toggle"
+                type="button"
+                title="Control Plane"
+                aria-label="Control Plane"
+                aria-pressed="false"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                </svg>
+                <span
+                  id="control-plane-attention-badge"
+                  class="control-plane-attention-badge hidden"
+                  aria-hidden="true"
+                  >0</span
+                >
+              </button>
+              <button
+                class="theme-toggle"
+                id="theme-toggle"
+                title="Toggle theme"
+              >
+                <svg
+                  class="theme-icon-dark"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                  ></path>
+                </svg>
+                <svg
+                  class="theme-icon-light"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+              </button>
+              <button
+                class="service-drawer-toggle"
+                id="service-drawer-toggle"
+                title="Toggle service drawer"
+                aria-label="Toggle service drawer"
+                aria-controls="service-drawer"
+                aria-expanded="false"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M20 8h-2.81a5.01 5.01 0 0 0-1.92-1.82L17 4.41 15.59 3l-2.17 2.17C13.14 5.06 12.58 5 12 5s-1.14.06-1.68.17L8.17 3 6.76 4.41l1.73 1.77A5.01 5.01 0 0 0 6.57 8H3v2h3v2H3v2h3v2a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4v-2h3v-2h-3v-2h3V8Zm-6 8h-4V8h4v8Z"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- PORTICO-399: the PORTICO-105 "move to Applications" banner lived here; the
+           launch guard now blocks a non-blessed launch outright instead. -->
+
+      <!-- Main content area -->
+      <main class="main-content">
+        <!-- Chat Interface Tab -->
+        <div class="tab-content active" id="chat-tab">
+          <div
+            class="conversation-session-loading-overlay visible"
+            id="main-chat-session-loading-overlay"
+            aria-live="polite"
+          >
+            <div class="conversation-session-loading-card">
+              <div
+                class="conversation-session-loading-spinner"
+                aria-hidden="true"
+              ></div>
+              <div class="conversation-session-loading-title">
+                Preparing new session...
+              </div>
+            </div>
+          </div>
+          <div class="chat-and-artifact-wrapper" data-artifact-tab-key="chat">
+            <div id="chat-container" class="chat-container">
+              <div
+                id="chat-webview"
+                class="chat-webview hidden"
+              ></div>
+              <!-- Placeholder hidden by default - loading overlay handles initial state -->
+              <div id="chat-placeholder" class="chat-placeholder" style="display: none;">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">📡</div>
+                  <h2>Services Not Running</h2>
+                  <p>Start the services to access the chat interface</p>
+                  <button class="action-btn primary" id="start-services-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M8 5v14l11-7z" fill="currentColor" />
+                    </svg>
+                    Start Services
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Draggable Divider between Chat and Artifact Panel -->
+            <div class="artifact-divider" id="artifact-divider"></div>
+
+            <!-- Artifact Preview Panel -->
+            <div id="artifact-panel" class="artifact-panel hidden">
+              <div class="artifact-panel-header">
+                <div class="artifact-info">
+                  <span class="artifact-title-mark" aria-hidden="true">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M7 3.75h7.25L18.5 8v12.25H7z"></path>
+                      <path d="M14 3.75V8h4.25"></path>
+                      <path d="m10.25 14 1.15 1.15 2.6-2.8"></path>
+                    </svg>
+                  </span>
+                  <span class="artifact-name" id="artifact-name">Artifact</span>
+                  <!-- Custom version dropdown (replaces native select for better theming) -->
+                  <div class="version-dropdown" id="version-dropdown">
+                    <button class="version-dropdown-trigger" id="version-dropdown-trigger" title="Select version">
+                      <span class="version-trigger-indicator" id="version-trigger-indicator">●</span>
+                      <span class="version-dropdown-text" id="version-dropdown-text">v1</span>
+                      <svg class="version-dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="artifact-controls">
+                  <button
+                    id="artifact-publish-btn"
+                    class="artifact-control-btn artifact-publish-btn"
+                    title="Publish to Prototypes Hub"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M12 3v12"></path>
+                      <polyline points="7 8 12 3 17 8"></polyline>
+                      <path d="M5 21h14"></path>
+                    </svg>
+                    <span class="artifact-publish-label">Publish</span>
+                  </button>
+                  <button
+                    id="artifact-refresh-btn"
+                    class="artifact-control-btn"
+                    title="Refresh"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path
+                        d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                      ></path>
+                    </svg>
+                  </button>
+                  <button
+                    id="artifact-detach-btn"
+                    class="artifact-control-btn"
+                    title="Open in separate window"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                      ></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </button>
+                  <button
+                    id="artifact-close-btn"
+                    class="artifact-control-btn"
+                    title="Close panel"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div id="artifact-publish-status" class="artifact-publish-status hidden"></div>
+              <!-- Loading overlay for artifact snapshot restoration -->
+              <div id="artifact-loading-overlay" class="artifact-loading-overlay hidden">
+                <div class="artifact-loading-content">
+                  <div class="artifact-loading-spinner"></div>
+                  <div class="artifact-loading-text" id="artifact-loading-text">Restoring artifact snapshot...</div>
+                </div>
+              </div>
+              <div id="artifact-webview-host" class="artifact-webview-host"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control Plane Tab -->
+        <div class="tab-content" id="control-tab">
+          <div class="control-plane-layout-v2">
+            <!-- LEFT PANEL: MCP Servers / Agent Skills (70%) -->
+            <div class="mcp-panel">
+              <div class="mcp-panel-header">
+                <!-- View Toggle -->
+                <div class="panel-view-toggle">
+                  <button
+                    class="panel-view-btn active"
+                    data-view="mcp-servers"
+                    id="view-mcp-servers-btn"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect
+                        x="2"
+                        y="2"
+                        width="20"
+                        height="8"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <rect
+                        x="2"
+                        y="14"
+                        width="20"
+                        height="8"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                      <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                    </svg>
+                    Integrations
+                  </button>
+                  <button
+                    class="panel-view-btn"
+                    data-view="agents-tab"
+                    id="view-agents-tab-btn"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="8" r="4"></circle>
+                      <path d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8"></path>
+                    </svg>
+                    Agents
+                  </button>
+                  <button
+                    class="panel-view-btn"
+                    data-view="agent-skills"
+                    id="view-agent-skills-btn"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                      <path d="M2 17l10 5 10-5"></path>
+                      <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                    Agent Skills
+                  </button>
+                  <button
+                    class="panel-view-btn"
+                    data-view="updates"
+                    id="view-updates-btn"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M1 4v6h6"></path>
+                      <path d="M23 20v-6h-6"></path>
+                      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"></path>
+                      <path d="M3.51 15a9 9 0 0 0 14.85 3.36L23 14"></path>
+                    </svg>
+                    Updates
+                  </button>
+                  <button
+                    class="panel-view-btn"
+                    data-view="cost-dashboard"
+                    id="view-cost-dashboard-btn"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M3 3v18h18"></path>
+                      <path d="M7 15l4-4 3 3 5-7"></path>
+                    </svg>
+                    Cost Dashboard
+                  </button>
+                </div>
+                <div class="mcp-header-actions" id="mcp-header-actions">
+                  <button
+                    class="btn-secondary bulk-selection-action is-hidden"
+                    id="enable-selected-btn"
+                    title="Enable selected MCP servers"
+                  >
+                    Enable Selected
+                  </button>
+                  <button
+                    class="btn-secondary bulk-selection-action is-hidden"
+                    id="disable-selected-btn"
+                    title="Disable selected MCP servers"
+                  >
+                    Disable Selected
+                  </button>
+                  <button
+                    class="btn-link mcp-select-all-btn"
+                    id="toggle-select-all-servers-btn"
+                    title="Select all visible MCP servers eligible for bulk actions"
+                    type="button"
+                  >
+                    Select all
+                  </button>
+                </div>
+                <!-- Skills Header Actions (hidden by default) -->
+                <div
+                  class="skills-header-actions"
+                  id="skills-header-actions"
+                  style="display: none"
+                >
+                  <button
+                    class="btn-secondary"
+                    id="add-marketplace-btn"
+                    title="Add a new skill marketplace"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="16"></line>
+                      <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Add Marketplace
+                  </button>
+                  <button
+                    class="btn-secondary"
+                    id="check-updates-btn"
+                    title="Sync all marketplaces and check for skill updates"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M1 4v6h6"></path>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    Sync All
+                  </button>
+                </div>
+                <div
+                  class="cost-dashboard-header-actions"
+                  id="cost-dashboard-header-actions"
+                  style="display: none"
+                >
+                  <button
+                    class="btn-secondary"
+                    id="refresh-cost-dashboard-btn"
+                    title="Refresh cost dashboard"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M1 4v6h6"></path>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    Refresh
+                  </button>
+                  <button
+                    class="btn-secondary"
+                    id="open-cost-reporting-folder-btn"
+                    title="Open reporting folder"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+                    </svg>
+                    Open Reporting Folder
+                  </button>
+                </div>
+                <!-- Updates Header Actions (hidden by default) -->
+                <div
+                  class="updates-header-actions"
+                  id="updates-header-actions"
+                  style="display: none"
+                >
+                  <button
+                    class="btn-secondary"
+                    id="updates-sync-all-btn"
+                    title="Update everything inbound, then publish everything outbound"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M7 20V6"></path>
+                      <path d="m3 10 4-4 4 4"></path>
+                      <path d="M17 4v14"></path>
+                      <path d="m21 14-4 4-4-4"></path>
+                    </svg>
+                    Sync All
+                  </button>
+                  <button
+                    class="btn-secondary"
+                    id="updates-refresh-btn"
+                    title="Re-check for inbound and outbound updates"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M1 4v6h6"></path>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+                <!-- Agents Tab Header Actions (hidden by default) -->
+                <div
+                  class="agents-header-actions"
+                  id="agents-tab-header-actions"
+                  style="display: none"
+                >
+                  <button
+                    class="btn-secondary"
+                    id="agents-tab-new-agent-btn"
+                    title="Create a new agent"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="16"></line>
+                      <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    New Agent
+                  </button>
+                  <button
+                    class="btn-secondary"
+                    id="agents-tab-settings-btn"
+                    title="AI Marketplace settings (API key)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Settings
+                  </button>
+                </div>
+              </div>
+
+              <!-- MCP Servers View -->
+              <div id="mcp-servers-view">
+                <!-- Search and Filter Bar -->
+                <div class="mcp-search-filter-bar">
+                  <div class="mcp-search-wrapper">
+                    <svg
+                      class="mcp-search-icon"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      class="mcp-search-input"
+                      id="mcp-search-input"
+                      placeholder="Search integrations..."
+                    />
+                  </div>
+                  <div class="mcp-filter-tabs">
+                    <button class="mcp-filter-tab active" data-filter="all">
+                      All
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="enabled">
+                      Enabled
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="disabled">
+                      Disabled
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="attention">
+                      Needs Attention
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Server Cards Grid -->
+                <div class="mcp-servers-grid" id="mcp-servers-list">
+                  <!-- Dynamically populated with .mcp-server-card elements -->
+                </div>
+              </div>
+
+              <!-- Agent Skills View (hidden by default) -->
+              <div id="agent-skills-view" style="display: none">
+                <div id="agent-skills-browser">
+                <div class="mcp-search-filter-bar" id="agent-skills-search-bar">
+                  <div class="mcp-search-wrapper" id="skills-search-wrapper">
+                    <svg
+                      class="mcp-search-icon"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      class="mcp-search-input"
+                      id="skills-search-input"
+                      placeholder="Search skills..."
+                    />
+                  </div>
+                  <div
+                    class="mcp-search-wrapper"
+                    id="marketplaces-search-wrapper"
+                    style="display: none"
+                  >
+                    <svg
+                      class="mcp-search-icon"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      class="mcp-search-input"
+                      id="marketplaces-search-input"
+                      placeholder="Search marketplaces..."
+                    />
+                  </div>
+                  <div class="mcp-filter-tabs" id="skills-filter-tabs">
+                    <button class="mcp-filter-tab active" data-filter="user">
+                      User
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="published">
+                      Published
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="marketplace">
+                      Installed
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="all">
+                      All
+                    </button>
+                    <button class="mcp-filter-tab" data-filter="discover">
+                      Discover
+                    </button>
+                    <button
+                      class="mcp-filter-tab"
+                      data-filter="marketplaces-browse"
+                    >
+                      Git
+                      <span
+                        class="update-indicator"
+                        id="marketplaces-update-indicator"
+                        style="display: none"
+                        >•</span
+                      >
+                    </button>
+                  </div>
+                </div>
+
+                <div id="skills-browse-panel">
+                  <!-- Skills Cards Grid -->
+                  <div class="mcp-servers-grid" id="skills-list">
+                    <!-- Dynamically populated with .skill-card elements -->
+                  </div>
+                </div>
+
+                <!-- Skill marketplaces browse (nested under Agent Skills) -->
+                <div id="marketplaces-view" style="display: none">
+                  <!-- Marketplaces Cards Grid -->
+                  <div class="mcp-servers-grid" id="marketplaces-list">
+                    <!-- Dynamically populated with .marketplace-card elements -->
+                  </div>
+                </div>
+                </div>
+                <!-- Inline skill page; populated by the agent-skills controller -->
+                <div
+                  id="agent-skills-editor"
+                  class="agent-editor-inline-host"
+                  style="display: none"
+                ></div>
+                <!-- Inline marketplace details page; populated by marketplaces.js -->
+                <div
+                  id="marketplace-details-page"
+                  class="agent-editor-inline-host"
+                  style="display: none"
+                ></div>
+              </div>
+
+              <!-- Updates View (hidden by default) -->
+              <div id="updates-view" style="display: none">
+                <div class="updates-shell" id="updates-shell">
+                  <div class="updates-empty">
+                    <div class="updates-empty-title">Checking for updates...</div>
+                    <div class="updates-empty-copy">
+                      Inbound and outbound updates will appear here.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cost Dashboard View (hidden by default) -->
+              <div id="cost-dashboard-view" style="display: none">
+                <div class="cost-dashboard-shell" id="cost-dashboard-shell">
+                  <div class="cost-dashboard-empty">
+                    <div class="cost-dashboard-empty-title">Cost dashboard loading...</div>
+                    <div class="cost-dashboard-empty-copy">
+                      We’ll start showing spend and usage here as prompts complete.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Agents Tab View (hidden by default) -->
+              <!-- My Agents + Discover locked to type=agents (no type tabs). -->
+              <div id="agents-tab-view" style="display: none">
+                <div id="agents-tab-browser">
+                  <div class="mcp-search-filter-bar">
+                    <div class="mcp-search-wrapper">
+                      <svg
+                        class="mcp-search-icon"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                      </svg>
+                      <input
+                        type="text"
+                        class="mcp-search-input"
+                        id="agents-tab-search-input"
+                        placeholder="Search agents..."
+                      />
+                    </div>
+                    <div class="mcp-filter-tabs" id="agents-tab-mode-tabs">
+                      <button class="mcp-filter-tab active" data-agents-mode="user">
+                        User
+                      </button>
+                      <button class="mcp-filter-tab" data-agents-mode="published">
+                        Published
+                      </button>
+                      <button class="mcp-filter-tab" data-agents-mode="marketplace">
+                        Installed
+                      </button>
+                      <button class="mcp-filter-tab" data-agents-mode="all">
+                        All
+                      </button>
+                      <button class="mcp-filter-tab" data-agents-mode="discover">
+                        Discover
+                      </button>
+                    </div>
+                  </div>
+                  <div class="mcp-servers-grid" id="agents-tab-list">
+                    <!-- Dynamically populated -->
+                  </div>
+                </div>
+                <!-- Inline agent create/edit editor; populated by the agents controller -->
+                <div
+                  id="agents-tab-editor"
+                  class="agent-editor-inline-host"
+                  style="display: none"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Drawer -->
+        <div class="service-drawer-backdrop" id="service-drawer-backdrop"></div>
+        <aside class="service-drawer" id="service-drawer" aria-hidden="true">
+          <div class="service-drawer-inner">
+            <div class="service-user-section" id="service-user-section">
+              <h3>User</h3>
+              <div class="service-user-rows">
+                <div class="service-user-row">
+                  <span class="service-user-label">Email</span>
+                  <span class="service-user-value" id="service-user-email">Loading...</span>
+                </div>
+              </div>
+            </div>
+            <div class="service-drawer-build-section">
+              <h3>Build</h3>
+              <span class="build-badge" id="build-badge">
+                <span id="build-text">Build: Loading...</span>
+                <button
+                  class="copy-button"
+                  id="copy-build"
+                  title="Copy build number"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <path
+                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                    ></path>
+                  </svg>
+                  <span id="copy-text">Copy</span>
+                </button>
+              </span>
+            </div>
+
+            <div class="services-compact">
+              <div class="service-drawer-section-header">
+                <h3>Service Status</h3>
+                <span class="status-indicator service-drawer-status-indicator" id="status-indicator">
+                  <span class="status-dot"></span>
+                  <span class="status-text">Checking...</span>
+                </span>
+              </div>
+              <div class="services-compact-grid" id="services-grid">
+                <div class="service-card-compact">
+                  <button
+                    class="service-logs-btn-compact"
+                    data-service="llm-gateway"
+                    title="View logs"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      ></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </button>
+                  <div class="service-name">LLM Gateway</div>
+                  <div class="service-status" data-service="llm-gateway">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                  </div>
+                </div>
+                <div class="service-card-compact">
+                  <button
+                    class="service-logs-btn-compact"
+                    data-service="mcpo"
+                    title="View logs"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      ></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </button>
+                  <div class="service-name">MCP Control Plane</div>
+                  <div class="service-status" data-service="mcpo">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                  </div>
+                </div>
+                <div class="service-card-compact">
+                  <button
+                    class="service-logs-btn-compact"
+                    data-service="host-mcpo"
+                    title="View logs"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      ></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </button>
+                  <div class="service-name">Host MCP Runtime</div>
+                  <div class="service-status" data-service="host-mcpo">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                  </div>
+                </div>
+                <div class="service-card-compact">
+                  <button
+                    class="service-config-btn-compact"
+                    id="host-mcp-bridge-config-btn"
+                    title="Configure clients"
+                    aria-label="Configure Host MCP Bridge clients"
+                    type="button"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polygon points="13 2 4 14 12 14 11 22 20 10 12 10 13 2" fill="currentColor"></polygon>
+                    </svg>
+                  </button>
+                  <button
+                    class="service-logs-btn-compact"
+                    data-service="host-mcp-bridge"
+                    title="View logs"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      ></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </button>
+                  <div class="service-name">Host MCP Bridge</div>
+                  <div class="service-status" data-service="host-mcp-bridge">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                  </div>
+                </div>
+                <div class="service-card-compact">
+                  <button
+                    class="service-logs-btn-compact"
+                    data-service="portico-open-webui"
+                    title="View logs"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      ></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </button>
+                  <div class="service-name">Open WebUI</div>
+                  <div class="service-status" data-service="portico-open-webui">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                  </div>
+                </div>
+                <div class="service-card-compact">
+                  <button
+                    class="service-logs-btn-compact"
+                    data-service="open-webui-health-check"
+                    title="View logs"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      ></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </button>
+                  <div class="service-name">Health Check</div>
+                  <div class="service-status" data-service="open-webui-health-check">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="service-sync-section" id="service-sync-section">
+              <h3>Health Sync</h3>
+              <div class="service-sync-rows">
+                <div class="service-sync-row">
+                  <span class="service-sync-label">Last full attempt</span>
+                  <span class="service-sync-value" id="service-sync-last-attempt">never</span>
+                </div>
+                <div class="service-sync-row">
+                  <span class="service-sync-label">Last full success</span>
+                  <span class="service-sync-value" id="service-sync-last-success">never</span>
+                </div>
+                <div class="service-sync-row">
+                  <span class="service-sync-label">Pending full sync</span>
+                  <span class="service-sync-value" id="service-sync-pending">none</span>
+                </div>
+                <div class="service-sync-row">
+                  <span class="service-sync-label">Lagging servers</span>
+                  <span class="service-sync-value" id="service-sync-lagging">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="quick-actions-v2">
+              <h3>Quick Actions</h3>
+              <div class="debug-mode-row">
+                <div class="debug-mode-copy">
+                  <div class="debug-mode-title">Debug Mode</div>
+                  <div class="debug-mode-hint">Show upstream LLM request markers in chat.</div>
+                </div>
+                <label class="debug-mode-switch" for="debug-mode-toggle">
+                  <input type="checkbox" id="debug-mode-toggle" />
+                  <span class="debug-mode-slider" aria-hidden="true"></span>
+                </label>
+              </div>
+              <!-- Inline display:none (not [hidden]): .debug-mode-row's
+                   display:flex would win over the UA hidden rule. Unhidden by
+                   initAutoApproveToggle on dev builds only. -->
+              <div class="debug-mode-row" id="auto-approve-row" style="display: none">
+                <div class="debug-mode-copy">
+                  <div class="debug-mode-title">Auto Approve</div>
+                  <div class="debug-mode-hint">Auto-approve agent-initiated publish/unpublish dialogs after 1s. Dev builds only.</div>
+                </div>
+                <label class="debug-mode-switch" for="auto-approve-toggle">
+                  <input type="checkbox" id="auto-approve-toggle" />
+                  <span class="debug-mode-slider" aria-hidden="true"></span>
+                </label>
+              </div>
+              <div class="action-buttons-v2">
+                <button class="action-btn collect-debug" id="debug-btn">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  Collect Debug Info
+                  <span id="debug-btn-progress" class="debug-btn-progress hidden" aria-live="polite">
+                    <span class="update-prep-spinner" aria-hidden="true"></span>
+                    <span id="debug-btn-percent">0%</span>
+                  </span>
+                </button>
+                <button
+                  class="action-btn primary"
+                  id="start-btn"
+                  style="display: none"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M8 5v14l11-7z" fill="currentColor" />
+                  </svg>
+                  Start Services
+                </button>
+                <button
+                  class="action-btn"
+                  id="restart-btn"
+                  style="display: none"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 2v6h-6"></path>
+                    <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                    <path d="M3 22v-6h6"></path>
+                    <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                  </svg>
+                  Restart Services
+                </button>
+                <button
+                  class="action-btn"
+                  id="electron-app-btn"
+                  title="Re-run initial setup wizard"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+                    ></path>
+                  </svg>
+                  Setup Wizard
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <!-- Configuration Modal -->
+      <div class="modal" id="config-modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Configuration</h2>
+            <button class="modal-close" id="close-config-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Configuration interface from original app -->
+            <div id="config-interface"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" id="cancel-config-btn">Cancel</button>
+            <button class="btn-primary" id="save-config-btn">
+              Save & Apply
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bug Report Modal -->
+      <div class="modal" id="bug-report-modal">
+        <div class="modal-content" style="max-width: 520px;">
+          <div class="modal-header">
+            <h2>Report a Bug</h2>
+            <button class="modal-close" id="bug-report-close-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label for="bug-report-description" style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text-primary);">What happened? <span style="color: var(--danger);">*</span></label>
+              <textarea id="bug-report-description" rows="4" placeholder="What were you doing when this happened?" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-default); background: var(--bg-default); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+            <div>
+              <label for="bug-report-severity" style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text-primary);">How bad is it?</label>
+              <select id="bug-report-severity" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-default); background: var(--bg-default); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; box-sizing: border-box;">
+                <option value="">Not sure</option>
+                <option value="crash">The app crashed or froze</option>
+                <option value="bug">Something isn't working right</option>
+                <option value="minor">Minor annoyance</option>
+              </select>
+            </div>
+            <div>
+              <label for="bug-report-reporter" style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text-primary);">Preferred contact (optional)</label>
+              <input id="bug-report-reporter" type="text" placeholder="name or email" style="width: 100%; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-default); background: var(--bg-default); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; box-sizing: border-box;" />
+            </div>
+            <div id="bug-report-identity" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
+            <div id="bug-report-error" style="display: none; color: var(--danger); font-size: 0.8rem;"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" id="bug-report-cancel-btn">Cancel</button>
+            <button class="btn-primary" id="bug-report-submit-btn">Send Report</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading overlay -->
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner" id="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">Loading...</div>
+      </div>
+
+      <!-- MCP operations have their own lifecycle and are never hidden by the
+           generic loading-overlay safety timeout. -->
+      <div
+        class="loading-overlay mcp-operation-overlay"
+        id="mcp-operation-overlay"
+        aria-hidden="true"
+      >
+        <div
+          class="loading-progress-shell visible"
+          id="mcp-operation-shell"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mcp-operation-title"
+        >
+          <div class="loading-progress-header">
+            <div class="loading-progress-header-main">
+              <div class="loading-progress-header-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4.5" width="16" height="5" rx="1.5"></rect>
+                  <rect x="4" y="14.5" width="16" height="5" rx="1.5"></rect>
+                  <path d="M8 9.5v5"></path>
+                  <path d="M16 9.5v5"></path>
+                  <circle cx="7.25" cy="7" r="0.75" fill="currentColor" stroke="none"></circle>
+                  <circle cx="7.25" cy="17" r="0.75" fill="currentColor" stroke="none"></circle>
+                </svg>
+                <div
+                  class="spinner loading-progress-spinner"
+                  id="mcp-operation-spinner"
+                >
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+              <div class="loading-progress-header-copy">
+                <div class="loading-progress-title" id="mcp-operation-title">
+                  Updating MCP servers
+                </div>
+                <div
+                  class="loading-progress-subtitle"
+                  id="mcp-operation-subtitle"
+                >
+                  0/0 servers complete
+                </div>
+              </div>
+            </div>
+            <div class="loading-progress-header-actions">
+              <div
+                class="loading-progress-summary"
+                id="mcp-operation-summary"
+              >
+                0%
+              </div>
+              <button
+                class="modal-close loading-progress-close-btn"
+                id="mcp-operation-hide-btn"
+                type="button"
+                title="Hide and continue in background"
+                aria-label="Hide and continue operation in background"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+              <button
+                class="modal-close loading-progress-close-btn"
+                id="mcp-operation-background-btn"
+                type="button"
+                title="Continue in background"
+                aria-label="Continue operation in background"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12"></path>
+                  <path d="M18 6L6 18"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="loading-progress-body">
+            <div class="loading-progress-bar">
+              <div
+                class="loading-progress-bar-fill"
+                id="mcp-operation-bar-fill"
+              ></div>
+            </div>
+            <div class="loading-progress-list" id="mcp-operation-list"></div>
+          </div>
+          <div class="mcp-operation-footer hidden" id="mcp-operation-footer">
+            <div
+              class="mcp-operation-footer-message"
+              id="mcp-operation-footer-message"
+            ></div>
+            <button
+              class="btn-primary mcp-operation-done-btn"
+              id="mcp-operation-done-btn"
+              type="button"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="debug-request-modal-overlay" id="debug-request-modal" aria-hidden="true">
+        <div
+          class="debug-request-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="debug-request-modal-title"
+        >
+          <div class="debug-request-modal-header">
+            <div class="debug-request-modal-header-copy">
+              <div class="debug-request-modal-eyebrow">Upstream Request</div>
+              <h2 id="debug-request-modal-title">Raw Request JSON</h2>
+              <div class="debug-request-modal-subtitle" id="debug-request-modal-subtitle"></div>
+            </div>
+            <div class="debug-request-modal-actions">
+              <button class="debug-request-modal-btn" id="debug-request-copy-btn" type="button">
+                Copy
+              </button>
+              <button
+                class="debug-request-modal-btn debug-request-modal-btn-close"
+                id="debug-request-close-btn"
+                type="button"
+                aria-label="Close debug request modal"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          <pre class="debug-request-modal-body" id="debug-request-modal-body"></pre>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MCP Tooltip (outside main container for better positioning) -->
+    <div
+      class="mcp-tooltip"
+      id="mcp-tooltip"
+      style="display: none; opacity: 0; visibility: hidden; pointer-events: none"
+    >
+      <div class="tooltip-content" id="mcp-tooltip-content">
+        <!-- Dynamically populated with health-aware content -->
+      </div>
+    </div>
+
+    <!-- Update preparation tooltip (outside main container, MCP-style positioning) -->
+    <div
+      class="update-prep-tooltip hidden"
+      id="update-prep-tooltip"
+      style="opacity: 0; visibility: hidden; pointer-events: none"
+    >
+      <div class="update-prep-tooltip-title">Preparing update...</div>
+      <div class="progress-bar update-prep-overall-bar">
+        <div id="update-prep-overall-progress" class="progress-fill"></div>
+      </div>
+      <div class="progress-text update-prep-overall-text">
+        <span id="update-prep-phase-text">Waiting to start...</span>
+        <span id="update-prep-percent-text">0%</span>
+      </div>
+      <div class="update-prep-detail-text" id="update-prep-detail-text">
+        Waiting to start...
+      </div>
+    </div>
+
+    <!-- Service Logs Side Panel -->
+    <div class="service-logs-panel" id="service-logs-panel">
+      <div class="service-logs-content">
+        <div class="service-logs-header">
+          <span class="service-logs-title" id="service-logs-title"
+            >Service Logs</span
+          >
+          <div class="service-logs-controls">
+            <button
+              class="service-logs-control-btn"
+              id="copy-service-logs"
+              title="Copy logs"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                ></path>
+              </svg>
+            </button>
+            <button
+              class="service-logs-control-btn"
+              id="close-service-logs"
+              title="Close"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="service-logs-body" id="service-logs-body">
+          <!-- Logs will be populated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Copy feedback for service logs -->
+    <div class="service-logs-copy-feedback" id="service-logs-copy-feedback">
+      Copied to clipboard!
+    </div>
+
+    <div class="oauth-modal host-mcp-config-modal" id="host-mcp-bridge-config-modal" aria-hidden="true">
+      <div class="oauth-modal-content host-mcp-config-content">
+        <button class="oauth-modal-close" id="host-mcp-bridge-config-close-btn" title="Close" type="button">
+          &times;
+        </button>
+
+        <div class="oauth-header">
+          <h2 class="oauth-header-title">
+            <span class="oauth-header-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z"></path>
+                <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.15 2.15 0 1 1-3.04 3.04l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.4a2.15 2.15 0 1 1-4.3 0v-.06a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.15 2.15 0 1 1-3.04-3.04l.04-.04A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H2.9a2.15 2.15 0 1 1 0-4.3h.06A1.8 1.8 0 0 0 4.6 8.5a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2.15 2.15 0 1 1 3.04-3.04l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.35 2.2V2.1a2.15 2.15 0 1 1 4.3 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.15 2.15 0 1 1 3.04 3.04l-.04.04a1.8 1.8 0 0 0-.36 1.98A1.8 1.8 0 0 0 22.05 9.6h.05a2.15 2.15 0 1 1 0 4.3h-.06A1.8 1.8 0 0 0 19.4 15z"></path>
+              </svg>
+            </span>
+            Host MCP Bridge
+          </h2>
+          <p class="oauth-header-description" id="host-mcp-config-status">
+            Detecting MCP clients...
+          </p>
+        </div>
+
+        <div class="host-mcp-config-toolbar">
+          <button class="server-selection-link" id="host-mcp-config-select-all-btn" type="button" aria-pressed="false">
+            Select all
+          </button>
+        </div>
+        <div class="host-mcp-client-grid" id="host-mcp-client-grid"></div>
+
+        <div class="host-mcp-config-footer">
+          <div class="setup-wizard-modal-buttons host-mcp-config-buttons">
+            <button class="btn btn-secondary" id="host-mcp-config-cancel-btn" type="button">Cancel</button>
+            <button class="btn btn-danger" id="host-mcp-remove-config-btn" type="button" disabled hidden>
+              Remove configuration
+            </button>
+            <button class="btn btn-primary" id="host-mcp-configure-btn" type="button" disabled>
+              Configure
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OAuth Authorization Modal (from shared component) -->
+    <style>
+      /* OAuth Modal Styles - Flat Minimal Design */
+      .oauth-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(30, 35, 36, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, visibility 0.15s ease;
+      }
+
+      .oauth-modal.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .oauth-modal-content {
+        background: var(--bg-secondary, #2d3233);
+        border-radius: 12px;
+        padding: 40px;
+        max-width: 550px;
+        width: 95%;
+        text-align: center;
+        position: relative;
+      }
+
+      /* Close button - matches Tool Config modal style */
+      .oauth-modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.25rem;
+        line-height: 1;
+        transition: color 0.15s ease;
+        z-index: 1;
+      }
+
+      .oauth-modal-close:hover {
+        color: var(--text-primary);
+      }
+
+      .oauth-header {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .oauth-header-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary, #e5e5e5);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .oauth-header-icon {
+        display: flex;
+        align-items: center;
+      }
+
+      .oauth-header-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: var(--text-secondary, #a3a3a3);
+        fill: none;
+      }
+
+      .oauth-header-description {
+        font-size: 13px;
+        color: var(--text-secondary, #a3a3a3);
+        line-height: 1.6;
+        max-width: 420px;
+        margin: 0 auto;
+      }
+
+
+      .oauth-server-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: var(--bg-dark, #1e2324);
+        padding: 8px;
+      }
+
+      .oauth-server-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary, #e5e5e5);
+        margin-bottom: 8px;
+      }
+
+      .oauth-server-description {
+        font-size: 13px;
+        color: var(--text-secondary, #a3a3a3);
+        line-height: 1.5;
+        margin-bottom: 12px;
+      }
+
+      .oauth-progress-text {
+        font-size: 12px;
+        color: var(--accent-primary, #003a9b);
+        margin-bottom: 24px;
+        font-weight: 500;
+      }
+
+      .oauth-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+
+      .oauth-btn {
+        background: var(--accent-primary, #003a9b);
+        color: var(--bg-dark, #1e2324);
+        border: none;
+        padding: 10px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .oauth-btn:hover:not(:disabled) {
+        background: var(--accent-primary-hover, #002c75);
+      }
+
+      .oauth-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .oauth-btn.secondary {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-primary, #e5e5e5);
+      }
+
+      .oauth-btn.secondary:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .oauth-waiting {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .oauth-waiting.visible {
+        display: flex;
+      }
+
+      .oauth-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(255, 255, 255, 0.06);
+        border-top-color: var(--accent-primary, #003a9b);
+        border-radius: 50%;
+        animation: oauth-spin 1s linear infinite;
+      }
+
+      @keyframes oauth-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .oauth-waiting-text {
+        color: var(--text-secondary, #a3a3a3);
+        font-size: 13px;
+      }
+
+      /* Error message container */
+      .oauth-error-container {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .oauth-error-container.visible {
+        display: flex;
+      }
+
+      .oauth-error-message {
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .oauth-view-logs-btn {
+        background: transparent;
+        border: 1px solid #dc2626;
+        color: #dc2626;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .oauth-view-logs-btn:hover {
+        background: rgba(220, 38, 38, 0.1);
+      }
+
+      .oauth-success {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+      }
+
+      .oauth-success.visible {
+        display: flex;
+      }
+
+      .oauth-success-icon {
+        font-size: 36px;
+        color: var(--accent-primary, #003a9b);
+      }
+
+      .oauth-success-text {
+        color: var(--accent-primary, #003a9b);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      /* Server Preview Bar */
+      .oauth-server-preview {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+      }
+
+      .oauth-server-preview:empty {
+        display: none;
+      }
+
+      .oauth-preview-card {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+      }
+
+      .oauth-preview-card:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .oauth-preview-card.current {
+        border-color: var(--accent-primary, #003a9b);
+        background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+      }
+
+      .oauth-preview-card.done {
+        border-color: var(--accent-primary, #003a9b);
+      }
+
+      .oauth-preview-card.done .oauth-preview-status {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      .oauth-preview-card.failed {
+        border-color: #ef4444;
+      }
+
+      .oauth-preview-card.failed .oauth-preview-status {
+        color: #ef4444;
+      }
+
+      .oauth-preview-card.skipped {
+        opacity: 0.5;
+      }
+
+      .oauth-preview-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+      }
+
+      .oauth-preview-name {
+        font-size: 11px;
+        color: var(--text-secondary, #a3a3a3);
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .oauth-preview-status {
+        font-size: 10px;
+        color: var(--text-secondary, #a3a3a3);
+      }
+
+      /* Buttons Container */
+      .oauth-buttons-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* Navigation Buttons */
+      .oauth-navigation {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .oauth-nav-btn {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-secondary, #a3a3a3);
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .oauth-nav-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary, #e5e5e5);
+      }
+
+      .oauth-nav-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      /* Completion Summary */
+      .oauth-completion-summary {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+      }
+
+      .oauth-completion-summary.visible {
+        display: flex;
+      }
+
+      .oauth-completion-icon {
+        font-size: 48px;
+      }
+
+      .oauth-completion-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary, #e5e5e5);
+      }
+
+      .oauth-completion-stats {
+        display: flex;
+        gap: 20px;
+        color: var(--text-secondary, #a3a3a3);
+      }
+
+      .oauth-stat {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13px;
+      }
+
+      .oauth-stat.done {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      .oauth-stat.failed {
+        color: #ef4444;
+      }
+
+      .oauth-done-btn {
+        margin-top: 10px;
+      }
+
+      /* Dark mode contrast boosts for OAuth modal */
+      [data-theme="dark"] .oauth-modal {
+        background: rgba(18, 20, 21, 0.92);
+      }
+
+      [data-theme="dark"] .oauth-modal-content {
+        background: var(--bg-elevated, #3a3f40);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+      }
+
+      [data-theme="dark"] .oauth-header {
+        border-bottom-color: rgba(255, 255, 255, 0.18);
+      }
+
+      [data-theme="dark"] .oauth-server-icon {
+        background: var(--bg-surface, #323738);
+      }
+
+      [data-theme="dark"] .oauth-server-preview {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      [data-theme="dark"] .oauth-preview-card {
+        background: rgba(255, 255, 255, 0.12);
+        border: none;
+      }
+
+      [data-theme="dark"] .oauth-preview-card:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      [data-theme="dark"] .oauth-preview-card.current {
+        background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.22);
+        border: none;
+      }
+
+      [data-theme="dark"] .oauth-preview-card.done {
+        background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.14);
+        border: none;
+      }
+
+      [data-theme="dark"] .oauth-preview-card.failed {
+        background: rgba(239, 68, 68, 0.14);
+        border: none;
+      }
+
+      [data-theme="dark"] .oauth-preview-name {
+        color: #e2e8f0;
+      }
+
+      [data-theme="dark"] .oauth-progress-text {
+        color: #f1f5f9;
+        font-weight: 600;
+      }
+
+      [data-theme="dark"] .oauth-btn:not(.secondary):not(.nav-btn):not(.oauth-skip-all-btn) {
+        background: #166534;
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .oauth-btn:not(.secondary):not(.nav-btn):not(.oauth-skip-all-btn):hover:not(:disabled) {
+        background: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="dark"] .oauth-btn.secondary {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .oauth-btn.secondary:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.26);
+      }
+
+      [data-theme="dark"] .oauth-nav-btn {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--text-primary, #e5e5e5);
+      }
+
+      [data-theme="dark"] .oauth-nav-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      [data-theme="dark"] .oauth-header-description,
+      [data-theme="dark"] .oauth-server-description,
+      [data-theme="dark"] .oauth-waiting-text,
+      [data-theme="dark"] .oauth-completion-stats {
+        color: #d1d5db;
+      }
+
+      /* Single server mode - hide multi-server navigation elements */
+      .oauth-modal.single-server .oauth-server-preview,
+      .oauth-modal.single-server .oauth-progress-text,
+      .oauth-modal.single-server #oauth-prev-btn,
+      .oauth-modal.single-server #oauth-next-btn,
+      .oauth-modal.single-server #oauth-skip-btn,
+      .oauth-modal.single-server #oauth-skip-all-btn {
+        display: none !important;
+      }
+
+      /* Light mode fixes for OAuth modal */
+      [data-theme="light"] .oauth-modal {
+        background: rgba(245, 245, 245, 0.95);
+      }
+
+      [data-theme="light"] .oauth-modal-content {
+        background: #ffffff;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      }
+
+      [data-theme="light"] .oauth-header {
+        border-bottom-color: rgba(0, 0, 0, 0.08);
+      }
+
+      [data-theme="light"] .oauth-header-title {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-header-description {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-progress-text {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-btn {
+        background: var(--accent-primary, #003a9b);
+        color: #ffffff;
+      }
+
+      [data-theme="light"] .oauth-btn:hover:not(:disabled) {
+        background: var(--accent-primary-hover, #002c75);
+      }
+
+      [data-theme="light"] .oauth-btn.secondary {
+        background: rgba(0, 0, 0, 0.04);
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .oauth-btn.secondary:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      [data-theme="light"] .oauth-btn.nav-btn {
+        background: rgba(0, 0, 0, 0.04);
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .oauth-btn.nav-btn:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      [data-theme="light"] .oauth-server-preview {
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      [data-theme="light"] .oauth-preview-card:hover {
+        background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+      }
+
+      [data-theme="light"] .oauth-preview-card.current {
+        background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.15);
+        border: 2px solid var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-preview-card.current .oauth-preview-name {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-preview-card.current .oauth-preview-status {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-preview-name {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-current-server {
+        border-bottom-color: rgba(0, 0, 0, 0.08);
+      }
+
+      [data-theme="light"] .oauth-server-name {
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .oauth-server-description {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-spinner {
+        border-color: rgba(0, 0, 0, 0.1);
+        border-top-color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-waiting-text {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-success-text {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-stat.done {
+        color: var(--accent-primary, #003a9b);
+      }
+
+      [data-theme="light"] .oauth-completion-title {
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .oauth-completion-stats {
+        color: #4b5563;
+      }
+
+      /* ---- Update Install Modal ---- */
+      .update-install-modal-content {
+        max-width: 700px;
+        width: 95%;
+      }
+      .update-modal-version-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+      .update-modal-status {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 8px 0 12px;
+      }
+      .update-modal-progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 4px;
+        position: relative;
+      }
+      .update-modal-progress-bar .progress-fill {
+        height: 100%;
+        background: var(--accent-primary, #6366f1);
+        width: 0%;
+        transition: width 0.5s ease-out;
+      }
+      .update-modal-task-list {
+        max-width: 100%;
+        margin-bottom: 0;
+      }
+      .update-modal-log {
+        background: var(--bg-dark);
+        border-radius: 6px;
+        padding: 12px;
+        max-height: 220px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 16px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      /* Task list styles (mirrored from loading.html) */
+      .task-list {
+        width: 100%;
+      }
+      .task-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        opacity: 0.5;
+        transition: all 0.3s ease;
+      }
+      .task-item.active {
+        opacity: 1;
+      }
+      .task-item.completed {
+        opacity: 1;
+      }
+      .task-item.failed {
+        opacity: 1;
+      }
+      .task-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--bg-dark, #1a1a2e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 14px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        position: relative;
+        flex-shrink: 0;
+      }
+      .task-item.active .task-icon {
+        background: transparent;
+      }
+      .task-item.active .task-icon::before {
+        content: "";
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border: 3px solid var(--bg-dark, #1a1a2e);
+        border-top-color: var(--accent-primary, #6366f1);
+        border-radius: 50%;
+        animation: umodal-spin 1s linear infinite;
+      }
+      @keyframes umodal-spin {
+        to { transform: rotate(360deg); }
+      }
+      .task-item.completed .task-icon {
+        background: var(--accent-primary, #003a9b);
+        color: var(--bg-dark, #1a1a2e);
+      }
+      .task-item.completed .task-icon::before {
+        content: "✓";
+        position: absolute;
+        animation: none;
+        border: none;
+        font-weight: bold;
+      }
+      .task-list.prepared-update-task-list .task-item.completed .task-icon {
+        background: transparent;
+        color: inherit;
+      }
+      .task-list.prepared-update-task-list .task-item.completed .task-icon::before {
+        content: none;
+      }
+      .task-item.failed .task-icon {
+        background: var(--status-error, #ef4444);
+        color: var(--bg-dark, #1a1a2e);
+      }
+      .task-item.failed .task-icon::before {
+        content: "✕";
+        position: absolute;
+        animation: none;
+        border: none;
+        font-weight: bold;
+      }
+      .task-text {
+        flex: 1;
+        font-size: 14px;
+        color: var(--text-tertiary);
+        transition: color 0.3s ease;
+      }
+      .task-item.active .task-text {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .task-item.completed .task-text {
+        color: var(--accent-primary, #003a9b);
+      }
+      .task-item.failed .task-text {
+        color: var(--status-error, #ef4444);
+      }
+    </style>
+
+    <!-- Tool Configuration Modal -->
+    <div class="modal-overlay" id="tool-config-modal">
+      <div class="modal-content tool-config-modal">
+        <!-- Main content area -->
+        <div class="tool-config-main">
+          <div class="modal-header">
+            <div class="tool-config-server-icon" id="tool-config-logo"></div>
+            <h3 id="tool-config-title">Configure Tools</h3>
+            <span id="tools-count-display" class="tools-count"
+              >0/0 tools enabled</span
+            >
+            <div class="modal-header-actions">
+              <button
+                class="modal-maximize"
+                id="tool-config-maximize-btn"
+                title="Maximize"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                  ></path>
+                </svg>
+              </button>
+              <button class="modal-close" id="tool-config-close-btn">
+                &times;
+              </button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="tool-config-description">
+              Enable or disable individual tools for this integration. Disabled
+              tools will not be available in the chat interface.
+            </p>
+
+            <!-- Toolbar with search, filters, and toggles -->
+            <div class="tool-config-toolbar">
+              <div class="tool-config-search">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input
+                  type="text"
+                  id="tool-search-input"
+                  placeholder="Search tools..."
+                />
+              </div>
+              <div class="tool-config-filter-row">
+                <div class="tool-config-filters">
+                  <button class="tool-filter-btn active" data-filter="all">
+                    All
+                  </button>
+                  <button class="tool-filter-btn" data-filter="enabled">
+                    Enabled
+                  </button>
+                  <button class="tool-filter-btn" data-filter="disabled">
+                    Disabled
+                  </button>
+                  <span
+                    id="tool-filter-separator"
+                    style="color: var(--text-secondary); margin: 0 0.5rem"
+                    >|</span
+                  >
+                  <button class="btn-link" id="tool-enable-all-btn">
+                    Enable All
+                  </button>
+                  <button class="btn-link" id="tool-disable-all-btn">
+                    Disable All
+                  </button>
+                </div>
+                <div class="tool-config-toggles">
+                  <button
+                    class="tool-toggle-btn"
+                    id="tool-show-descriptions-btn"
+                    title="Toggle tool descriptions"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                      ></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>Descriptions</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Core server info message (hidden by default) -->
+            <div
+              id="core-server-info"
+              class="core-server-info"
+              style="display: none"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span
+                >This is a core system server. Tools cannot be disabled to
+                ensure essential functionality remains available.</span
+              >
+            </div>
+
+            <div id="tool-config-list" class="tool-config-list">
+              <!-- Tool items rendered here by JavaScript -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" id="tool-config-cancel-btn">
+              Cancel
+            </button>
+            <button class="btn-primary" id="tool-config-save-btn">
+              Save &amp; Restart
+            </button>
+          </div>
+        </div>
+
+        <!-- Draggable divider between main and testing pane -->
+        <div class="tool-config-divider" id="tool-config-divider"></div>
+
+        <!-- Testing pane (hidden by default, slides in from right) -->
+        <div class="tool-testing-pane" id="tool-testing-pane">
+          <div class="testing-pane-header">
+            <h4 id="testing-tool-name">Tool Name</h4>
+            <button
+              class="testing-pane-close"
+              id="close-testing-pane"
+              title="Close testing pane"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="testing-pane-body">
+            <!-- Left column: inputs and run button -->
+            <div class="testing-inputs-column">
+              <div class="testing-inputs-section">
+                <h5>Input Parameters</h5>
+                <div class="testing-inputs" id="testing-inputs">
+                  <!-- Dynamic input fields rendered from inputSchema -->
+                </div>
+              </div>
+              <div
+                class="testing-validation-error"
+                id="testing-validation-error"
+              ></div>
+              <button class="btn-primary testing-run-btn" id="run-tool-btn">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Run Tool
+              </button>
+            </div>
+            <!-- Right column: request/response output -->
+            <div class="testing-output-column">
+              <div class="testing-output-section">
+                <div class="testing-output-header">
+                  <h5>Request</h5>
+                  <button
+                    class="testing-copy-btn"
+                    id="copy-request-btn"
+                    title="Copy to clipboard"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path
+                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                      ></path>
+                    </svg>
+                    Copy
+                  </button>
+                </div>
+                <pre id="testing-input-json" class="testing-json"></pre>
+              </div>
+              <div class="testing-output-section">
+                <div class="testing-output-header">
+                  <h5>Response</h5>
+                  <button
+                    class="testing-copy-btn"
+                    id="copy-response-btn"
+                    title="Copy to clipboard"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path
+                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                      ></path>
+                    </svg>
+                    Copy
+                  </button>
+                </div>
+                <pre id="testing-output-json" class="testing-json"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Startup Failure Modal -->
+    <div class="modal-overlay" id="startup-failure-modal">
+      <div class="modal-content startup-failure-modal">
+        <div class="modal-header">
+          <div>
+            <h3 id="startup-failure-title">Startup Failure</h3>
+            <div class="startup-failure-subtitle" id="startup-failure-subtitle"></div>
+          </div>
+          <div class="modal-header-actions">
+            <button
+              class="modal-action-btn"
+              id="startup-failure-logs-btn"
+              title="View logs"
+              aria-label="View server logs"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </button>
+            <button
+              class="modal-action-btn"
+              id="startup-failure-copy-btn"
+              title="Copy failure details"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                ></path>
+              </svg>
+            </button>
+            <button class="modal-close" id="startup-failure-close-btn">
+              &times;
+            </button>
+          </div>
+        </div>
+        <div class="modal-body startup-failure-body">
+          <div class="startup-failure-meta-grid">
+            <div>
+              <span>Server ID</span>
+              <strong id="startup-failure-server-id"></strong>
+            </div>
+            <div>
+              <span>Stage</span>
+              <strong id="startup-failure-stage"></strong>
+            </div>
+            <div>
+              <span>Source</span>
+              <strong id="startup-failure-source"></strong>
+            </div>
+            <div>
+              <span>Config Path</span>
+              <strong id="startup-failure-config-path"></strong>
+            </div>
+          </div>
+          <pre class="startup-failure-error" id="startup-failure-error"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Viewer Modal -->
+    <div class="modal-overlay" id="log-viewer-modal">
+      <div class="modal-content log-viewer-modal">
+        <div class="modal-header">
+          <div class="log-viewer-server-icon" id="log-viewer-logo"></div>
+          <h3 id="log-viewer-title">Server Logs</h3>
+          <span id="log-line-count" class="log-line-count">0 lines</span>
+          <div class="modal-header-actions">
+            <button
+              class="modal-action-btn"
+              id="log-viewer-refresh-btn"
+              title="Refresh logs"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path
+                  d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                ></path>
+              </svg>
+            </button>
+            <button
+              class="modal-action-btn"
+              id="log-viewer-copy-btn"
+              title="Copy logs to clipboard"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                ></path>
+              </svg>
+            </button>
+            <button class="modal-close" id="log-viewer-close-btn">
+              &times;
+            </button>
+          </div>
+        </div>
+        <div class="modal-body log-viewer-body">
+          <!-- Toolbar with search and filters -->
+          <div class="log-viewer-toolbar mcp-search-filter-bar">
+            <div class="mcp-search-wrapper">
+              <svg
+                class="mcp-search-icon"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input
+                type="text"
+                class="mcp-search-input"
+                id="log-viewer-search"
+                placeholder="Search logs..."
+              />
+            </div>
+            <div class="mcp-filter-tabs">
+              <button class="mcp-filter-tab active" data-filter="all">
+                All
+              </button>
+              <button class="mcp-filter-tab" data-filter="error">Errors</button>
+              <button class="mcp-filter-tab" data-filter="warn">
+                Warnings
+              </button>
+              <button class="mcp-filter-tab" data-filter="info">Info</button>
+            </div>
+          </div>
+          <!-- Log content -->
+          <div class="log-viewer-content" id="log-viewer-content">
+            <!-- Logs will be rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="oauth-modal" id="oauth-modal">
+      <div class="oauth-modal-content">
+        <!-- Close button -->
+        <button class="oauth-modal-close" id="oauth-close-btn" title="Close">
+          &times;
+        </button>
+
+        <!-- Generic header with explanation -->
+        <div class="oauth-header">
+          <h2 class="oauth-header-title">
+            <span class="oauth-header-icon">
+              <svg
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            OAuth Authorization Required
+          </h2>
+          <p class="oauth-header-description">
+            One or more of your configured MCP servers requires OAuth
+            authentication. This is a secure, one-time setup that will be
+            remembered for future sessions.
+          </p>
+        </div>
+
+        <!-- Server preview bar for multiple servers -->
+        <div class="oauth-server-preview" id="oauth-server-preview"></div>
+
+        <!-- Current server section -->
+        <div id="oauth-current-server">
+          <!-- Specific server information -->
+          <img
+            class="oauth-server-icon"
+            id="oauth-server-icon"
+            src=""
+            alt="Server Icon"
+          />
+          <h2 class="oauth-server-name" id="oauth-server-name">Server Name</h2>
+          <p class="oauth-server-description" id="oauth-server-description">
+            Server description
+          </p>
+          <p class="oauth-progress-text" id="oauth-progress-text">
+            Authorizing server
+          </p>
+        </div>
+
+        <!-- Buttons container -->
+        <div class="oauth-buttons-container">
+          <div class="oauth-buttons" id="oauth-buttons">
+            <button class="oauth-btn" id="oauth-authorize-btn">
+              Authorize Access
+            </button>
+            <button class="oauth-btn secondary" id="oauth-skip-btn">
+              Skip
+            </button>
+          </div>
+          <button
+            class="oauth-btn secondary"
+            id="oauth-skip-all-btn"
+            style="margin-top: 8px; font-size: 12px; padding: 8px 16px"
+          >
+            Skip All
+          </button>
+
+          <!-- Navigation buttons -->
+          <div class="oauth-navigation">
+            <button class="oauth-nav-btn" id="oauth-prev-btn" disabled>
+              ← Previous
+            </button>
+            <button class="oauth-nav-btn" id="oauth-next-btn">Next →</button>
+          </div>
+        </div>
+
+        <!-- Error message (shown on failure) -->
+        <div class="oauth-error-container" id="oauth-error-container">
+          <span class="oauth-error-message">Oops, something went wrong.</span>
+          <button class="oauth-view-logs-btn" id="oauth-view-logs-btn">View Logs</button>
+        </div>
+
+        <div class="oauth-waiting" id="oauth-waiting">
+          <div class="oauth-spinner"></div>
+          <p class="oauth-waiting-text">
+            Waiting for authorization in browser...
+          </p>
+          <p
+            style="
+              font-size: 11px;
+              color: var(--accent-primary, #003a9b);
+              margin-top: 8px;
+            "
+          >
+            Complete the authorization in your browser, then return here.
+          </p>
+        </div>
+
+        <div class="oauth-success" id="oauth-success">
+          <div class="oauth-success-icon">✓</div>
+          <p class="oauth-success-text">Authorization successful!</p>
+        </div>
+
+        <!-- Completion Summary (shown when all servers processed) -->
+        <div class="oauth-completion-summary" id="oauth-completion-summary">
+          <div class="oauth-completion-icon">🎉</div>
+          <h3 class="oauth-completion-title">OAuth Setup Complete</h3>
+          <div class="oauth-completion-stats">
+            <span class="oauth-stat done" id="oauth-stat-done"
+              >✓ 0 authorized</span
+            >
+            <span class="oauth-stat skipped" id="oauth-stat-skipped"
+              >⊘ 0 skipped</span
+            >
+            <span class="oauth-stat failed" id="oauth-stat-failed"
+              >✗ 0 failed</span
+            >
+          </div>
+          <button class="oauth-btn oauth-done-btn" id="oauth-done-btn">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="oauth-modal" id="konami-modal" aria-hidden="true">
+      <div class="oauth-modal-content">
+        <button class="oauth-modal-close" id="konami-close-btn" title="Close">
+          &times;
+        </button>
+
+        <div class="oauth-header">
+          <h2 class="oauth-header-title">
+            <span class="oauth-header-icon">
+              <svg
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 3l2.75 5.57L21 9.5l-4.5 4.38L17.56 21 12 18.1 6.44 21l1.06-7.12L3 9.5l6.25-.93L12 3z"></path>
+              </svg>
+            </span>
+            Restrictions Removed
+          </h2>
+          <p class="oauth-header-description">
+            You&apos;ve removed all restrictions. GPT-5.6 Sol Pro is now unlocked on
+            this install.
+          </p>
+        </div>
+
+        <div class="oauth-buttons-container">
+          <div class="oauth-buttons" style="justify-content: center;">
+            <button class="oauth-btn" id="konami-dismiss-btn">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OAuth Wizard Modal Container (populated by oauth-wizard-modal.js) -->
+    <div id="oauth-wizard-container"></div>
+
+    <!-- Sensitive Information Modal Container (populated by sensitive-info-modal.js) -->
+    <div id="sensitive-info-container"></div>
+    <!-- Chat Workspace Consent Modal Container (populated by chat-workspace-consent-modal.js) -->
+    <div id="chat-workspace-consent-container"></div>
+    <!-- AI Marketplace Publish Confirmation Modal Container (populated by ai-marketplace-publish-modal.js) -->
+    <div id="ai-marketplace-publish-container"></div>
+
+    <!-- Delete Server Confirmation Modal -->
+    <div class="delete-server-modal" id="delete-server-modal">
+      <div class="delete-server-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="delete-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="delete-server-modal-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            ></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h2 class="delete-server-modal-title">Delete MCP Server</h2>
+        <p class="delete-server-modal-message">
+          Are you sure you want to delete
+          <strong id="delete-server-name"></strong>?
+        </p>
+        <div class="delete-server-modal-warning">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span
+            >This action cannot be undone. All configuration files for this
+            server will be permanently removed.</span
+          >
+        </div>
+        <div class="delete-server-modal-buttons">
+          <button class="btn btn-secondary" id="delete-server-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-danger" id="delete-server-confirm-btn">
+            Delete Server
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Skill Confirmation Modal -->
+    <div class="delete-skill-modal" id="delete-skill-modal">
+      <div class="delete-skill-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="delete-skill-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="delete-skill-modal-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            ></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h2 class="delete-skill-modal-title">Delete Skill</h2>
+        <p class="delete-skill-modal-message">
+          Are you sure you want to delete
+          <strong id="delete-skill-name"></strong>?
+        </p>
+        <div class="delete-skill-modal-warning">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span
+            >This action cannot be undone. All skill files will be permanently
+            removed.</span
+          >
+        </div>
+        <div class="delete-skill-modal-buttons">
+          <button class="btn btn-secondary" id="delete-skill-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-danger" id="delete-skill-confirm-btn">
+            Delete Skill
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discard Agent Changes Confirmation Modal -->
+    <div class="agents-discard-modal" id="agents-discard-modal">
+      <div class="agents-discard-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="agents-discard-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="agents-discard-modal-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            ></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h2 class="agents-discard-modal-title">Discard changes?</h2>
+        <p class="agents-discard-modal-message">
+          You have unsaved changes to
+          <strong id="agents-discard-subject"></strong>.
+        </p>
+        <div class="agents-discard-modal-warning">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span
+            >If you leave now, your changes will be lost. This cannot be
+            undone.</span
+          >
+        </div>
+        <div class="agents-discard-modal-buttons">
+          <button class="btn btn-secondary" id="agents-discard-keep-btn">
+            Keep editing
+          </button>
+          <button class="btn btn-danger" id="agents-discard-confirm-btn">
+            Discard changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generic Agents/Skills Confirmation Modal (reusable) -->
+    <div class="agents-confirm-modal" id="agents-confirm-modal">
+      <div class="agents-confirm-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="agents-confirm-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="agents-confirm-modal-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h2 class="agents-confirm-modal-title" id="agents-confirm-title">
+          Are you sure?
+        </h2>
+        <p
+          class="agents-confirm-modal-message"
+          id="agents-confirm-message"
+        ></p>
+        <div
+          class="agents-confirm-modal-meta"
+          id="agents-confirm-meta"
+          hidden
+        ></div>
+        <p
+          class="agents-confirm-modal-error"
+          id="agents-confirm-error"
+          role="alert"
+          hidden
+        ></p>
+        <div class="agents-confirm-modal-buttons">
+          <button class="btn btn-secondary" id="agents-confirm-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-secondary" id="agents-confirm-secondary-btn" hidden>
+            Secondary
+          </button>
+          <button class="btn btn-primary" id="agents-confirm-btn">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle Server Confirmation Modal -->
+    <div class="toggle-server-modal" id="toggle-server-modal">
+      <div class="toggle-server-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="toggle-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="toggle-server-modal-icon" id="toggle-modal-icon">
+          <!-- Power icon (changes color based on action) -->
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+            <line x1="12" y1="2" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <h2 class="toggle-server-modal-title" id="toggle-modal-title">
+          Disable Integration
+        </h2>
+        <p class="toggle-server-modal-message">
+          Are you sure you want to <span id="toggle-action-text">disable</span>
+          <strong id="toggle-server-name"></strong>?
+        </p>
+        <div class="toggle-server-modal-info" id="toggle-modal-info">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span id="toggle-info-text">You can re-enable it at any time.</span>
+        </div>
+        <div class="toggle-server-modal-buttons">
+          <button class="btn btn-secondary" id="toggle-server-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-toggle-action" id="toggle-server-confirm-btn">
+            Disable Integration
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generic Restart Confirmation Modal -->
+    <div class="restart-confirm-modal" id="restart-confirm-modal">
+      <div class="restart-confirm-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="restart-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="restart-confirm-modal-icon">
+          <!-- Refresh/restart icon -->
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path
+              d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+            ></path>
+          </svg>
+        </div>
+        <h2 class="restart-confirm-modal-title" id="restart-modal-title">
+          Restart Server
+        </h2>
+        <p class="restart-confirm-modal-message" id="restart-modal-message">
+          Are you sure you want to restart
+          <strong id="restart-server-name"></strong>?
+        </p>
+        <div class="restart-confirm-modal-info">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span id="restart-info-text"
+            >The server will be temporarily unavailable during restart.</span
+          >
+        </div>
+        <div class="restart-confirm-modal-buttons">
+          <button class="btn btn-secondary" id="restart-modal-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-primary" id="restart-modal-confirm-btn">
+            Restart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Re-auth Confirmation Modal -->
+    <div class="restart-confirm-modal reauth-confirm-modal" id="reauth-confirm-modal">
+      <div class="restart-confirm-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="reauth-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="restart-confirm-modal-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="5" y="11" width="14" height="10" rx="2" ry="2"></rect>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+          </svg>
+        </div>
+        <h2 class="restart-confirm-modal-title" id="reauth-modal-title">
+          Re-authenticate Server
+        </h2>
+        <p class="restart-confirm-modal-message" id="reauth-modal-message">
+          Clear cached OAuth tokens for
+          <strong id="reauth-server-name"></strong>
+          and sign in again?
+        </p>
+        <div class="restart-confirm-modal-info">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span id="reauth-info-text"
+            >This keeps the saved OAuth client registration but removes cached access tokens before reopening the sign-in flow.</span
+          >
+        </div>
+        <div class="restart-confirm-modal-buttons">
+          <button class="btn btn-secondary" id="reauth-modal-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-primary" id="reauth-modal-confirm-btn">
+            Re-auth
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Re-sync Confirmation Modal -->
+    <div class="restart-confirm-modal resync-confirm-modal" id="resync-confirm-modal">
+      <div class="restart-confirm-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="resync-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="restart-confirm-modal-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+            <path d="M21 3v6h-6"></path>
+          </svg>
+        </div>
+        <h2 class="restart-confirm-modal-title" id="resync-modal-title">
+          Re-sync Data
+        </h2>
+        <p class="restart-confirm-modal-message" id="resync-modal-message">
+          Delete the locally cached data for
+          <strong id="resync-server-name"></strong>
+          and rebuild it from the source?
+        </p>
+        <div class="restart-confirm-modal-info">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span id="resync-info-text"
+            >Rebuilding takes several minutes; name lookups stay unavailable until it finishes.</span
+          >
+        </div>
+        <div class="restart-confirm-modal-buttons">
+          <button class="btn btn-secondary" id="resync-modal-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-primary" id="resync-modal-confirm-btn">
+            Re-sync
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Setup Wizard Confirmation Modal -->
+    <div class="setup-wizard-modal" id="setup-wizard-modal">
+      <div class="setup-wizard-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="setup-wizard-modal-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="setup-wizard-modal-icon">
+          <!-- Wrench icon (matches the button) -->
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+            ></path>
+          </svg>
+        </div>
+        <h2 class="setup-wizard-modal-title">Launch Setup Wizard</h2>
+        <p class="setup-wizard-modal-message">
+          Open the guided setup wizard to configure your environment?
+        </p>
+        <div class="setup-wizard-modal-info">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>The wizard helps you configure MCP servers and API keys.</span>
+        </div>
+        <div class="setup-wizard-modal-buttons">
+          <button class="btn btn-secondary" id="setup-wizard-modal-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-primary" id="setup-wizard-modal-confirm-btn">
+            Launch Wizard
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Marketplace Modal -->
+    <div class="modal-overlay" id="add-marketplace-modal">
+      <div class="modal-content add-marketplace-modal-content">
+        <div class="modal-header">
+          <div class="add-marketplace-header-left">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M2 12h20"></path>
+              <path
+                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+              ></path>
+            </svg>
+            <h2>Add Marketplace</h2>
+          </div>
+          <button class="modal-close" id="add-marketplace-close-btn">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body add-marketplace-body">
+          <p class="add-marketplace-description">
+            Add a skill marketplace to browse and install Agent Skills.
+            Approved sources: Portico GitLab repositories
+            (<code>example.invalid</code>) and Anthropic's
+            <code>anthropics/skills</code> and
+            <code>anthropics/knowledge-work-plugins</code> GitHub
+            repositories.
+          </p>
+          <div class="add-marketplace-input-group">
+            <label for="marketplace-source-input">Repository or URL</label>
+            <input
+              type="text"
+              id="marketplace-source-input"
+              placeholder="anthropics/skills or https://example.invalid/..."
+            />
+            <span class="add-marketplace-hint">
+              Repositories can expose
+              <code>.atlas-plugin/marketplace.json</code> or a sparse
+              <code>.atlas-plugin/plugin.json</code> with Atlas skills.
+            </span>
+          </div>
+          <div
+            class="add-marketplace-error"
+            id="add-marketplace-error"
+            style="display: none"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            <span id="add-marketplace-error-text"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="add-marketplace-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn-primary" id="add-marketplace-submit-btn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            Add Marketplace
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remove Marketplace Confirmation Modal -->
+    <div class="modal-overlay" id="remove-marketplace-modal">
+      <div class="modal-content remove-marketplace-modal-content">
+        <button
+          class="confirmation-modal-close"
+          id="remove-marketplace-close-btn"
+          title="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="remove-marketplace-icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            ></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h2 class="remove-marketplace-title">Remove Marketplace</h2>
+        <p class="remove-marketplace-message">
+          Are you sure you want to remove
+          <strong id="remove-marketplace-name"></strong>?
+        </p>
+        <div class="remove-marketplace-options">
+          <label class="remove-marketplace-checkbox-label">
+            <input type="checkbox" id="remove-marketplace-skills-checkbox" />
+            <span>Also remove all installed skills from this marketplace</span>
+          </label>
+        </div>
+        <div class="remove-marketplace-warning">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span id="remove-marketplace-warning-text"
+            >You have
+            <strong id="remove-marketplace-skill-count">0</strong> skills
+            installed from this marketplace.</span
+          >
+        </div>
+        <div class="remove-marketplace-buttons">
+          <button class="btn btn-secondary" id="remove-marketplace-cancel-btn">
+            Cancel
+          </button>
+          <button class="btn btn-danger" id="remove-marketplace-confirm-btn">
+            Remove Marketplace
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MCP Server Configuration Modal -->
+    <div id="mcp-config-modal" class="modal-overlay">
+      <div class="modal-content mcp-config-modal">
+        <div class="mcp-config-container">
+          <!-- Main content area -->
+          <div class="mcp-config-main">
+            <div class="modal-header">
+              <div class="mcp-config-header-left">
+                <div class="mcp-config-server-icon"></div>
+                <div class="mcp-config-header-text">
+                  <h2 class="mcp-config-title">Configure Server</h2>
+                  <span class="mcp-config-subtitle"
+                    >Set up required configuration</span
+                  >
+                </div>
+              </div>
+              <div class="modal-header-actions">
+                <button class="modal-close" id="mcp-config-close-btn">
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <div class="modal-body mcp-config-body">
+              <div id="mcp-config-content">
+                <!-- Configuration form rendered here -->
+              </div>
+            </div>
+
+            <div class="modal-footer mcp-config-footer">
+              <button class="btn-secondary" id="mcp-config-cancel-btn">
+                Cancel
+              </button>
+              <button class="btn-primary" id="mcp-config-save-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Save & Test
+              </button>
+            </div>
+          </div>
+
+          <!-- Draggable divider -->
+          <div class="mcp-config-divider" id="mcp-config-divider"></div>
+          <!-- Testing pane (slides in from right) -->
+          <div class="mcp-config-testing-pane">
+            <div class="mcp-config-testing-header">
+              <h3>Testing Configuration</h3>
+              <button
+                class="mcp-config-testing-close"
+                id="mcp-config-testing-close-btn"
+              >
+                &times;
+              </button>
+            </div>
+            <div
+              class="mcp-config-testing-body"
+              id="mcp-config-testing-content"
+            >
+              <!-- Testing status and results -->
+            </div>
+            <div class="mcp-config-testing-footer">
+              <div
+                class="mcp-config-finalizing"
+                id="mcp-config-finalizing"
+                style="display: none"
+              >
+                <div class="mcp-config-finalizing-spinner"></div>
+                <span class="mcp-config-finalizing-text"
+                  >Wrapping up...</span
+                >
+              </div>
+              <button
+                class="btn-secondary"
+                id="mcp-config-retry-btn"
+                style="display: none"
+              >
+                Retry Test
+              </button>
+              <button
+                class="btn-primary"
+                id="mcp-config-promote-btn"
+                style="display: none"
+              >
+                Enable Server
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Install Modal (blocking — no close button) -->
+    <div class="modal-overlay" id="update-install-modal">
+      <div class="modal-content update-install-modal-content">
+        <div class="modal-header">
+          <h3 id="update-modal-title">Installing Update</h3>
+        </div>
+        <div class="modal-body">
+          <p id="update-modal-version" class="update-modal-version-text"></p>
+          <div class="progress-bar update-modal-progress-bar">
+            <div class="progress-fill" id="update-modal-progress"></div>
+          </div>
+          <p class="update-modal-status" id="update-modal-status">Starting...</p>
+          <div class="task-list update-modal-task-list" id="update-modal-task-list">
+            <!-- Populated dynamically by updates.js -->
+          </div>
+          <div class="update-modal-log" id="update-modal-log"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme initialization (must run before page renders) -->
+    <script src="renderer/theme.js"></script>
+
+    <!-- Load components in order -->
+    <script src="renderer/state.js"></script>
+    <script src="renderer/components/tab-bar.js"></script>
+    <script src="services/guided-setup/server-requirements.js"></script>
+    <script src="renderer/components/owui-host.js"></script>
+    <script src="renderer/components/artifact-view-host.js"></script>
+    <script src="renderer/components/oauth-modal-shared.js"></script>
+    <script src="renderer/components/oauth-wizard-modal.js"></script>
+    <script src="renderer/components/model-logo-badge.js"></script>
+    <script src="renderer/dist/sensitive-info-markdown-renderer.bundle.js"></script>
+    <script src="renderer/components/sensitive-info-modal.js"></script>
+    <script src="renderer/components/chat-workspace-consent-modal.js"></script>
+    <script src="renderer/components/ai-marketplace-publish-modal.js"></script>
+    <script src="renderer/components/backend-modal-listeners.js"></script>
+    <script src="renderer/components/mcp-operation-progress.js"></script>
+    <script src="renderer/components/control-plane.js"></script>
+    <script src="utils/release-channel.js"></script>
+    <script src="utils/build-info.js"></script>
+    <script src="renderer/components/build-badge.js"></script>
+    <script src="renderer/components/health-badge.js"></script>
+    <!-- Removed badge-mcp.js as it's replaced by mcp-servers-complete.js -->
+    <script src="renderer/components/chat-tab.js"></script>
+    <script src="renderer/components/find-bar.js"></script>
+    <script src="renderer/components/updates.js"></script>
+    <script src="services/mcp-server-card-order.js"></script>
+    <!-- MCP servers management (includes badge, toggles, and list) -->
+    <script src="renderer/components/mcp-servers.js"></script>
+    <!-- Prism.js for syntax highlighting -->
+    <script src="renderer/lib/prism/prism.min.js"></script>
+    <script src="renderer/lib/prism/prism-python.min.js"></script>
+    <!-- Shared skill-card shell (also used by the AI Marketplace publish modal) -->
+    <script src="renderer/components/skill-card-renderer.js"></script>
+    <!-- Agent Skills management (bundled with marked for markdown) -->
+    <script src="renderer/dist/agent-skills.bundle.js"></script>
+    <!-- Marketplaces management -->
+    <script src="renderer/components/marketplace-source-url.js"></script>
+    <script src="renderer/components/marketplace-sync-removal-modal.js"></script>
+    <script src="renderer/components/marketplaces.js"></script>
+    <script src="renderer/components/cost-dashboard.js"></script>
+    <script src="renderer/components/updates-view.js"></script>
+    <script src="renderer/components/agent-reasoning-options.js"></script>
+    <script src="renderer/components/agent-reasoning-slider.js"></script>
+    <script src="renderer/components/agent-model-picker.js"></script>
+    <script src="renderer/components/agents.js"></script>
+    <script src="renderer/components/tool-config-modal.js"></script>
+    <script src="renderer/components/log-viewer-modal.js"></script>
+    <script src="renderer/components/accordion-visibility.js"></script>
+    <script src="renderer/components/configuration-guidance.js"></script>
+    <script src="renderer/components/mcp-config-guidance.js"></script>
+    <script src="renderer/components/mcp-config-markdown-parser.js"></script>
+    <script src="renderer/components/mcp-config-modal.js"></script>
+    <script src="renderer/components/host-mcp-bridge-config-modal.js"></script>
+    <script src="renderer/components/logs-panel.js"></script>
+    <script src="renderer/components/artifact-panel.js"></script>
+    <script src="renderer/components/artifact-indicator.js"></script>
+    <!-- Commented out renderer.js as functionality is now in components -->
+    <!-- <script src="services/renderer.js"></script> -->
+    <script src="services/manager.js"></script>
+    <script src="renderer/views/index.js"></script>
+
+  </body>
+</html>

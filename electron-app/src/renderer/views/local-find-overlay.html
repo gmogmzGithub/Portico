@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent !important;
+      }
+
+      body {
+        display: block;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      .local-find-window {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 0;
+      }
+
+      .local-find-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 0.45rem 0.6rem;
+        background: var(--portico-search-surface, rgba(23, 23, 23, 0.96));
+        border: 1px solid var(--portico-search-border-muted, rgba(148, 163, 184, 0.24));
+        border-radius: 0.875rem;
+        box-shadow: var(--portico-search-shadow, 0 16px 40px rgba(15, 23, 42, 0.24));
+        backdrop-filter: blur(16px);
+      }
+
+      .local-find-input {
+        flex: 1 1 11rem;
+        min-width: 0;
+        border: 1px solid var(--portico-search-border-muted, rgba(148, 163, 184, 0.24));
+        border-radius: 0.625rem;
+        padding: 0.38rem 0.72rem;
+        font-size: 13px;
+        width: auto;
+        outline: none;
+        background: var(--portico-search-input-bg, rgba(15, 23, 42, 0.28));
+        color: var(--portico-search-text, #f8fafc);
+      }
+
+      .local-find-input::placeholder {
+        color: var(--portico-search-muted, rgba(226, 232, 240, 0.68));
+      }
+
+      .local-find-input:focus {
+        border-color: var(--portico-accent-border, rgba(79, 148, 255, 0.3));
+        box-shadow: 0 0 0 3px var(--portico-accent-fill, rgba(79, 148, 255, 0.16));
+      }
+
+      .local-find-counter {
+        font-size: 11px;
+        color: var(--portico-search-muted, rgba(226, 232, 240, 0.68));
+        white-space: nowrap;
+        min-width: 48px;
+        text-align: center;
+      }
+
+      .local-find-btn {
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        padding: 0.25rem 0.45rem;
+        font-size: 12px;
+        color: var(--portico-search-muted, rgba(226, 232, 240, 0.68));
+        line-height: 1;
+        transition: background-color 0.1s ease, border-color 0.1s ease;
+      }
+
+      .local-find-btn:hover {
+        background: var(--portico-search-surface-hover, rgba(255, 255, 255, 0.08));
+      }
+
+      .local-find-btn:focus-visible {
+        outline: none;
+        border-color: var(--portico-accent-border, rgba(79, 148, 255, 0.3));
+        box-shadow: 0 0 0 3px var(--portico-accent-fill, rgba(79, 148, 255, 0.16));
+      }
+
+      .local-find-toggle.active {
+        background: var(--portico-accent-fill, rgba(79, 148, 255, 0.16));
+        color: var(--portico-accent-text, #4f94ff);
+        border-color: var(--portico-accent-border, rgba(79, 148, 255, 0.3));
+      }
+
+      .local-find-separator {
+        width: 1px;
+        height: 16px;
+        background: var(--portico-search-border-muted, rgba(148, 163, 184, 0.24));
+        margin: 0 2px;
+      }
+
+      .local-find-close {
+        font-size: 16px;
+        font-weight: 300;
+        padding: 0 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="local-find-window">
+      <div class="local-find-bar" role="search" aria-label="Find in current chat">
+        <input
+          id="local-find-input"
+          type="text"
+          class="local-find-input"
+          placeholder="Find in current chat…"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <span id="local-find-counter" class="local-find-counter"></span>
+        <button
+          id="local-find-case"
+          class="local-find-btn local-find-toggle"
+          type="button"
+          title="Case sensitive (Aa)"
+        >
+          Aa
+        </button>
+        <div class="local-find-separator"></div>
+        <button
+          class="local-find-btn"
+          type="button"
+          data-action="prev"
+          title="Previous match (Shift+Enter / Shift+CMD+G / ArrowUp)"
+        >
+          &#x25B2;
+        </button>
+        <button
+          class="local-find-btn"
+          type="button"
+          data-action="next"
+          title="Next match (Enter / CMD+G / ArrowDown)"
+        >
+          &#x25BC;
+        </button>
+        <button
+          class="local-find-btn local-find-close"
+          type="button"
+          data-action="close"
+          title="Close (Esc)"
+        >
+          &times;
+        </button>
+      </div>
+    </div>
+    <script>
+      (() => {
+        const api = window.localFindOverlayWindowAPI;
+        const input = document.getElementById('local-find-input');
+        const counter = document.getElementById('local-find-counter');
+        const caseButton = document.getElementById('local-find-case');
+        const actionButtons = Array.from(document.querySelectorAll('[data-action]'));
+        let suppressEvents = false;
+        let currentState = {
+          query: '',
+          caseSensitive: false,
+          activeMatch: 0,
+          totalMatches: 0,
+          retainFocus: false,
+          selectionStart: 0,
+          selectionEnd: 0,
+          revision: 0,
+        };
+
+        function sendEvent(type, detail = {}) {
+          api?.sendEvent?.(type, detail);
+        }
+
+        function updateCounter(query, activeMatch, totalMatches) {
+          if (!counter) {
+            return;
+          }
+
+          if (totalMatches === 0 && query) {
+            counter.textContent = 'No matches';
+          } else if (totalMatches > 0) {
+            counter.textContent = `${activeMatch} of ${totalMatches}`;
+          } else {
+            counter.textContent = '';
+          }
+        }
+
+        function syncSelection() {
+          if (!input || suppressEvents) {
+            return;
+          }
+
+          sendEvent('selection-change', {
+            selectionStart: input.selectionStart ?? input.value.length,
+            selectionEnd: input.selectionEnd ?? input.value.length,
+          });
+        }
+
+        function applyState(nextState = {}) {
+          if (Number(nextState.revision) < Number(currentState.revision)) {
+            return;
+          }
+
+          currentState = {
+            ...currentState,
+            ...nextState,
+          };
+
+          suppressEvents = true;
+          document.documentElement.setAttribute('data-theme', currentState.theme || 'dark');
+
+          if (input && input.value !== currentState.query) {
+            input.value = currentState.query || '';
+          }
+
+          const safeStart = Math.max(0, Math.min(input?.value.length || 0, Number(currentState.selectionStart) || 0));
+          const safeEnd = Math.max(
+            safeStart,
+            Math.min(input?.value.length || 0, Number(currentState.selectionEnd) || 0),
+          );
+          if (input) {
+            input.setSelectionRange(safeStart, safeEnd);
+          }
+
+          caseButton?.classList.toggle('active', currentState.caseSensitive === true);
+          updateCounter(currentState.query || '', Number(currentState.activeMatch) || 0, Number(currentState.totalMatches) || 0);
+
+          suppressEvents = false;
+
+          if (currentState.retainFocus === true && input && document.activeElement !== input) {
+            window.requestAnimationFrame(() => {
+              input.focus({ preventScroll: true });
+              input.setSelectionRange(safeStart, safeEnd);
+            });
+          }
+        }
+
+        input?.addEventListener('input', () => {
+          if (suppressEvents) {
+            return;
+          }
+
+          currentState.query = input.value;
+          currentState.selectionStart = input.selectionStart ?? input.value.length;
+          currentState.selectionEnd = input.selectionEnd ?? input.value.length;
+          updateCounter(input.value, 0, 0);
+          sendEvent('query-change', {
+            query: input.value,
+            selectionStart: currentState.selectionStart,
+            selectionEnd: currentState.selectionEnd,
+          });
+        });
+
+        input?.addEventListener('focus', () => {
+          if (suppressEvents) {
+            return;
+          }
+
+          sendEvent('focus');
+          syncSelection();
+        });
+
+        input?.addEventListener('select', syncSelection);
+        input?.addEventListener('keyup', syncSelection);
+        input?.addEventListener('mouseup', () => {
+          window.requestAnimationFrame(syncSelection);
+        });
+
+        input?.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            sendEvent('close', { reason: 'escape' });
+            return;
+          }
+
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            sendEvent(event.shiftKey ? 'prev' : 'next');
+            return;
+          }
+
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            sendEvent('prev');
+            return;
+          }
+
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            sendEvent('next');
+          }
+        });
+
+        caseButton?.addEventListener('click', () => {
+          caseButton.classList.toggle('active');
+          currentState.caseSensitive = caseButton.classList.contains('active');
+          sendEvent('toggle-case');
+        });
+
+        for (const button of actionButtons) {
+          button.addEventListener('click', () => {
+            const action = button.dataset.action;
+            if (!action) {
+              return;
+            }
+
+            if (action === 'close') {
+              sendEvent('close', { reason: 'button' });
+              return;
+            }
+
+            sendEvent(action);
+          });
+        }
+
+        api?.onState?.((state) => {
+          applyState(state);
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,2685 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <base href="../.." />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'none'; object-src 'none';"
+    />
+    <title>Portico - Loading</title>
+    <!-- CRITICAL: Set theme BEFORE CSS loads to prevent flash -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <style>
+      /* === FLAT MINIMAL THEME - Matching Control Plane === */
+      :root {
+        /* Dark Background Colors - pitch-black neutral canvas (blue-tinted
+           #06080b family read as a blue haze behind the cosmic scene) */
+        --bg-primary: #050505;
+        --window-chrome-bg: #050505;
+        --bg-secondary: #0a0a0a;
+        --bg-surface: #12171d;
+        --bg-elevated: #1a2027;
+        --bg-dark: #030303;
+
+        /* Solid backgrounds */
+        --bg-glass: rgba(18, 23, 29, 0.96);
+        --bg-glass-subtle: rgba(18, 23, 29, 0.88);
+        --bg-glass-solid: #12171d;
+
+        /* Text Colors - Clean greys */
+        --text-primary: #e5e5e5;
+        --text-secondary: #a3a3a3;
+        --text-tertiary: #737373;
+        --text-muted: #525252;
+
+        /* Accent Colors - Muted, subtle */
+        --accent-primary: #4f94ff;
+        --accent-secondary: #94a3b8;
+        --accent-gradient: linear-gradient(180deg, #4f94ff 0%, #4f94ff 100%);
+        --accent-primary-rgb: 79, 148, 255;
+        --accent-secondary-rgb: 148, 163, 184;
+        --accent-text-color: #68a4ff;
+        --btn-secondary-bg: rgba(255, 255, 255, 0.05);
+        --btn-secondary-hover: rgba(255, 255, 255, 0.1);
+
+        /* Minimal Borders */
+        --border-subtle: transparent;
+        --border-default: rgba(255, 255, 255, 0.045);
+        --border-glass: transparent;
+        --border-glass-highlight: transparent;
+
+        /* No shadows */
+        --shadow-glass: none;
+        --shadow-glow: none;
+        --shadow-inner: none;
+
+        /* Status Colors - Slightly muted */
+        --status-success: #4ade80;
+        --status-error: #f87171;
+        --status-warning: #fbbf24;
+        --status-info: #4f94ff;
+
+        /* Component Specific */
+        --scrollbar-track: rgba(0, 0, 0, 0.2);
+        --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+        --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+        --caption-shimmer-base: #8a94a3;
+        --caption-shimmer-highlight: #f2f4f7;
+        --caption-shimmer-accent: #d5dbe3;
+        --caption-shimmer-glow-rgb: 226, 232, 240;
+        --caption-shimmer-shadow-opacity: 0.18;
+
+        /* Cosmic loading scene */
+        --star-color: #eaf2ff;
+        --star-warm: #ffd9a0;
+        --star-glow: #ffffff;
+        --starfield-opacity: 0.7;
+        /* No ambient wash in dark: the navy radial glows tinted the whole
+           canvas blue; pitch black lets the (subtler) stars carry the scene. */
+        --scene-glow: none;
+        --planet-halo: rgba(255, 214, 150, 0.2);
+        --planet-halo-2: rgba(255, 176, 137, 0.14);
+        --planet-shadow: rgba(0, 0, 0, 0);
+      }
+
+      [data-theme="light"] {
+        /* Light theme - neutral near-white canvas with layered controls */
+        --bg-primary: #f7f7f7;
+        --window-chrome-bg: #f7f7f7;
+        --bg-secondary: #c5cdda;
+        --bg-surface: #c0c9d6;
+        --bg-elevated: #d5dce7;
+        --bg-dark: #b8c2cf;
+
+        --bg-glass: rgba(15, 23, 42, 0.06);
+        --bg-glass-subtle: rgba(15, 23, 42, 0.04);
+        --bg-glass-solid: #d2d9e4;
+
+        --text-primary: #0f172a;
+        --text-secondary: #334155;
+        --text-tertiary: #64748b;
+        --text-muted: #94a3b8;
+
+        --accent-primary: #003a9b;
+        --accent-secondary: #64748b;
+        --accent-gradient: linear-gradient(180deg, #003a9b 0%, #003a9b 100%);
+        --accent-primary-rgb: 0, 58, 155;
+        --accent-secondary-rgb: 100, 116, 139;
+        --accent-text-color: #003a9b;
+        --btn-secondary-bg: rgba(0, 0, 0, 0.03);
+        --btn-secondary-hover: rgba(0, 0, 0, 0.06);
+
+        --border-subtle: transparent;
+        --border-default: rgba(15, 23, 42, 0.07);
+        --border-glass: transparent;
+        --border-glass-highlight: transparent;
+
+        --shadow-glass: none;
+        --shadow-glow: none;
+        --shadow-inner: none;
+
+        --scrollbar-track: rgba(15, 23, 42, 0.06);
+        --scrollbar-thumb: rgba(15, 23, 42, 0.24);
+        --scrollbar-thumb-hover: rgba(15, 23, 42, 0.34);
+        --caption-shimmer-base: #4f5967;
+        --caption-shimmer-highlight: #6b7583;
+        --caption-shimmer-accent: #818b98;
+        --caption-shimmer-glow-rgb: 107, 117, 131;
+        --caption-shimmer-shadow-opacity: 0;
+
+        /* Light mode status colors - darker for contrast */
+        --status-success: #16a34a;
+        --status-error: #dc2626;
+        --status-warning: #b45309;
+        --status-info: #003a9b;
+
+        /* Cosmic loading scene - light */
+        --star-color: #46577e;
+        --star-warm: #8a6240;
+        --star-glow: #3d4e73;
+        --starfield-opacity: 0.85;
+        --scene-glow: radial-gradient(560px 400px at 50% 0%, rgba(91, 107, 140, 0.1), transparent 70%);
+        --planet-halo: rgba(255, 196, 120, 0.42);
+        --planet-halo-2: rgba(255, 158, 110, 0.26);
+        --planet-shadow: rgba(74, 54, 34, 0.16);
+      }
+
+      [data-theme="light"] h1,
+      [data-theme="light"] h2 {
+        background: none;
+        -webkit-text-fill-color: var(--accent-primary);
+        color: var(--accent-primary);
+      }
+
+      /* Theme transitions */
+      *,
+      *::before,
+      *::after {
+        transition:
+          background-color 0.3s ease,
+          border-color 0.3s ease,
+          box-shadow 0.3s ease,
+          color 0.3s ease;
+      }
+
+      /* PORTICO: Custom Font - Portico Sans */
+      @font-face {
+        font-family: 'Portico Sans';
+        font-style: normal;
+        font-weight: 1 1000;
+        font-stretch: 100%;
+        font-display: swap;
+        src: url('../assets/portico-sans/PorticoSansVF.woff2') format('woff2');
+      }
+
+      @font-face {
+        font-family: 'Portico Sans';
+        font-style: italic;
+        font-weight: 1 1000;
+        font-stretch: 100%;
+        font-display: swap;
+        src: url('../assets/portico-sans/PorticoSansVF_It.woff2') format('woff2');
+      }
+
+      @supports not font-tech(variations) {
+        @font-face {
+          font-family: 'Portico Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+          src: url('../assets/portico-sans/PorticoSans_Rg.woff2') format('woff2');
+        }
+
+        @font-face {
+          font-family: 'Portico Sans';
+          font-style: normal;
+          font-weight: 500;
+          font-display: swap;
+          src: url('../assets/portico-sans/PorticoSans_Md.woff2') format('woff2');
+        }
+
+        @font-face {
+          font-family: 'Portico Sans';
+          font-style: normal;
+          font-weight: 700;
+          font-display: swap;
+          src: url('../assets/portico-sans/PorticoSans_Bd.woff2') format('woff2');
+        }
+
+        @font-face {
+          font-family: 'Portico Sans';
+          font-style: italic;
+          font-weight: 400;
+          font-display: swap;
+          src: url('../assets/portico-sans/PorticoSans_It.woff2') format('woff2');
+        }
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body, * {
+        font-family: 'Portico Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-weight: 500 !important;
+      }
+
+      html {
+        background: var(--window-chrome-bg);
+      }
+
+      body {
+        background: var(--window-chrome-bg);
+        color: var(--text-primary);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .titlebar {
+        height: 48px;
+        background: transparent;
+        -webkit-app-region: drag;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 24px 1.5rem 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: none !important;
+        border: none !important;
+      }
+
+      .titlebar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        -webkit-app-region: no-drag;
+      }
+
+      .debug-toggle,
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: var(--btn-secondary-bg);
+        border: none;
+        border-radius: 0.375rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .debug-toggle {
+        background: rgba(255, 183, 197, 0.16);
+        color: #f3b9c6;
+      }
+
+      .debug-toggle:hover {
+        background: rgba(255, 183, 197, 0.24);
+        color: #ffd4dd;
+      }
+
+      .debug-toggle:active,
+      .debug-toggle.active {
+        background: rgba(255, 183, 197, 0.28);
+      }
+
+      [data-theme="light"] .debug-toggle {
+        background: rgba(201, 74, 108, 0.08);
+        color: #c94a6c;
+      }
+
+      [data-theme="light"] .debug-toggle:hover {
+        background: rgba(201, 74, 108, 0.14);
+        color: #ac3658;
+      }
+
+      .theme-toggle:hover {
+        background: var(--btn-secondary-hover);
+        color: var(--text-primary);
+      }
+
+      .theme-toggle:active {
+        background: var(--btn-secondary-hover);
+      }
+
+      .theme-toggle .theme-icon-dark {
+        display: block;
+      }
+
+      .theme-toggle .theme-icon-light {
+        display: none;
+      }
+
+      [data-theme="light"] .theme-toggle .theme-icon-dark {
+        display: none;
+      }
+
+      [data-theme="light"] .theme-toggle .theme-icon-light {
+        display: block;
+      }
+
+      .main-container {
+        flex: 1;
+        display: flex;
+        margin-top: 48px;
+        height: calc(100vh - 48px);
+        overflow: hidden;
+        /* Lift the panels above the fixed .starfield backdrop */
+        position: relative;
+        z-index: 1;
+      }
+
+      .main-container.logs-drawer-open .log-panel {
+        display: flex;
+      }
+
+      /* Left Panel - Progress */
+      .progress-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 28px 28px 40px 28px;
+        min-width: 0;
+        position: relative;
+        background: transparent;
+        overflow-y: auto;
+      }
+
+      .planet-stage {
+        position: relative;
+        height: clamp(190px, 38vh, 280px);
+        aspect-ratio: 360 / 260;
+        margin: 0 auto 10px;
+        flex-shrink: 0;
+      }
+
+      /* Animated glow/shadow behind the planet: two gradient layers breathing in
+         alternating phase (opacity/transform only). They paint above .starfield but
+         below panel content because .main-container is the stacking context. */
+      .planet-stage::before,
+      .planet-stage::after {
+        content: "";
+        position: absolute;
+        inset: -14% -18%;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      .planet-stage::before {
+        background:
+          radial-gradient(closest-side at 50% 48%, var(--planet-halo), transparent 72%),
+          radial-gradient(closest-side at 50% 52%, var(--planet-shadow), transparent 66%);
+        animation: jupiter-glow 7s ease-in-out infinite;
+      }
+
+      .planet-stage::after {
+        background: radial-gradient(closest-side at 50% 46%, var(--planet-halo-2), transparent 70%);
+        animation: jupiter-glow 7s ease-in-out -3.5s infinite;
+      }
+
+      @keyframes jupiter-glow {
+        0%,
+        100% {
+          opacity: 0.65;
+          transform: scale(0.96);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.05);
+        }
+      }
+
+      .planet-stage svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        /* Sits between the back and front ring-grain overlay layers */
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Simulated axial rotation: the detail tile is 384 units (2x disc diameter) wide
+         and loops seamlessly; CSS px on SVG children map to user units */
+      .jupiter-drift {
+        animation: jupiter-drift 50s linear infinite;
+        will-change: transform;
+      }
+
+      @keyframes jupiter-drift {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-384px);
+        }
+      }
+
+      /* Orbiting ring grains, composited: the grains live in two HTML overlay
+         layers sandwiching the SVG (back layer under the opaque disc, front
+         layer above it), so occlusion comes free from paint order — SVG-internal
+         transform animations would repaint on the main thread, HTML layers
+         composite on the GPU. Each layer holds two rigid groups (inner=faster,
+         outer=slower) spinning in the ring plane; per-grain opacity gates,
+         phase-shifted by each grain's placement angle, swap the visible copy
+         exactly at the ring tips where the grain is outside the silhouette. */
+      .ring-orbits {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .ring-orbits--back {
+        z-index: 0;
+      }
+
+      .ring-orbits--front {
+        z-index: 2;
+      }
+
+      .ring-orbit-group {
+        position: absolute;
+        inset: 0;
+        transform-origin: 50% 50%;
+        will-change: transform;
+        animation: jupiter-orbit-spin 26s linear infinite;
+      }
+
+      .ring-orbit-group.orbit-fast {
+        animation-duration: 18s;
+      }
+
+      .ring-grain {
+        position: absolute;
+        margin: -3px 0 0 -3px;
+        border-radius: 50%;
+        animation: jupiter-orbit-front 26s linear infinite;
+      }
+
+      .orbit-fast .ring-grain {
+        animation-duration: 18s;
+      }
+
+      .ring-grain--back {
+        animation-name: jupiter-orbit-back;
+      }
+
+      @keyframes jupiter-orbit-spin {
+        from {
+          transform: rotate(-12deg) scale(1, 0.22) rotate(0deg);
+        }
+        to {
+          transform: rotate(-12deg) scale(1, 0.22) rotate(360deg);
+        }
+      }
+
+      /* Front half of the orbit is the first 50% of the cycle (grain below the
+         ring line); the 0.2% ramps land at the ansae so the crossfade is unseen */
+      @keyframes jupiter-orbit-front {
+        0%,
+        49.8% {
+          opacity: 1;
+        }
+        50%,
+        99.8% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes jupiter-orbit-back {
+        0%,
+        49.8% {
+          opacity: 0;
+        }
+        50%,
+        99.8% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      h1 {
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      h2 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 28px;
+        color: var(--accent-primary);
+        background: none;
+        -webkit-text-fill-color: currentColor;
+      }
+
+      .progress-bar {
+        width: 100%;
+        max-width: 460px;
+        height: 8px;
+        min-height: 8px;
+        flex-shrink: 0;
+        background: var(--border-default);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .current-step-caption {
+        width: 100%;
+        max-width: 460px;
+        min-height: 18px;
+        margin-top: -6px;
+        margin-bottom: 18px;
+        color: var(--text-tertiary);
+        font-size: 13px;
+        letter-spacing: 0.01em;
+        text-align: center;
+        background: linear-gradient(
+          90deg,
+          var(--caption-shimmer-base) 0%,
+          var(--caption-shimmer-highlight) 20%,
+          var(--caption-shimmer-accent) 50%,
+          var(--caption-shimmer-highlight) 80%,
+          var(--caption-shimmer-base) 100%
+        );
+        background-size: 240% 100%;
+        background-position: 0% 50%;
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        animation: status-shimmer 4s ease-in-out infinite alternate;
+        text-shadow: 0 0 14px
+          rgba(
+            var(--caption-shimmer-glow-rgb),
+            var(--caption-shimmer-shadow-opacity)
+          );
+        will-change: background-position;
+      }
+
+      @keyframes status-shimmer {
+        from {
+          background-position: 0% 50%;
+        }
+        to {
+          background-position: 100% 50%;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .current-step-caption {
+          animation: none;
+          background: none;
+          color: var(--text-secondary);
+          -webkit-text-fill-color: currentColor;
+          text-shadow: none;
+        }
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: var(--accent-primary);
+        width: 0%;
+        transition: width 0.5s ease-out;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Subtle shimmer effect */
+      .progress-fill::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        height: 100%;
+        width: 50%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.15),
+          transparent
+        );
+        animation: shimmer 2s ease-in-out infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          left: -100%;
+        }
+        100% {
+          left: 200%;
+        }
+      }
+
+      /* Task List */
+      .task-list {
+        width: 100%;
+        max-width: 400px;
+        flex-shrink: 0;
+        margin-bottom: 32px;
+        display: none;
+      }
+
+      .task-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        opacity: 0.5;
+        transition: all 0.3s ease;
+      }
+
+      .task-item.active {
+        opacity: 1;
+      }
+
+      .task-item.completed {
+        opacity: 1;
+      }
+
+      .task-item.failed {
+        opacity: 1;
+      }
+
+      .task-item.skipped {
+        opacity: 0.7;
+      }
+
+      .task-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--bg-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      /* Spinner for active tasks */
+      .task-item.active .task-icon {
+        background: transparent;
+      }
+
+      .task-item.active .task-icon::before {
+        content: "";
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--bg-dark);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Completed tasks */
+      .task-item.completed .task-icon {
+        background: var(--status-success);
+        color: var(--bg-dark);
+      }
+
+      .task-item.completed .task-icon::before {
+        content: "✓";
+        position: absolute;
+        animation: none;
+        border: none;
+        font-weight: bold;
+      }
+
+      /* Failed tasks */
+      .task-item.failed .task-icon {
+        background: var(--status-error);
+        color: var(--bg-dark);
+      }
+
+      .task-item.failed .task-icon::before {
+        content: "✕";
+        position: absolute;
+        animation: none;
+        border: none;
+        font-weight: bold;
+      }
+
+      /* Skipped tasks */
+      .task-item.skipped .task-icon {
+        background: var(--status-warning);
+        color: var(--bg-dark);
+      }
+
+      .task-item.skipped .task-icon::before {
+        content: "⏭";
+        position: absolute;
+        animation: none;
+        border: none;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .task-text {
+        flex: 1;
+        font-size: 14px;
+        color: var(--text-tertiary);
+        transition: color 0.3s ease;
+      }
+
+      .task-item.active .task-text {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      .task-item.completed .task-text {
+        color: var(--status-success);
+      }
+
+      .task-item.failed .task-text {
+        color: var(--status-error);
+      }
+
+      .task-item.skipped .task-text {
+        color: var(--status-warning);
+      }
+
+      /* Right Panel - Logs */
+      .log-panel {
+        width: 560px;
+        background: linear-gradient(180deg, rgba(10, 14, 19, 0.96) 0%, rgba(6, 10, 15, 0.98) 100%);
+        border-left: 1px solid rgba(255, 255, 255, 0.04);
+        display: none;
+        flex-direction: column;
+        height: calc(100% - 28px);
+        flex-shrink: 0;
+        margin: 14px 14px 14px 0;
+        border-radius: 20px 0 0 20px;
+        overflow: hidden;
+        box-shadow:
+          inset 1px 0 0 rgba(255, 255, 255, 0.04),
+          inset 0 1px 0 rgba(255, 255, 255, 0.02),
+          -16px 0 32px rgba(0, 0, 0, 0.14);
+      }
+
+      .log-header {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 22px 24px 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--border-default);
+        flex-shrink: 0;
+        gap: 16px;
+      }
+
+      .log-header-main {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .log-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+
+      .log-copy-wrapper {
+        position: relative;
+        height: 0;
+        min-height: 0;
+        flex-shrink: 0;
+        z-index: 1;
+      }
+
+      .log-copy-wrapper > .log-btn {
+        position: absolute;
+        top: 6px;
+        right: 22px;
+      }
+
+      .log-btn {
+        background: rgba(255, 255, 255, 0.04);
+        border: none;
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .log-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+      }
+
+      /* Light mode log button overrides */
+      [data-theme="light"] .log-btn {
+        background: #dfe7ef;
+        border: none;
+        color: #334155;
+      }
+      [data-theme="light"] .log-btn:hover {
+        background: #d3dde7;
+        color: #0f172a;
+      }
+
+      .log-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 18px 22px 22px;
+        font-family: "SF Mono", Monaco, "Consolas", monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-primary);
+        background: transparent;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .log-entry {
+        margin-bottom: 2px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .log-entry.info {
+        color: var(--status-info);
+      }
+      .log-entry.success {
+        color: var(--status-success);
+      }
+      .log-entry.warning {
+        color: #e0af68;
+      }
+      .log-entry.error {
+        color: var(--status-error);
+      }
+
+      /* Light mode log colors - much darker for better contrast on light background */
+      [data-theme="light"] .log-entry.info {
+        color: #0c4a6e !important;
+      }
+      [data-theme="light"] .log-entry.success {
+        color: #14532d !important;
+      }
+      [data-theme="light"] .log-entry.warning {
+        color: #78350f !important;
+      }
+      [data-theme="light"] .log-entry.error {
+        color: #7f1d1d !important;
+      }
+      [data-theme="light"] .log-entry {
+        color: #1f2937 !important;
+      }
+      [data-theme="light"] .log-content {
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .log-header {
+        background: rgba(255, 255, 255, 0.12);
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      }
+
+      /* Light mode task text colors */
+      [data-theme="light"] .task-item.completed .task-text {
+        color: #15803d !important;
+      }
+      [data-theme="light"] .task-item.failed .task-text {
+        color: #b91c1c !important;
+      }
+      [data-theme="light"] .task-item.skipped .task-text {
+        color: #a16207 !important;
+      }
+
+      [data-theme="light"] .progress-panel {
+        /* Transparent so the starfield reads through; canvas color comes from --window-chrome-bg */
+        background: transparent;
+        border-right: none;
+      }
+
+      [data-theme="light"] .log-panel {
+        background: linear-gradient(180deg, #bcc6d3 0%, #b5bfcc 100%);
+        border-left: 1px solid rgba(105, 122, 145, 0.14);
+        box-shadow:
+          inset 1px 0 0 rgba(255, 255, 255, 0.24),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          -14px 0 24px rgba(76, 94, 122, 0.08);
+      }
+
+      [data-theme="light"] .progress-bar {
+        background: #b0bbc9 !important;
+      }
+
+      [data-theme="light"] .task-item {
+        opacity: 0.72;
+      }
+
+      [data-theme="light"] .task-icon {
+        background: #b8c2cf;
+        border: none;
+      }
+
+      [data-theme="light"] .task-item.active .task-icon::before {
+        border: 3px solid #b0bbc9;
+        border-top-color: var(--accent-primary);
+      }
+
+      [data-theme="light"] .task-text {
+        color: #64748b;
+      }
+
+      [data-theme="light"] .task-item.active .task-text {
+        color: #0f172a;
+      }
+
+      [data-theme="light"] .task-item.completed .task-icon,
+      [data-theme="light"] .task-item.failed .task-icon,
+      [data-theme="light"] .task-item.skipped .task-icon {
+        color: #ffffff;
+      }
+
+      /* ANSI color support */
+      .ansi-bold {
+        font-weight: bold;
+      }
+      .ansi-green {
+        color: var(--status-success);
+      }
+      .ansi-red {
+        color: var(--status-error);
+      }
+      .ansi-yellow {
+        color: #e0af68;
+      }
+      .ansi-blue {
+        color: var(--accent-primary);
+      }
+      .ansi-cyan {
+        color: var(--status-info);
+      }
+      .ansi-magenta {
+        color: var(--accent-secondary);
+      }
+
+      /* Light mode ANSI colors */
+      [data-theme="light"] .ansi-green {
+        color: #15803d;
+      }
+      [data-theme="light"] .ansi-red {
+        color: #b91c1c;
+      }
+      [data-theme="light"] .ansi-yellow {
+        color: #a16207;
+      }
+      [data-theme="light"] .ansi-blue {
+        color: #0369a1;
+      }
+      [data-theme="light"] .ansi-cyan {
+        color: #0e7490;
+      }
+
+      /* Scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--scrollbar-track);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
+      }
+
+      /* Recovery buttons */
+      .recovery-buttons {
+        position: absolute;
+        bottom: 35px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        row-gap: 8px;
+        width: calc(100% - 56px);
+        max-width: 640px;
+      }
+
+      .recovery-buttons.visible {
+        display: flex;
+      }
+
+      .main-container.logs-drawer-open .recovery-buttons {
+        width: calc(100% - 36px);
+        max-width: none;
+        gap: 8px;
+      }
+
+      .manual-recovery-panel {
+        display: none;
+        width: calc(100% - 56px);
+        max-width: 640px;
+        margin: 0 auto 18px;
+        padding: 14px;
+        background: rgba(248, 113, 113, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.22);
+        border-radius: 8px;
+        color: var(--text-secondary);
+      }
+
+      .manual-recovery-panel.visible {
+        display: block;
+      }
+
+      .manual-recovery-title {
+        margin-bottom: 10px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .manual-recovery-command-wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .manual-recovery-command {
+        max-height: 150px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.28);
+        color: var(--text-primary);
+        font-family: "SF Mono", Monaco, "Consolas", monospace !important;
+        font-size: 11px;
+        line-height: 1.5;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .manual-recovery-copy-btn {
+        white-space: nowrap;
+      }
+
+      .main-container.logs-drawer-open .manual-recovery-panel {
+        width: calc(100% - 36px);
+        max-width: none;
+      }
+
+      [data-theme="light"] .manual-recovery-panel {
+        background: rgba(220, 38, 38, 0.08);
+        border-color: rgba(220, 38, 38, 0.18);
+        color: #475569;
+      }
+
+      [data-theme="light"] .manual-recovery-command {
+        background: rgba(15, 23, 42, 0.06);
+        color: #1f2937;
+      }
+
+      .recovery-btn {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.15s ease;
+      }
+
+      .recovery-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .recovery-btn.secondary {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .recovery-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      /* Light mode recovery button overrides */
+      [data-theme="light"] .recovery-btn {
+        background: #dfe7ef;
+        border: none;
+        color: #334155;
+      }
+      [data-theme="light"] .recovery-btn:hover {
+        background: #d3dde7;
+        color: #0f172a;
+      }
+      [data-theme="light"] .recovery-btn.secondary {
+        background: #e7edf4;
+      }
+      [data-theme="light"] .recovery-btn.secondary:hover {
+        background: #dbe4ee;
+      }
+
+      /* Copy feedback */
+      .copy-feedback {
+        position: fixed;
+        top: 50%;
+        right: 25%;
+        transform: translate(50%, -50%);
+        /* Must beat .main-container's z-index:1; z-auto would paint below it */
+        z-index: 2;
+        background: var(--status-success);
+        color: var(--bg-dark);
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+
+      .copy-feedback.visible {
+        opacity: 1;
+      }
+
+      /* Loading overlay for debug collection */
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(30, 35, 36, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 10000;
+      }
+
+      [data-theme="light"] .loading-overlay {
+        background: rgba(247, 247, 247, 0.95);
+      }
+
+      .loading-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .loading-overlay-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--border-default);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      .loading-text {
+        color: var(--text-primary);
+        margin-top: 16px;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .build-badge {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 6px;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.75rem;
+        line-height: 1.2;
+        color: var(--text-secondary);
+        animation: fadeIn 0.8s ease-out;
+        font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+        margin-bottom: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: fit-content;
+      }
+
+      /* Light mode build badge */
+      [data-theme="light"] .build-badge {
+        background: rgba(0, 0, 0, 0.05);
+        border: none;
+        color: #334155;
+        font-weight: 400 !important;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      #build-text {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        line-height: 1.2;
+      }
+
+      .channel-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        line-height: 1;
+        height: 1.5rem;
+      }
+
+      .channel-badge.stable {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+
+      .channel-badge.beta {
+        background: rgba(251, 146, 60, 0.15);
+        color: #fb923c;
+        border: 1px solid rgba(251, 146, 60, 0.3);
+      }
+
+      .channel-badge.dev {
+        background: rgba(244, 63, 94, 0.15);
+        color: #f43f5e;
+        border: 1px solid rgba(244, 63, 94, 0.3);
+      }
+
+      .channel-badge.custom {
+        background: rgba(167, 139, 250, 0.15);
+        color: #c4b5fd;
+        border: 1px solid rgba(167, 139, 250, 0.3);
+      }
+
+      [data-theme="light"] .channel-badge.stable {
+        background: rgba(0, 58, 155, 0.12);
+        color: #003a9b;
+        border: none;
+        font-weight: 400 !important;
+      }
+
+      [data-theme="light"] .channel-badge.beta {
+        background: rgba(217, 119, 6, 0.12);
+        color: #b45309;
+        border: none;
+        font-weight: 400 !important;
+      }
+
+      [data-theme="light"] .channel-badge.dev {
+        background: rgba(220, 38, 38, 0.12);
+        color: #b91c1c;
+        border: none;
+        font-weight: 400 !important;
+      }
+
+      [data-theme="light"] .channel-badge.custom {
+        background: rgba(124, 58, 237, 0.12);
+        color: #6d28d9;
+        border: none;
+        font-weight: 400 !important;
+      }
+
+      .copy-button {
+        background: rgba(255, 255, 255, 0.06);
+        border: none;
+        color: var(--text-secondary, #a3a3a3);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-family: inherit;
+      }
+
+      .copy-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary, #e5e5e5);
+      }
+
+      .main-container.logs-drawer-open .progress-panel {
+        padding-right: 24px;
+      }
+
+      .main-container.logs-drawer-open .log-panel {
+        width: 600px;
+      }
+
+      .main-container.logs-drawer-open .recovery-btn {
+        padding: 9px 14px;
+        font-size: 12px;
+      }
+
+      .copy-button.copied {
+        background: rgba(74, 222, 128, 0.15);
+        color: var(--accent-primary, #4ade80);
+      }
+
+      /* Light mode copy button overrides */
+      [data-theme="light"] .copy-button {
+        background: #b8c2cf;
+        border: none;
+        color: #334155;
+        font-weight: 400 !important;
+      }
+      [data-theme="light"] .copy-button:hover {
+        background: #a8b3c2;
+        color: #0f172a;
+      }
+
+      /* === Cosmic loading scene: starfield + Jupiter === */
+      .starfield {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+        background-image: var(--scene-glow);
+        opacity: var(--starfield-opacity);
+        transition: opacity 0.3s ease;
+      }
+
+      .starfield-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      .starfield .st,
+      .starfield .tw {
+        fill: var(--star-color);
+        transition: fill 0.3s ease;
+      }
+
+      .starfield .warm {
+        fill: var(--star-warm);
+      }
+
+      .starfield .tw {
+        animation: star-twinkle 5s ease-in-out infinite;
+      }
+
+      .starfield .sp-core {
+        fill: var(--star-glow);
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: star-sparkle 6.5s ease-in-out infinite;
+      }
+
+      @keyframes star-twinkle {
+        0%,
+        100% {
+          opacity: 0.15;
+        }
+        50% {
+          opacity: 0.9;
+        }
+      }
+
+      @keyframes star-sparkle {
+        0%,
+        100% {
+          transform: scale(0.35);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1);
+          opacity: 0.9;
+        }
+      }
+
+      /* Shrink the planet when recovery UI needs the vertical room (error states),
+         and restore the tall bottom padding so scrolled content clears the
+         absolutely-positioned recovery buttons */
+      body:has(#recovery-buttons.visible) .planet-stage {
+        height: 120px;
+      }
+
+      body:has(#recovery-buttons.visible) .progress-panel {
+        padding-bottom: 128px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .jupiter-drift,
+        .starfield .tw,
+        .starfield .sp-core {
+          animation: none;
+        }
+        .planet-stage::before,
+        .planet-stage::after {
+          animation: none;
+          opacity: 0.8;
+          transform: none;
+        }
+        /* Frozen grains would pile up mid-orbit; the dashed arcs already
+           depict the ring statically, so hide the orbiters entirely */
+        .ring-orbit-group,
+        .ring-grain {
+          animation: none;
+        }
+        .ring-orbits {
+          opacity: 0;
+        }
+        .starfield .tw {
+          opacity: 0.6;
+        }
+        .starfield .sp-core {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
+      }
+
+      /* OAuth Modal Styles - loaded from shared component */
+    </style>
+  </head>
+  <body>
+    <!-- Cosmic backdrop: static baked starfield (decorative, inert) -->
+    <div class="starfield" aria-hidden="true">
+      <svg class="starfield-svg" width="1200" height="720" viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg">
+        <circle class="st warm" cx="365.3" cy="368.2" r="1.4" opacity="0.6"/>
+        <circle class="st" cx="958.9" cy="274.0" r="1.1" opacity="0.5"/>
+        <circle class="st" cx="149.6" cy="147.8" r="1.2" opacity="0.6"/>
+        <circle class="st" cx="124.4" cy="277.3" r="1.4" opacity="0.3"/>
+        <circle class="st" cx="717.9" cy="110.3" r="1.0" opacity="0.3"/>
+        <circle class="st" cx="1030.6" cy="206.2" r="1.2" opacity="0.5"/>
+        <circle class="st" cx="654.6" cy="64.8" r="1.2" opacity="0.7"/>
+        <circle class="st" cx="855.3" cy="708.4" r="1.2" opacity="0.4"/>
+        <circle class="st" cx="477.1" cy="354.6" r="0.8" opacity="0.3"/>
+        <circle class="st warm" cx="946.8" cy="578.2" r="0.7" opacity="0.5"/>
+        <circle class="st" cx="1026.1" cy="630.4" r="1.3" opacity="0.5"/>
+        <circle class="st" cx="1174.6" cy="212.6" r="0.9" opacity="0.7"/>
+        <circle class="st" cx="858.3" cy="153.4" r="1.1" opacity="0.5"/>
+        <circle class="st" cx="1027.6" cy="394.0" r="1.1" opacity="0.6"/>
+        <circle class="st" cx="1155.2" cy="120.4" r="1.2" opacity="0.7"/>
+        <circle class="st" cx="818.8" cy="670.5" r="1.1" opacity="0.3"/>
+        <circle class="st" cx="636.0" cy="161.0" r="0.7" opacity="0.4"/>
+        <circle class="st" cx="440.0" cy="632.5" r="1.3" opacity="0.3"/>
+        <circle class="st warm" cx="1149.3" cy="300.7" r="1.2" opacity="0.6"/>
+        <circle class="st" cx="69.6" cy="426.6" r="1.4" opacity="0.3"/>
+        <circle class="st" cx="598.8" cy="498.6" r="1.1" opacity="0.6"/>
+        <circle class="st" cx="931.1" cy="486.2" r="0.8" opacity="0.6"/>
+        <circle class="st" cx="773.2" cy="459.2" r="0.8" opacity="0.4"/>
+        <circle class="st" cx="595.0" cy="529.0" r="1.2" opacity="0.7"/>
+        <circle class="st" cx="618.9" cy="466.8" r="0.9" opacity="0.4"/>
+        <circle class="st" cx="213.1" cy="66.4" r="1.2" opacity="0.6"/>
+        <circle class="st" cx="780.3" cy="362.8" r="1.0" opacity="0.5"/>
+        <circle class="st warm" cx="863.2" cy="622.3" r="1.3" opacity="0.3"/>
+        <circle class="st" cx="221.8" cy="716.2" r="1.4" opacity="0.4"/>
+        <circle class="st" cx="475.8" cy="688.2" r="0.7" opacity="0.7"/>
+        <circle class="st" cx="478.4" cy="591.4" r="1.3" opacity="0.3"/>
+        <circle class="st" cx="650.5" cy="394.3" r="0.8" opacity="0.7"/>
+        <circle class="st" cx="113.4" cy="283.0" r="1.1" opacity="0.4"/>
+        <circle class="st" cx="341.8" cy="280.3" r="1.1" opacity="0.4"/>
+        <circle class="st" cx="983.6" cy="246.7" r="1.0" opacity="0.4"/>
+        <circle class="st" cx="271.9" cy="242.1" r="0.7" opacity="0.5"/>
+        <circle class="st warm" cx="134.9" cy="608.9" r="0.8" opacity="0.7"/>
+        <circle class="st" cx="822.5" cy="183.8" r="0.8" opacity="0.3"/>
+        <circle class="st" cx="1146.1" cy="412.9" r="1.3" opacity="0.3"/>
+        <circle class="st" cx="498.5" cy="57.8" r="0.7" opacity="0.4"/>
+        <circle class="st" cx="87.5" cy="444.2" r="1.0" opacity="0.3"/>
+        <circle class="st" cx="418.0" cy="604.5" r="0.9" opacity="0.3"/>
+        <circle class="st" cx="4.8" cy="114.3" r="1.4" opacity="0.5"/>
+        <circle class="st" cx="1072.1" cy="240.5" r="1.1" opacity="0.3"/>
+        <circle class="st" cx="501.6" cy="300.9" r="0.6" opacity="0.3"/>
+        <circle class="st warm" cx="409.6" cy="29.2" r="1.3" opacity="0.3"/>
+        <circle class="st" cx="267.0" cy="119.3" r="0.6" opacity="0.3"/>
+        <circle class="st" cx="839.3" cy="270.1" r="1.1" opacity="0.5"/>
+        <circle class="st" cx="1145.7" cy="158.1" r="1.0" opacity="0.6"/>
+        <circle class="st" cx="1194.9" cy="225.9" r="1.1" opacity="0.5"/>
+        <circle class="st" cx="597.9" cy="693.5" r="1.0" opacity="0.5"/>
+        <circle class="st" cx="116.2" cy="69.2" r="1.2" opacity="0.6"/>
+        <circle class="st" cx="338.1" cy="154.7" r="1.1" opacity="0.4"/>
+        <circle class="st" cx="319.8" cy="268.5" r="1.0" opacity="0.3"/>
+        <circle class="st warm" cx="694.4" cy="604.9" r="0.8" opacity="0.5"/>
+        <circle class="st" cx="256.9" cy="713.1" r="0.7" opacity="0.6"/>
+        <circle class="st" cx="88.3" cy="573.1" r="0.9" opacity="0.6"/>
+        <circle class="st" cx="323.9" cy="676.1" r="1.2" opacity="0.3"/>
+        <circle class="st" cx="1148.8" cy="419.8" r="1.3" opacity="0.6"/>
+        <circle class="st" cx="451.8" cy="718.9" r="0.9" opacity="0.5"/>
+        <circle class="st" cx="485.3" cy="179.5" r="0.9" opacity="0.5"/>
+        <circle class="st" cx="363.4" cy="610.0" r="1.3" opacity="0.6"/>
+        <circle class="st" cx="426.1" cy="100.9" r="1.3" opacity="0.5"/>
+        <circle class="st warm" cx="134.1" cy="194.8" r="1.0" opacity="0.4"/>
+        <circle class="st" cx="31.5" cy="101.4" r="1.3" opacity="0.6"/>
+        <circle class="st" cx="713.2" cy="510.7" r="1.2" opacity="0.5"/>
+        <circle class="st" cx="1114.1" cy="90.4" r="0.6" opacity="0.5"/>
+        <circle class="st" cx="549.8" cy="2.8" r="0.9" opacity="0.5"/>
+        <circle class="st" cx="1023.1" cy="677.9" r="1.0" opacity="0.6"/>
+        <circle class="st" cx="831.6" cy="83.2" r="1.0" opacity="0.3"/>
+        <circle class="st" cx="1175.7" cy="427.2" r="0.8" opacity="0.6"/>
+        <circle class="st" cx="339.5" cy="493.8" r="0.9" opacity="0.5"/>
+        <circle class="st warm" cx="175.7" cy="664.2" r="1.2" opacity="0.7"/>
+        <circle class="st" cx="448.0" cy="601.9" r="0.6" opacity="0.6"/>
+        <circle class="st" cx="146.3" cy="590.4" r="1.0" opacity="0.6"/>
+        <circle class="st" cx="385.1" cy="200.2" r="0.8" opacity="0.5"/>
+        <circle class="st" cx="31.1" cy="417.2" r="1.1" opacity="0.6"/>
+        <circle class="st" cx="452.6" cy="354.8" r="1.1" opacity="0.5"/>
+        <circle class="st" cx="332.5" cy="284.5" r="0.8" opacity="0.3"/>
+        <circle class="st" cx="412.6" cy="234.2" r="1.1" opacity="0.3"/>
+        <circle class="st" cx="443.9" cy="430.4" r="1.0" opacity="0.5"/>
+        <circle class="st warm" cx="48.1" cy="475.7" r="0.9" opacity="0.6"/>
+        <circle class="st" cx="828.2" cy="153.5" r="1.2" opacity="0.7"/>
+        <circle class="st" cx="1010.5" cy="503.7" r="0.6" opacity="0.3"/>
+        <circle class="st" cx="641.3" cy="629.5" r="0.8" opacity="0.4"/>
+        <circle class="st" cx="384.5" cy="699.1" r="1.1" opacity="0.5"/>
+        <circle class="st" cx="425.1" cy="6.4" r="0.9" opacity="0.7"/>
+        <circle class="st" cx="1020.5" cy="566.2" r="1.1" opacity="0.3"/>
+        <circle class="st" cx="1138.3" cy="297.0" r="0.8" opacity="0.3"/>
+        <circle class="st" cx="213.2" cy="493.5" r="1.1" opacity="0.5"/>
+        <circle class="st warm" cx="624.4" cy="589.7" r="1.3" opacity="0.5"/>
+        <circle class="st" cx="237.7" cy="256.5" r="1.1" opacity="0.3"/>
+        <circle class="st" cx="829.7" cy="680.0" r="1.3" opacity="0.4"/>
+        <circle class="st" cx="181.2" cy="8.5" r="1.3" opacity="0.3"/>
+        <circle class="st" cx="386.4" cy="209.7" r="0.9" opacity="0.7"/>
+        <circle class="st" cx="591.3" cy="340.3" r="1.2" opacity="0.3"/>
+        <circle class="st" cx="398.5" cy="396.1" r="1.1" opacity="0.6"/>
+        <circle class="st" cx="69.3" cy="187.6" r="0.6" opacity="0.5"/>
+        <circle class="st" cx="93.1" cy="637.5" r="0.6" opacity="0.5"/>
+        <circle class="st warm" cx="649.5" cy="654.4" r="1.2" opacity="0.3"/>
+        <circle class="tw warm" cx="180.4" cy="15.8" r="1.3" style="animation-duration:3.6s;animation-delay:-0.6s"/>
+        <circle class="tw" cx="588.2" cy="490.4" r="1.2" style="animation-duration:6.0s;animation-delay:-3.4s"/>
+        <circle class="tw" cx="566.7" cy="132.4" r="1.5" style="animation-duration:3.2s;animation-delay:-6.8s"/>
+        <circle class="tw" cx="9.4" cy="129.9" r="1.6" style="animation-duration:3.9s;animation-delay:-1.4s"/>
+        <circle class="tw" cx="916.2" cy="271.1" r="1.0" style="animation-duration:5.0s;animation-delay:-0.3s"/>
+        <circle class="tw" cx="446.5" cy="464.5" r="1.5" style="animation-duration:6.0s;animation-delay:-2.3s"/>
+        <circle class="tw" cx="3.3" cy="689.6" r="1.5" style="animation-duration:5.3s;animation-delay:-5.5s"/>
+        <circle class="tw warm" cx="778.1" cy="521.2" r="1.6" style="animation-duration:6.1s;animation-delay:-0.0s"/>
+        <circle class="tw" cx="417.4" cy="567.7" r="1.6" style="animation-duration:5.2s;animation-delay:-0.5s"/>
+        <circle class="tw" cx="1010.2" cy="698.1" r="1.1" style="animation-duration:6.5s;animation-delay:-4.3s"/>
+        <circle class="tw" cx="1017.3" cy="534.9" r="1.1" style="animation-duration:3.5s;animation-delay:-5.7s"/>
+        <circle class="tw" cx="893.5" cy="97.1" r="1.6" style="animation-duration:4.1s;animation-delay:-2.1s"/>
+        <circle class="tw" cx="669.5" cy="700.4" r="1.1" style="animation-duration:3.7s;animation-delay:-4.5s"/>
+        <circle class="tw" cx="243.7" cy="711.7" r="1.4" style="animation-duration:4.5s;animation-delay:-0.7s"/>
+        <circle class="tw warm" cx="303.4" cy="20.0" r="1.6" style="animation-duration:4.4s;animation-delay:-1.3s"/>
+        <circle class="tw" cx="11.5" cy="307.1" r="1.7" style="animation-duration:3.0s;animation-delay:-6.1s"/>
+        <circle class="tw" cx="464.6" cy="78.2" r="1.4" style="animation-duration:6.0s;animation-delay:-2.1s"/>
+        <circle class="tw" cx="1189.3" cy="507.1" r="1.7" style="animation-duration:4.8s;animation-delay:-2.0s"/>
+        <circle class="tw" cx="155.4" cy="671.9" r="1.0" style="animation-duration:4.6s;animation-delay:-7.0s"/>
+        <circle class="tw" cx="547.2" cy="222.8" r="1.5" style="animation-duration:4.4s;animation-delay:-3.6s"/>
+        <circle class="tw" cx="232.8" cy="705.3" r="1.3" style="animation-duration:6.0s;animation-delay:-5.1s"/>
+        <circle class="tw warm" cx="965.4" cy="609.5" r="1.7" style="animation-duration:3.2s;animation-delay:-5.3s"/>
+        <circle class="tw" cx="575.5" cy="671.8" r="1.0" style="animation-duration:3.8s;animation-delay:-5.5s"/>
+        <circle class="tw" cx="1012.0" cy="444.1" r="0.9" style="animation-duration:3.9s;animation-delay:-1.6s"/>
+        <circle class="tw" cx="745.9" cy="484.2" r="1.0" style="animation-duration:4.6s;animation-delay:-2.8s"/>
+        <circle class="tw" cx="70.0" cy="46.1" r="1.1" style="animation-duration:5.1s;animation-delay:-0.1s"/>
+        <circle class="tw" cx="274.8" cy="216.3" r="1.6" style="animation-duration:5.7s;animation-delay:-0.5s"/>
+        <circle class="tw" cx="342.9" cy="212.3" r="1.3" style="animation-duration:5.9s;animation-delay:-3.6s"/>
+        <circle class="tw warm" cx="1085.7" cy="431.1" r="1.0" style="animation-duration:3.7s;animation-delay:-3.0s"/>
+        <circle class="tw" cx="922.1" cy="498.1" r="1.6" style="animation-duration:4.7s;animation-delay:-6.2s"/>
+        <g class="sp" transform="translate(150 120)">
+          <path class="sp-core" style="animation-delay:-0.8s" d="M0 -7 L1.4 -1.4 L7 0 L1.4 1.4 L0 7 L-1.4 1.4 L-7 0 L-1.4 -1.4 Z"/>
+        </g>
+        <g class="sp" transform="translate(1050 180)">
+          <path class="sp-core" style="animation-delay:-2.2s" d="M0 -7 L1.4 -1.4 L7 0 L1.4 1.4 L0 7 L-1.4 1.4 L-7 0 L-1.4 -1.4 Z"/>
+        </g>
+        <g class="sp" transform="translate(220 560)">
+          <path class="sp-core" style="animation-delay:-3.6s" d="M0 -7 L1.4 -1.4 L7 0 L1.4 1.4 L0 7 L-1.4 1.4 L-7 0 L-1.4 -1.4 Z"/>
+        </g>
+        <g class="sp" transform="translate(930 540)">
+          <path class="sp-core" style="animation-delay:-5.1s" d="M0 -7 L1.4 -1.4 L7 0 L1.4 1.4 L0 7 L-1.4 1.4 L-7 0 L-1.4 -1.4 Z"/>
+        </g>
+        <g class="sp" transform="translate(598 84)">
+          <path class="sp-core" style="animation-delay:-6.4s" d="M0 -7 L1.4 -1.4 L7 0 L1.4 1.4 L0 7 L-1.4 1.4 L-7 0 L-1.4 -1.4 Z"/>
+        </g>
+      </svg>
+    </div>
+    <div class="titlebar">
+      <div class="titlebar-actions">
+        <button class="theme-toggle" id="theme-toggle" title="Toggle theme" type="button" aria-label="Toggle theme">
+          <svg
+            class="theme-icon-dark"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+            ></path>
+          </svg>
+          <svg
+            class="theme-icon-light"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+        <button
+          class="debug-toggle"
+          id="toggle-logs-btn"
+          title="Open initialization logs"
+          type="button"
+          aria-expanded="false"
+          aria-label="Open initialization logs"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M20 8h-2.81a5.01 5.01 0 0 0-1.92-1.82L17 4.41 15.59 3l-2.17 2.17C13.14 5.06 12.58 5 12 5s-1.14.06-1.68.17L8.17 3 6.76 4.41l1.73 1.77A5.01 5.01 0 0 0 6.57 8H3v2h3v2H3v2h3v2a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4v-2h3v-2h-3v-2h3V8Zm-6 8h-4V8h4v8Z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <!-- Left Panel - Progress -->
+      <div class="progress-panel">
+        <div class="planet-stage" aria-hidden="true">
+          <div class="ring-orbits ring-orbits--back" aria-hidden="true">
+            <div class="ring-orbit-group orbit-slow">
+              <i class="ring-grain ring-grain--back" style="left: 95.41%; top: 61.09%; width: 7px; height: 7px; background: #E8DCC3; opacity: 0.9; animation-delay: -0.72s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 56.22%; top: 111.32%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.75; animation-delay: -5.92s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 8.06%; top: 78.33%; width: 7px; height: 7px; background: #E8DCC3; opacity: 0.9; animation-delay: -11.12s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 19.51%; top: 6.29%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.75; animation-delay: -16.32s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 71.26%; top: -5.35%; width: 6px; height: 6px; background: #E8DCC3; opacity: 0.85; animation-delay: -21.52s"></i>
+            </div>
+            <div class="ring-orbit-group orbit-fast">
+              <i class="ring-grain ring-grain--back" style="left: 77.70%; top: 88.35%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.8; animation-delay: -2.25s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 31.46%; top: 100.38%; width: 6px; height: 6px; background: #E8DCC3; opacity: 0.9; animation-delay: -5.85s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 11.86%; top: 41.64%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.75; animation-delay: -9.45s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 43.48%; top: -6.98%; width: 6px; height: 6px; background: #E8DCC3; opacity: 0.9; animation-delay: -13.05s"></i>
+              <i class="ring-grain ring-grain--back" style="left: 85.64%; top: 24.86%; width: 6px; height: 6px; background: #C9B08C; opacity: 0.8; animation-delay: -16.65s"></i>
+            </div>
+          </div>
+          <svg class="jupiter" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg" focusable="false">
+            <defs>
+              <clipPath id="jup-clip"><circle cx="180" cy="130" r="96"/></clipPath>
+              <linearGradient id="jup-bands" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#A98F6E"/>
+                <stop offset="6%" stop-color="#C4A57E"/>
+                <stop offset="11%" stop-color="#D9C4A3"/>
+                <stop offset="14%" stop-color="#D9C4A3"/>
+                <stop offset="17%" stop-color="#9C7B5A"/>
+                <stop offset="20%" stop-color="#9C7B5A"/>
+                <stop offset="23%" stop-color="#D9C4A3"/>
+                <stop offset="28%" stop-color="#E8DCC3"/>
+                <stop offset="31%" stop-color="#9C7B5A"/>
+                <stop offset="33%" stop-color="#7A5C42"/>
+                <stop offset="38%" stop-color="#7A5C42"/>
+                <stop offset="40%" stop-color="#9C7B5A"/>
+                <stop offset="43%" stop-color="#F2E8D5"/>
+                <stop offset="52%" stop-color="#F2E8D5"/>
+                <stop offset="55%" stop-color="#E8DCC3"/>
+                <stop offset="57%" stop-color="#9C7B5A"/>
+                <stop offset="59%" stop-color="#7A5C42"/>
+                <stop offset="62%" stop-color="#7A5C42"/>
+                <stop offset="65%" stop-color="#9C7B5A"/>
+                <stop offset="68%" stop-color="#D9C4A3"/>
+                <stop offset="73%" stop-color="#D9C4A3"/>
+                <stop offset="76%" stop-color="#C4A57E"/>
+                <stop offset="79%" stop-color="#9C7B5A"/>
+                <stop offset="81%" stop-color="#9C7B5A"/>
+                <stop offset="84%" stop-color="#C4A57E"/>
+                <stop offset="90%" stop-color="#C4A57E"/>
+                <stop offset="100%" stop-color="#A98F6E"/>
+              </linearGradient>
+              <radialGradient id="jup-limb" cx="36%" cy="30%" r="80%">
+                <stop offset="0%" stop-color="rgba(255, 246, 228, 0.34)"/>
+                <stop offset="38%" stop-color="rgba(255, 246, 228, 0)"/>
+                <stop offset="72%" stop-color="rgba(74, 49, 32, 0)"/>
+                <stop offset="88%" stop-color="rgba(74, 49, 32, 0.34)"/>
+                <stop offset="100%" stop-color="rgba(23, 14, 8, 0.62)"/>
+              </radialGradient>
+            </defs>
+            <g class="jupiter-ring jupiter-ring--back" transform="rotate(-12 180 130)">
+              <path d="M 27 130 A 153 33.7 0 0 1 333 130" fill="none" stroke="rgba(169, 143, 110, 0.1)" stroke-width="8"/>
+              <path d="M 12 130 A 168 37 0 0 1 348 130" fill="none" stroke="#A98F6E" stroke-width="2.2" stroke-dasharray="2 7" stroke-linecap="round" opacity="0.55"/>
+              <path d="M 28 130 A 152 33.4 0 0 1 332 130" fill="none" stroke="#C9B08C" stroke-width="1.8" stroke-dasharray="1.5 5" stroke-linecap="round" opacity="0.65"/>
+              <path d="M 42 130 A 138 30.4 0 0 1 318 130" fill="none" stroke="#E8DCC3" stroke-width="1.5" stroke-dasharray="1 4" stroke-linecap="round" opacity="0.7"/>
+            </g>
+            <g clip-path="url(#jup-clip)">
+              <rect x="84" y="34" width="192" height="192" fill="url(#jup-bands)"/>
+              <g class="jupiter-drift">
+                <g id="jup-tile">
+                  <path d="M 84 72 q 16 -5 32 0 q 16 5 32 0 q 16 -5 32 0 q 16 5 32 0 q 16 -5 32 0 q 16 5 32 0 q 16 -5 32 0 q 16 5 32 0 q 16 -5 32 0 q 16 5 32 0 q 16 -5 32 0 q 16 5 32 0" fill="none" stroke="rgba(156, 123, 90, 0.28)" stroke-width="7" stroke-linecap="round"/>
+                  <path d="M 84 114 q 32 -8 64 0 q 32 8 64 0 q 32 -8 64 0 q 32 8 64 0 q 32 -8 64 0 q 32 8 64 0" fill="none" stroke="rgba(122, 92, 66, 0.3)" stroke-width="11" stroke-linecap="round"/>
+                  <path d="M 84 140 q 48 -10 96 0 q 48 10 96 0 q 48 -10 96 0 q 48 10 96 0" fill="none" stroke="rgba(242, 232, 213, 0.3)" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M 84 159 q 24 -6 48 0 q 24 6 48 0 q 24 -6 48 0 q 24 6 48 0 q 24 -6 48 0 q 24 6 48 0 q 24 -6 48 0 q 24 6 48 0" fill="none" stroke="rgba(122, 92, 66, 0.26)" stroke-width="8" stroke-linecap="round"/>
+                  <path d="M 84 188 q 24 -5 48 0 q 24 5 48 0 q 24 -5 48 0 q 24 5 48 0 q 24 -5 48 0 q 24 5 48 0 q 24 -5 48 0 q 24 5 48 0" fill="none" stroke="rgba(156, 123, 90, 0.24)" stroke-width="7" stroke-linecap="round"/>
+                  <ellipse cx="140" cy="134.8" rx="32" ry="3.2" fill="rgba(242, 232, 213, 0.28)"/>
+                  <ellipse cx="212" cy="102.8" rx="40" ry="4" fill="rgba(122, 92, 66, 0.3)"/>
+                  <ellipse cx="300" cy="82" rx="24" ry="2.4" fill="rgba(242, 232, 213, 0.24)"/>
+                  <ellipse cx="164" cy="148.4" rx="36" ry="3.6" fill="rgba(122, 92, 66, 0.28)"/>
+                  <ellipse cx="348" cy="126.8" rx="44" ry="3.2" fill="rgba(242, 232, 213, 0.26)"/>
+                  <ellipse cx="404" cy="72.4" rx="22.4" ry="2.4" fill="rgba(122, 92, 66, 0.24)"/>
+                  <ellipse cx="148" cy="170" rx="28" ry="2.8" fill="rgba(242, 232, 213, 0.24)"/>
+                  <ellipse cx="388" cy="108.4" rx="32" ry="3.2" fill="rgba(122, 92, 66, 0.26)"/>
+                  <ellipse cx="244" cy="195.6" rx="24" ry="2.4" fill="rgba(242, 232, 213, 0.22)"/>
+                  <ellipse cx="324" cy="187.6" rx="25.6" ry="2.4" fill="rgba(122, 92, 66, 0.24)"/>
+                  <ellipse cx="188" cy="56.4" rx="20.8" ry="2" fill="rgba(242, 232, 213, 0.22)"/>
+                  <ellipse cx="428" cy="208.4" rx="19.2" ry="2" fill="rgba(122, 92, 66, 0.22)"/>
+                  <ellipse cx="116" cy="180.4" rx="4.8" ry="2.8" fill="rgba(242, 232, 213, 0.38)"/>
+                  <ellipse cx="368" cy="156.4" rx="4" ry="2.4" fill="rgba(242, 232, 213, 0.35)"/>
+                </g>
+                <use href="#jup-tile" x="384"/>
+              </g>
+              <circle cx="180" cy="130" r="96" fill="url(#jup-limb)"/>
+            </g>
+            <circle class="jupiter-rim" cx="180" cy="130" r="95.5" fill="none" stroke="rgba(60, 40, 25, 0.35)" stroke-width="1"/>
+            <g class="jupiter-ring jupiter-ring--front" transform="rotate(-12 180 130)">
+              <path d="M 28.5 134.7 A 153 33.7 0 0 0 331.5 134.7" fill="none" stroke="rgba(232, 220, 195, 0.14)" stroke-width="8"/>
+              <path d="M 13.6 135.1 A 168 37 0 0 0 346.4 135.1" fill="none" stroke="#A98F6E" stroke-width="2.4" stroke-dasharray="2 5" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 29.5 134.7 A 152 33.4 0 0 0 330.5 134.7" fill="none" stroke="#C9B08C" stroke-width="2" stroke-dasharray="1.5 4" stroke-linecap="round" opacity="0.95"/>
+              <path d="M 43.3 134.2 A 138 30.4 0 0 0 316.7 134.2" fill="none" stroke="#E8DCC3" stroke-width="1.7" stroke-dasharray="1 3" stroke-linecap="round" opacity="1"/>
+            </g>
+          </svg>
+          <div class="ring-orbits ring-orbits--front" aria-hidden="true">
+            <div class="ring-orbit-group orbit-slow">
+              <i class="ring-grain ring-grain--front" style="left: 95.41%; top: 61.09%; width: 7px; height: 7px; background: #E8DCC3; opacity: 0.9; animation-delay: -0.72s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 56.22%; top: 111.32%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.75; animation-delay: -5.92s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 8.06%; top: 78.33%; width: 7px; height: 7px; background: #E8DCC3; opacity: 0.9; animation-delay: -11.12s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 19.51%; top: 6.29%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.75; animation-delay: -16.32s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 71.26%; top: -5.35%; width: 6px; height: 6px; background: #E8DCC3; opacity: 0.85; animation-delay: -21.52s"></i>
+            </div>
+            <div class="ring-orbit-group orbit-fast">
+              <i class="ring-grain ring-grain--front" style="left: 77.70%; top: 88.35%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.8; animation-delay: -2.25s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 31.46%; top: 100.38%; width: 6px; height: 6px; background: #E8DCC3; opacity: 0.9; animation-delay: -5.85s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 11.86%; top: 41.64%; width: 5px; height: 5px; background: #C9B08C; opacity: 0.75; animation-delay: -9.45s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 43.48%; top: -6.98%; width: 6px; height: 6px; background: #E8DCC3; opacity: 0.9; animation-delay: -13.05s"></i>
+              <i class="ring-grain ring-grain--front" style="left: 85.64%; top: 24.86%; width: 6px; height: 6px; background: #C9B08C; opacity: 0.8; animation-delay: -16.65s"></i>
+            </div>
+          </div>
+        </div>
+        <h2>Portico</h2>
+
+        <div
+          class="progress-bar"
+          style="
+            background: var(--bg-dark) !important;
+            height: 8px !important;
+            display: block !important;
+          "
+        >
+          <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="current-step-caption" id="current-step-caption">Preparing startup...</div>
+
+        <div class="task-list">
+          <div class="task-item" id="task-auth">
+            <div class="task-icon"></div>
+            <div class="task-text">Signing into Portico</div>
+          </div>
+          <div class="task-item" id="task-verify">
+            <div class="task-icon"></div>
+            <div class="task-text">Verifying running services</div>
+          </div>
+          <div class="task-item" id="task-stop">
+            <div class="task-icon"></div>
+            <div class="task-text">Stopping existing services</div>
+          </div>
+          <div class="task-item" id="task-mcp-config">
+            <div class="task-icon"></div>
+            <div class="task-text">Configuring MCP servers</div>
+          </div>
+          <div class="task-item" id="task-host-mcpo">
+            <div class="task-icon"></div>
+            <div class="task-text">Starting host MCP proxy</div>
+          </div>
+          <div class="task-item" id="task-start">
+            <div class="task-icon"></div>
+            <div class="task-text">Starting Docker services</div>
+          </div>
+          <div class="task-item" id="task-health">
+            <div class="task-icon"></div>
+            <div class="task-text">Running health checks</div>
+          </div>
+          <div class="task-item" id="task-ready">
+            <div class="task-icon"></div>
+            <div class="task-text">Finalizing</div>
+          </div>
+        </div>
+
+        <div class="manual-recovery-panel" id="manual-recovery-panel" aria-live="polite">
+          <div class="manual-recovery-title" id="manual-recovery-title">Run This In Terminal</div>
+          <div class="manual-recovery-command-wrap">
+            <pre class="manual-recovery-command" id="manual-recovery-command"></pre>
+            <button class="copy-button manual-recovery-copy-btn" id="copy-recovery-command-btn" type="button">
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="recovery-buttons" id="recovery-buttons">
+          <button class="recovery-btn" id="control-plane-btn">
+            <span style="margin-right: 0.25rem">🎛️</span> Control Plane
+          </button>
+          <button class="recovery-btn secondary" id="retry-btn">
+            Retry Initialization
+          </button>
+          <button class="recovery-btn secondary" id="debug-btn">
+            Collect Debug Info
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Panel - Logs -->
+      <div class="log-panel">
+        <div class="log-header">
+          <div class="log-header-main">
+            <span class="log-title">Init Logs</span>
+            <div class="build-badge" id="build-badge">
+              <span id="build-text">Build: Loading...</span>
+              <button class="copy-button" id="copy-build" title="Copy build number">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path
+                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                  ></path>
+                </svg>
+                <span id="copy-text">Copy</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="log-copy-wrapper">
+          <button class="log-btn" id="copy-logs">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              ></path>
+            </svg>
+            Copy Logs
+          </button>
+        </div>
+        <div class="log-content" id="log-content"></div>
+      </div>
+    </div>
+
+    <!-- Copy feedback -->
+    <div class="copy-feedback" id="copy-feedback">Copied to clipboard!</div>
+
+    <!-- Note: the loading/recovery screen intentionally offers "Collect Debug Info" only
+         (the debug-btn handler in loading.js calls collectDebugInfo and shows the saved ZIP
+         path). Automatic upload lives in the main Control Plane bug-report flow; during early
+         startup recovery we deliberately collect-only and let the user attach the ZIP. A
+         "Report a Bug" upload modal previously sat here unwired — removed to avoid drift. -->
+
+    <div class="loading-overlay" id="debug-loading-overlay">
+      <div class="loading-overlay-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Collecting debug information...</div>
+      </div>
+    </div>
+
+    <!-- OAuth Authorization Modal (from shared component) -->
+    <style>
+      /* OAuth Modal Styles - Flat Minimal Design */
+      .oauth-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(30, 35, 36, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, visibility 0.15s ease;
+      }
+
+      [data-theme="light"] .oauth-modal {
+        background: rgba(245, 245, 245, 0.95);
+      }
+
+      .oauth-modal.visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .oauth-modal-content {
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        padding: 40px;
+        max-width: 650px;
+        width: 95%;
+        text-align: center;
+      }
+
+      .oauth-header {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-default);
+      }
+
+      .oauth-header-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent-primary);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .oauth-header-icon {
+        font-size: 28px;
+      }
+
+      .oauth-header-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      /* Server Preview Bar */
+      .oauth-server-preview {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+      }
+
+      .oauth-preview-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        min-width: 80px;
+        background: transparent;
+      }
+
+      .oauth-preview-card:hover {
+        background: rgba(var(--accent-primary-rgb), 0.08);
+      }
+
+      .oauth-preview-card.current {
+        background: rgba(var(--accent-primary-rgb), 0.12);
+      }
+
+      .oauth-preview-card.done {
+        background: rgba(74, 222, 128, 0.08);
+      }
+
+      .oauth-preview-card.failed {
+        background: rgba(248, 113, 113, 0.08);
+      }
+
+      .oauth-preview-card.skipped {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .oauth-preview-card.skipped:hover {
+        background: transparent;
+      }
+
+      .oauth-preview-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        object-fit: contain;
+        background: var(--bg-dark);
+        padding: 4px;
+        margin-bottom: 6px;
+      }
+
+      .oauth-preview-name {
+        font-size: 10px;
+        color: var(--text-secondary);
+        text-align: center;
+        max-width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .oauth-preview-card.current .oauth-preview-name {
+        color: var(--accent-primary);
+        font-weight: 600;
+      }
+
+      .oauth-preview-card.done .oauth-preview-name {
+        color: var(--status-success);
+      }
+
+      .oauth-preview-status {
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      .oauth-preview-card.current .oauth-preview-status {
+        color: var(--accent-primary);
+        animation: oauth-pulse 1.5s ease-in-out infinite;
+      }
+
+      .oauth-preview-card.done .oauth-preview-status {
+        color: var(--status-success);
+      }
+
+      .oauth-preview-card.failed .oauth-preview-status {
+        color: var(--status-error);
+      }
+
+      .oauth-preview-card.skipped .oauth-preview-status {
+        color: var(--text-muted);
+      }
+
+      .oauth-preview-card.pending .oauth-preview-status {
+        color: var(--text-muted);
+      }
+
+      @keyframes oauth-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      /* Current Server Display */
+      .oauth-current-server {
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-default);
+        margin-bottom: 20px;
+      }
+
+      .oauth-server-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 15px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: var(--bg-dark);
+        padding: 10px;
+        display: block;
+      }
+
+      .oauth-server-name {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .oauth-server-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 12px;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .oauth-progress-text {
+        font-size: 12px;
+        color: var(--accent-primary);
+        font-weight: 500;
+      }
+
+      /* Button Container */
+      .oauth-buttons-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .oauth-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .oauth-btn {
+        background: var(--accent-primary);
+        color: var(--bg-dark);
+        border: none;
+        padding: 10px 24px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .oauth-btn:hover:not(:disabled) {
+        background: var(--accent-primary-hover, #22c55e);
+      }
+
+      .oauth-btn.secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+      }
+
+      .oauth-btn.secondary:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* Light mode OAuth button overrides */
+      [data-theme="light"] .oauth-btn.secondary {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      [data-theme="light"] .oauth-btn.secondary:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.08);
+      }
+      [data-theme="light"] .oauth-btn.nav-btn {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      [data-theme="light"] .oauth-btn.nav-btn:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.08);
+      }
+      [data-theme="light"] .oauth-server-preview {
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .oauth-btn.nav-btn {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+        border: none;
+        padding: 10px 16px;
+        font-size: 16px;
+      }
+
+      .oauth-btn.nav-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .oauth-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .oauth-skip-all-btn {
+        font-size: 12px;
+        padding: 8px 16px;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+      }
+
+      .oauth-skip-all-btn:hover {
+        background: rgba(248, 113, 113, 0.08);
+        color: var(--status-error);
+      }
+
+      .oauth-waiting {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      .oauth-waiting.visible {
+        display: flex;
+      }
+
+      .oauth-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid var(--border-default);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      .oauth-waiting-text {
+        color: var(--text-secondary);
+        font-size: 13px;
+      }
+
+      .oauth-waiting-hint {
+        font-size: 11px;
+        color: var(--accent-primary);
+        margin-top: 5px;
+      }
+
+      /* Error message container */
+      .oauth-error-container {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .oauth-error-container.visible {
+        display: flex;
+      }
+
+      .oauth-error-message {
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .oauth-view-logs-btn {
+        background: transparent;
+        border: 1px solid #dc2626;
+        color: #dc2626;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .oauth-view-logs-btn:hover {
+        background: rgba(220, 38, 38, 0.1);
+      }
+
+      .oauth-success {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-top: 15px;
+      }
+
+      .oauth-success.visible {
+        display: flex;
+      }
+
+      .oauth-success-icon {
+        font-size: 40px;
+        animation: successPulse 0.6s ease-out;
+      }
+
+      @keyframes successPulse {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .oauth-success-text {
+        color: var(--status-success);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      /* Completion Summary */
+      .oauth-completion-summary {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+      }
+
+      .oauth-completion-summary.visible {
+        display: flex;
+      }
+
+      .oauth-completion-icon {
+        font-size: 48px;
+      }
+
+      .oauth-completion-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .oauth-completion-stats {
+        display: flex;
+        gap: 20px;
+        color: var(--text-secondary);
+        font-size: 13px;
+      }
+
+      .oauth-stat {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .oauth-stat.done {
+        color: var(--status-success);
+      }
+      .oauth-stat.skipped {
+        color: var(--text-muted);
+      }
+      .oauth-stat.failed {
+        color: var(--status-error);
+      }
+
+      .oauth-done-btn {
+        margin-top: 10px;
+      }
+
+      /* Single server mode - hide multi-server navigation elements */
+      .oauth-modal.single-server .oauth-server-preview,
+      .oauth-modal.single-server .oauth-progress-text,
+      .oauth-modal.single-server #oauth-prev-btn,
+      .oauth-modal.single-server #oauth-next-btn,
+      .oauth-modal.single-server #oauth-skip-btn,
+      .oauth-modal.single-server #oauth-skip-all-btn {
+        display: none !important;
+      }
+
+      /* Dark mode contrast boosts for OAuth modal */
+      [data-theme="dark"] .oauth-modal-content {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+      }
+
+      [data-theme="dark"] .oauth-header-description,
+      [data-theme="dark"] .oauth-server-description,
+      [data-theme="dark"] .oauth-waiting-text,
+      [data-theme="dark"] .oauth-completion-stats {
+        color: #d1d5db;
+      }
+
+      [data-theme="dark"] .oauth-preview-card:not(.current):not(.done):not(.failed) .oauth-preview-name {
+        color: #d1d5db;
+      }
+
+      [data-theme="dark"] .oauth-btn:not(.secondary):not(.nav-btn):not(.oauth-skip-all-btn) {
+        background: #166534;
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .oauth-btn:not(.secondary):not(.nav-btn):not(.oauth-skip-all-btn):hover:not(:disabled) {
+        background: #15803d;
+      }
+
+      /* Light mode fixes for OAuth modal */
+      [data-theme="light"] .oauth-modal-content {
+        background: #ffffff;
+        box-shadow: none;
+      }
+
+      [data-theme="light"] .oauth-header {
+        border-bottom-color: transparent;
+      }
+
+      [data-theme="light"] .oauth-header-title {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-header-description {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-progress-text {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-btn {
+        background: #16a34a;
+        color: #ffffff;
+      }
+
+      [data-theme="light"] .oauth-btn:hover:not(:disabled) {
+        background: #15803d;
+      }
+
+      [data-theme="light"] .oauth-preview-card:hover {
+        background: rgba(22, 163, 74, 0.1);
+      }
+
+      [data-theme="light"] .oauth-preview-card.current {
+        background: rgba(22, 163, 74, 0.15);
+        border: none;
+      }
+
+      [data-theme="light"] .oauth-preview-card.current .oauth-preview-name {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-preview-card.current .oauth-preview-status {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-preview-name {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-current-server {
+        border-bottom-color: transparent;
+      }
+
+      [data-theme="light"] .oauth-server-name {
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .oauth-server-description {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-spinner {
+        border-color: rgba(0, 0, 0, 0.1);
+        border-top-color: #16a34a;
+      }
+
+      [data-theme="light"] .oauth-waiting-text {
+        color: #4b5563;
+      }
+
+      [data-theme="light"] .oauth-waiting-hint {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-success-text {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-stat.done {
+        color: #15803d;
+      }
+
+      [data-theme="light"] .oauth-completion-title {
+        color: #1f2937;
+      }
+
+      [data-theme="light"] .oauth-completion-stats {
+        color: #4b5563;
+      }
+    </style>
+
+    <!-- OAuth Authorization Modal HTML -->
+    <div class="oauth-modal" id="oauth-modal">
+      <div class="oauth-modal-content">
+        <!-- Generic header with explanation -->
+        <div class="oauth-header">
+          <h2 class="oauth-header-title">
+            <span class="oauth-header-icon">🔐</span>
+            OAuth Authorization Required
+          </h2>
+          <p class="oauth-header-description">
+            One or more of your configured MCP servers requires OAuth
+            authentication. This is a secure, one-time setup that will be
+            remembered for future sessions.
+          </p>
+        </div>
+
+        <!-- Server Preview Bar - shows all servers needing auth -->
+        <div class="oauth-server-preview" id="oauth-server-preview">
+          <!-- Dynamically populated with server cards -->
+        </div>
+
+        <!-- Current Server Display -->
+        <div class="oauth-current-server" id="oauth-current-server">
+          <img
+            class="oauth-server-icon"
+            id="oauth-server-icon"
+            src=""
+            alt="Server Icon"
+          />
+          <h2 class="oauth-server-name" id="oauth-server-name">Server Name</h2>
+          <p class="oauth-server-description" id="oauth-server-description">
+            Server description
+          </p>
+          <p class="oauth-progress-text" id="oauth-progress-text">
+            Server 1 of 1
+          </p>
+        </div>
+
+        <!-- Buttons Container -->
+        <div class="oauth-buttons-container">
+          <div class="oauth-buttons" id="oauth-buttons">
+            <button
+              class="oauth-btn nav-btn"
+              id="oauth-prev-btn"
+              disabled
+              title="Previous server"
+            >
+              ◀
+            </button>
+            <button class="oauth-btn" id="oauth-authorize-btn">
+              Authorize Access
+            </button>
+            <button class="oauth-btn secondary" id="oauth-skip-btn">
+              Skip
+            </button>
+            <button
+              class="oauth-btn nav-btn"
+              id="oauth-next-btn"
+              title="Next server"
+            >
+              ▶
+            </button>
+          </div>
+          <button class="oauth-btn oauth-skip-all-btn" id="oauth-skip-all-btn">
+            Skip All Remaining
+          </button>
+        </div>
+
+        <!-- Error message (shown on failure) -->
+        <div class="oauth-error-container" id="oauth-error-container">
+          <span class="oauth-error-message">Oops, something went wrong.</span>
+          <button class="oauth-view-logs-btn" id="oauth-view-logs-btn">View Logs</button>
+        </div>
+
+        <div class="oauth-waiting" id="oauth-waiting">
+          <div class="oauth-spinner"></div>
+          <p class="oauth-waiting-text">
+            Waiting for authorization in browser...
+          </p>
+          <p class="oauth-waiting-hint">
+            Complete the authorization in your browser, then return here.
+          </p>
+        </div>
+
+        <div class="oauth-success" id="oauth-success">
+          <div class="oauth-success-icon">✓</div>
+          <p class="oauth-success-text">Authorization successful!</p>
+        </div>
+
+        <!-- Completion Summary (shown when all servers processed) -->
+        <div class="oauth-completion-summary" id="oauth-completion-summary">
+          <div class="oauth-completion-icon">🎉</div>
+          <h3 class="oauth-completion-title">OAuth Setup Complete</h3>
+          <div class="oauth-completion-stats">
+            <span class="oauth-stat done" id="oauth-stat-done"
+              >✓ 0 authorized</span
+            >
+            <span class="oauth-stat skipped" id="oauth-stat-skipped"
+              >⊘ 0 skipped</span
+            >
+            <span class="oauth-stat failed" id="oauth-stat-failed"
+              >✗ 0 failed</span
+            >
+          </div>
+          <button class="oauth-btn oauth-done-btn" id="oauth-done-btn">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme initialization -->
+    <script src="renderer/theme.js"></script>
+
+    <script src="renderer/components/oauth-modal-shared.js"></script>
+    <script src="utils/release-channel.js"></script>
+    <script src="utils/build-info.js"></script>
+    <script src="renderer/components/build-badge.js"></script>
+    <script src="renderer/views/loading.js"></script>
+  </body>
+</html>

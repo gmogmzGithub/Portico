@@ -1,0 +1,51 @@
+{
+    "command": "/app/mcp-servers/slack-mcp-server",
+    "args": [
+        "--transport",
+        "http"
+    ],
+    "env": {
+        "SLACK_MCP_HOST": "0.0.0.0",
+        "SLACK_MCP_PORT": "8080",
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true",
+        "SLACK_MCP_CACHE_TTL": "168h",
+        "SLACK_MCP_EXPECTED_USERS_HINT": "52500",
+        "SLACK_MCP_STATE_DIR": "/app/slack-mcp-state",
+        "SLACK_MCP_USERS_SEED": "/app/mcp-servers/slack/users_seed_v1.json.gz",
+        "SLACK_MCP_CHANNELS_SEED": "/app/mcp-servers/slack/channels_seed_v1.json.gz",
+        "SLACK_MCP_EXPECTED_CHANNELS_HINT": "19500"
+    },
+    "http_subprocess": {
+        "enabled": true,
+        "health_endpoint": "/mcp/",
+        "readiness_endpoint": "/health",
+        "startup_timeout": 30,
+        "oauth_access_token_file_env": "SLACK_MCP_OAUTH_ACCESS_TOKEN_FILE"
+    },
+    "oauth": {
+        "server_url": "https://slack.com",
+        "authorization_endpoint": "https://slack.com/oauth/v2/authorize",
+        "token_endpoint": "https://slack.com/api/oauth.v2.access",
+        "scope_parameter_name": "user_scope",
+        "credentials_source": {
+            "type": "inline",
+            "client_id": "2317524819.11152506261415"
+        },
+        "scopes": [
+            "channels:history",
+            "channels:read",
+            "groups:history",
+            "groups:read",
+            "im:history",
+            "im:read",
+            "im:write",
+            "mpim:history",
+            "mpim:read",
+            "mpim:write",
+            "users:read",
+            "chat:write",
+            "search:read"
+        ],
+        "storage_type": "file"
+    }
+}

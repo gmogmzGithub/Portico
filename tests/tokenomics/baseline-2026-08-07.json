@@ -1,0 +1,194 @@
+{
+  "captured_at": "2026-08-07T03:35:08+00:00",
+  "git_sha": "0e9c9e316b1a",
+  "scenarios": [
+    {
+      "desired": {
+        "wire_tools_bytes_max": 70000
+      },
+      "id": "T1",
+      "metrics": {
+        "billed_prompt_tokens": 81195,
+        "has_tool_namespaces": 0,
+        "main_request_count": 1,
+        "owui_tools_bytes": 105479,
+        "slimming_applied": 0,
+        "tool_count": 106,
+        "wire_tools_bytes": 105479
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "A-atlas",
+      "would_pass": false
+    },
+    {
+      "desired": {
+        "plan_d_wire_tools_delta_max": 8000,
+        "wire_tools_delta_max": 60000
+      },
+      "id": "T2",
+      "metrics": {
+        "slimming_applied": 0,
+        "tool_count_after": 206,
+        "wire_tools_bytes_after": 256147,
+        "wire_tools_bytes_before": 105479,
+        "wire_tools_delta": 150668
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "A-atlas",
+      "would_pass": false
+    },
+    {
+      "desired": {
+        "billed_prompt_tokens_max": 150000,
+        "plan_d_billed_prompt_tokens_max": 110000
+      },
+      "id": "T3",
+      "metrics": {
+        "billed_prompt_tokens": 191922,
+        "cache_read_tokens_turn2": 191920,
+        "has_tool_namespaces": 0,
+        "main_request_count": 1,
+        "owui_tools_bytes": 398157,
+        "slimming_applied": 0,
+        "tool_count": 317,
+        "wire_tools_bytes": 398157
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "A-atlas",
+      "would_pass": false
+    },
+    {
+      "desired": {
+        "billed_prompt_tokens_max": 95000
+      },
+      "id": "T3g",
+      "metrics": {
+        "billed_prompt_tokens": 109231,
+        "has_tool_namespaces": 0,
+        "main_request_count": 1,
+        "owui_tools_bytes": 398157,
+        "slimming_applied": 0,
+        "tool_count": 317,
+        "wire_tools_bytes": 398157
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "A-gemini",
+      "would_pass": false
+    },
+    {
+      "desired": {
+        "tool_count_max": 130
+      },
+      "id": "T4",
+      "metrics": {
+        "tool_count": 317
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "D",
+      "would_pass": false
+    },
+    {
+      "desired": {},
+      "id": "T5",
+      "metrics": {},
+      "notes": "discovery flow (find_tools -> activate -> hydrate -> native call) needs Plan D",
+      "runs": 0,
+      "status": "requires-plan-d",
+      "tag": "D",
+      "would_pass": null
+    },
+    {
+      "desired": {},
+      "id": "T6",
+      "metrics": {},
+      "notes": "sticky/replay after discovered-tool call needs Plan D",
+      "runs": 0,
+      "status": "requires-plan-d",
+      "tag": "D",
+      "would_pass": null
+    },
+    {
+      "desired": {},
+      "id": "T7",
+      "metrics": {},
+      "notes": "confirmation gate on a discovered destructive tool needs Plan D",
+      "runs": 0,
+      "status": "requires-plan-d",
+      "tag": "D",
+      "would_pass": null
+    },
+    {
+      "desired": {},
+      "id": "T8",
+      "metrics": {
+        "billed_prompt_tokens": 34668,
+        "has_tool_namespaces": 1,
+        "main_request_count": 1,
+        "owui_tools_bytes": 50663,
+        "slimming_applied": 0,
+        "tool_count": 106,
+        "wire_tools_bytes": 50663
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "guard",
+      "would_pass": true
+    },
+    {
+      "desired": {},
+      "id": "T9",
+      "metrics": {
+        "cache_read_tokens_turn2": 191920
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "guard",
+      "would_pass": true
+    },
+    {
+      "desired": {},
+      "id": "T10",
+      "metrics": {},
+      "notes": "subset hydration correctness needs Plan D",
+      "runs": 0,
+      "status": "requires-plan-d",
+      "tag": "D",
+      "would_pass": null
+    },
+    {
+      "desired": {
+        "max_main_requests": 4
+      },
+      "id": "T-args",
+      "metrics": {
+        "called_expected_tool": 1,
+        "distinct_tools_called": 1,
+        "main_request_count": 2
+      },
+      "notes": null,
+      "runs": 1,
+      "status": "measured",
+      "tag": "guard",
+      "would_pass": true
+    }
+  ],
+  "schema": "tokenomics-baseline/1",
+  "stack": {
+    "atlas_model": "Atlas Opus 5",
+    "gemini_model": "auto",
+    "gpt_model": "GPT-5.6 Sol",
+    "slimming_env": "unset"
+  }
+}

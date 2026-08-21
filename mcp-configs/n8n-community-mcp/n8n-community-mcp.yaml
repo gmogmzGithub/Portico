@@ -1,0 +1,50 @@
+name: "n8n MCP Server"
+id: "n8n-community-mcp"
+display_name: "n8n (Community Fork)"
+deployment_type: "docker"
+experimental: false
+deprecated: true
+user_installed: false
+description: "Access n8n workflow automation with 500+ node integrations"
+guided_setup_description: "Build and run n8n automation workflows"
+use_cases:
+  - "Building and managing automation workflows"
+  - "Accessing n8n node documentation"
+  - "Creating and executing workflows"
+  - "Managing AI agent workflows"
+tool_rename_mapping:
+  get_node: "Get Node Info"
+  n8n_autofix_workflow: "Autofix Workflow"
+  n8n_create_workflow: "Create Workflow"
+  n8n_delete_workflow: "Delete Workflow"
+  n8n_deploy_template: "Deploy Template"
+  n8n_executions: "Manage Executions"
+  n8n_get_workflow: "Get Workflow"
+  n8n_health_check: "Check Instance Health"
+  n8n_list_workflows: "List Workflows"
+  n8n_search_example_workflows: "Search Example Workflows"
+  n8n_test_workflow: "Test Workflow"
+  n8n_update_full_workflow: "Update Full Workflow"
+  n8n_update_partial_workflow: "Update Partial Workflow"
+  n8n_validate_workflow: "Validate Workflow by ID"
+  n8n_workflow_versions: "Manage Workflow Versions"
+  search_nodes: "Search Nodes"
+  tools_documentation: "Get Tools Documentation"
+  validate_node: "Validate Node"
+  validate_workflow: "Validate Full Workflow"
+
+required_env_vars:
+  - name: N8N_API_KEY
+    placeholder: "your_n8n_api_key"
+    description: "Your n8n API Key from Portico n8n"
+    sensitive: true
+
+preset_env_vars:
+  - name: N8N_API_URL
+    value: "https://n8n.example.invalid/"
+  - name: MCP_MODE
+    value: "stdio"
+  - name: LOG_LEVEL
+    value: "error"
+  - name: DISABLE_CONSOLE_OUTPUT
+    value: "true"

@@ -1,0 +1,101 @@
+# Development mode override for full-stack hot-reload
+# Usage: docker compose -f docker-compose.yml -f dev/docker-compose.debug-monitor.yml -f dev/docker-compose.dev.yml up -d
+#
+# This runs:
+# - Backend with uvicorn --reload for Python hot-reload
+# - Frontend with Vite dev server for instant hot-reload
+#
+# First image build: downloads Open WebUI, installs frontend deps, and prebuilds backend deps
+# First container start: mostly restores the seeded checkout into the writable volume
+# Subsequent starts: ~15-30 seconds (source cached in Docker volume)
+# Code changes: Instant hot-reload for both frontend AND backend
+#
+# NOTE: The llm-debug-monitor service is in dev/docker-compose.debug-monitor.yml
+# and is included automatically for any local (non-packaged) build.
+
+name: portico
+
+services:
+  # Override the production open-webui with dev version that has hot-reload
+  # Uses custom image with Python + Node pre-installed (no apt-get on every restart)
+  open-webui:
+    build:
+      context: ./dev
+      dockerfile: Dockerfile.dev
+    image: portico-open-webui-dev:latest
+    container_name: portico-open-webui
+    ports: !override
+      - "3789:8080"   # Vite frontend - Electron connects here
+      - "3790:8081"   # Backend API direct access
+    volumes: !override
+      # Cached source code (persists between restarts)
+      - open-webui-dev-source:/app/source
+      # Live-mounted patches for hot-reload (read-only staging area)
+      # NOTE: Both frontend and backend patches are applied by entrypoint script (not mounted directly)
+      # because direct mounts create empty directory structures that interfere with git clone.
+      # The entrypoint copies patches from /app/patches/ after cloning.
+      - ./src/patches/frontend:/app/patches/frontend:ro
+      - ./src/patches/backend:/app/patches/backend:ro
+      # Custom Portico modules (event_publisher, managers, filters)
+      # These are imported by filters and need to be at /app/src/
+      - ./src/event_publisher.py:/app/src/event_publisher.py:ro
+      - ./src/managers:/app/src/managers:ro
+      - ./src/filters:/app/src/filters:ro
+      - ./src/__init__.py:/app/src/__init__.py:ro
+      # MCP server configs (for icon serving)
+      - ./mcp-configs:/app/mcp-configs:ro
+      - ./mcp-configs-user:/app/mcp-configs-user:ro
+      # Data persistence (same as production)
+      - ./open-webui-data:/app/backend/data
+      # Skills directories for SkillManager to discover and read skills
+      - ./skills:/app/skills:ro
+      - ./skills-user:/app/skills-user:rw
+      - ./skills-marketplace:/app/skills-marketplace:rw
+      # Workspace directory for auto-copy files to Agent VM workspace
+      - ./workspaces:/app/workspaces:rw
+      # Agent configurations (base system prompt for custom agents)
+      - ./agents:/app/agents:ro
+      # Dev entrypoint script
+      - ./dev/entrypoint-fullstack.sh:/entrypoint.sh:ro
+      # Model catalog for capability generation
+      - ./model_catalog.yaml:/app/model_catalog.yaml:ro
+      - ./src/scripts/generate-model-config.cjs:/app/generate-model-config.cjs:ro
+      # Runtime-readable optimization flags. This dev override replaces the
+      # base open-webui volume list, so keep the feature-toggle mount here too.
+      - ./optimization_flags.json:/app/optimization_flags.json:ro
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    working_dir: /app/source
+    environment:
+      - NODE_ENV=development
+      - OPENAI_API_BASE_URL=http://llm-gateway:4000/v1
+      - OPENAI_API_KEY_FILE=/run/secrets/bifrost_bridge_local_api_key
+      - WEBUI_AUTH=True
+      - ENABLE_PASSWORD_AUTH=False
+      - ENABLE_LOGIN_FORM=False
+      - ENABLE_SIGNUP=False
+      - OWUI_AUTH_BRIDGE_SECRET_FILE=/run/secrets/owui_auth_bridge_secret
+      - WEBUI_SECRET_KEY_FILE=/run/secrets/webui_secret_key
+      - HF_HUB_OFFLINE=1
+      - DATA_DIR=/app/backend/data
+      # Dev mode: no static build, Vite serves frontend
+      - STATIC_DIR=
+      - FRONTEND_BUILD_DIR=
+      # Enable uvicorn reload
+      - UVICORN_RELOAD=true
+      # Custom prompt suggestions for Portico
+      - "DEFAULT_PROMPT_SUGGESTIONS=[{\"title\": [\"What's going on at Portico...\", \"this week?\"], \"content\": \"What's going on at Portico this week?\"}, {\"title\": [\"What are my most important meetings...\", \"this week?\"], \"content\": \"What are my most important meetings this week?\"}, {\"title\": [\"I'm new here. What are you...\", \"able to do?\"], \"content\": \"I'm new here. What are you able to do?\"}]"
+    secrets:
+      - bifrost_bridge_local_api_key
+      - owui_auth_bridge_secret
+      - webui_secret_key
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - llm-gateway
+    networks:
+      - default
+    restart: "no"
+
+volumes:
+  open-webui-dev-source:
+    name: portico-open-webui-dev-source

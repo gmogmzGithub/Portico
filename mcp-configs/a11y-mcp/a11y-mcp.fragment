@@ -1,0 +1,4 @@
+{
+  "type": "streamable-http",
+  "url": "https://a11y-mcp.sandbox.example.invalid/mcp"
+}

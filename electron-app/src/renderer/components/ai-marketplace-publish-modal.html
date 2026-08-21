@@ -1,0 +1,773 @@
+<style>
+  .ai-marketplace-publish-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 35, 36, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .ai-marketplace-publish-modal.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  .platform-darwin .ai-marketplace-publish-modal.visible {
+    -webkit-app-region: drag;
+  }
+
+  .ai-marketplace-publish-content {
+    background: var(--bg-secondary, #2d3233);
+    border-radius: 16px;
+    padding: 22px;
+    width: min(720px, 94vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    animation: aiMarketplacePublishSlideIn 0.3s ease-out;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Single publish-agent flows carry the provenance table: widen enough to
+     seat the table beside the agent card. (.batch below overrides this.) */
+  .ai-marketplace-publish-modal.roomy .ai-marketplace-publish-content {
+    width: min(1160px, 94vw);
+  }
+
+  /* Batch mode: wide enough for 2-3 request cards per grid row, or one
+     agent card with its provenance table seated alongside. */
+  .ai-marketplace-publish-modal.batch .ai-marketplace-publish-content {
+    width: min(1280px, 94vw);
+    max-height: 92vh;
+  }
+
+  @media (max-width: 720px) {
+    .ai-marketplace-publish-content,
+    .ai-marketplace-publish-modal.roomy .ai-marketplace-publish-content,
+    .ai-marketplace-publish-modal.batch .ai-marketplace-publish-content {
+      width: min(100vw - 24px, 100%);
+      padding: 16px;
+    }
+  }
+
+  .platform-darwin .ai-marketplace-publish-content,
+  .platform-darwin .ai-marketplace-publish-content * {
+    -webkit-app-region: no-drag;
+  }
+
+  @keyframes aiMarketplacePublishSlideIn {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .ai-marketplace-publish-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary, #737373);
+    transition: all 0.2s ease;
+  }
+
+  .ai-marketplace-publish-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #f3f4f6);
+  }
+
+  .ai-marketplace-publish-hide-btn {
+    position: absolute;
+    top: 14px;
+    right: 50px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary, #737373);
+    transition: all 0.2s ease;
+  }
+
+  .ai-marketplace-publish-hide-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #f3f4f6);
+  }
+
+  .ai-marketplace-publish-header {
+    margin-bottom: 14px;
+    padding-right: 70px;
+  }
+
+  .ai-marketplace-publish-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(var(--accent-primary-rgb, 79, 148, 255), 0.14);
+    color: var(--accent-primary-light, #d3e3ff);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .ai-marketplace-publish-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #f3f4f6);
+    margin: 0;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-marketplace-publish-panel {
+    background: var(--bg-surface, #323738);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .ai-marketplace-publish-summary {
+    color: var(--text-secondary, #d1d5db);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 0 0 12px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-marketplace-publish-summary:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Batch item list: every pending approval renders as one item. Scrolls as
+     a unit so a large parallel burst stays reviewable. */
+  .ai-marketplace-publish-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 62vh;
+    overflow-y: auto;
+    margin: 0 0 12px;
+  }
+
+  .ai-marketplace-publish-items:empty {
+    display: none;
+  }
+
+  /* Grouped batch sections: one per (action, shared explanation) pair. The
+     backend boilerplate renders ONCE per group; items sit in a responsive
+     grid below it (the .mcp-servers-grid auto-fill pattern, scoped here so
+     conversation popouts get it too). */
+  .ai-marketplace-publish-group {
+    margin: 0 0 6px;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-marketplace-publish-group-title {
+    margin: 0 0 4px;
+    color: var(--text-tertiary, #9ca3af);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .ai-marketplace-publish-group-summary {
+    color: var(--text-tertiary, #9ca3af);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 10px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-marketplace-publish-group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 12px;
+  }
+
+  /* Inside grid tracks the embedded card fills its column. */
+  .ai-marketplace-publish-group-grid .ai-marketplace-publish-card {
+    max-width: none;
+  }
+
+  /* Items carrying the skills provenance table span the full grid row and
+     split into card (left) + table (right) so the 4-column table gets real
+     horizontal room. flex-wrap folds it back to a stack when narrow. */
+  .ai-marketplace-publish-item-wide {
+    grid-column: 1 / -1;
+  }
+
+  .ai-marketplace-publish-item-columns {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px 24px;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-item-main {
+    flex: 0 0 340px;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-item-side {
+    flex: 1 1 420px;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-item-side .ai-marketplace-publish-skills {
+    margin-top: 2px;
+  }
+
+  /* Prompt preview renders below the card|table columns at full item width;
+     the card's usual bottom margin is zeroed there (:last-child). */
+  .ai-marketplace-publish-item-columns + .ai-marketplace-publish-prompt-block {
+    margin-top: 10px;
+  }
+
+  .ai-marketplace-publish-item {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 10px;
+    padding: 12px;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-item-check {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: transparent;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .ai-marketplace-publish-item-check.checked {
+    background: var(--accent-primary, #4f94ff);
+    border-color: var(--accent-primary, #4f94ff);
+  }
+
+  .ai-marketplace-publish-item-chip {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(var(--accent-primary-rgb, 79, 148, 255), 0.14);
+    color: var(--accent-primary-light, #d3e3ff);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .ai-marketplace-publish-item-chip-type {
+    background: rgba(148, 163, 184, 0.16);
+    color: var(--text-secondary, #d1d5db);
+  }
+
+  /* Live per-item execution status: replaces the checkbox once the queue is
+     approved and running (Publishing… → ✓ Published / ✕ Failed). */
+  .ai-marketplace-publish-item-status {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(148, 163, 184, 0.16);
+    color: var(--text-secondary, #d1d5db);
+  }
+
+  .ai-marketplace-publish-item-status[data-status="publishing"]::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid rgba(var(--accent-primary-rgb, 79, 148, 255), 0.35);
+    border-top-color: var(--accent-primary, #4f94ff);
+    animation: aiMarketplacePublishStatusSpin 0.8s linear infinite;
+  }
+
+  .ai-marketplace-publish-item-status[data-status="published"] {
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+  }
+
+  .ai-marketplace-publish-item-status[data-status="failed"] {
+    background: rgba(248, 113, 113, 0.18);
+    color: #f87171;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-item-status {
+    background: rgba(100, 116, 139, 0.14);
+    color: #475569;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-item-status[data-status="published"] {
+    background: rgba(22, 163, 74, 0.14);
+    color: #15803d;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-item-status[data-status="failed"] {
+    background: rgba(220, 38, 38, 0.12);
+    color: #b91c1c;
+  }
+
+  @keyframes aiMarketplacePublishStatusSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .ai-marketplace-publish-item-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--text-primary, #f3f4f6);
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-marketplace-publish-item-summary {
+    color: var(--text-tertiary, #9ca3af);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Solution-id badge + copy button (the agents-confirm chip pattern, scoped
+     to this modal so it works in conversation popouts too). */
+  .ai-marketplace-publish-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px;
+    min-width: 0;
+  }
+
+  .ai-marketplace-publish-id-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--text-secondary, #d1d5db);
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 6px;
+    padding: 2px 8px;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+
+  .ai-marketplace-publish-copy-btn {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: transparent;
+    border-radius: 6px;
+    color: var(--text-tertiary, #9ca3af);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .ai-marketplace-publish-copy-btn:hover {
+    color: var(--text-primary, #f3f4f6);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* The real Agents-tab card, presentation-only. Bounded to card width and
+     kept static (no hover lift) inside the confirmation. */
+  .ai-marketplace-publish-card {
+    max-width: 360px;
+    margin: 0 0 12px;
+  }
+
+  .ai-marketplace-publish-card:empty {
+    display: none;
+  }
+
+  .ai-marketplace-publish-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-marketplace-publish-card .mcp-server-card,
+  .ai-marketplace-publish-card .mcp-server-card:hover {
+    transform: none;
+    cursor: default;
+  }
+
+  .ai-marketplace-publish-prompt-block[hidden] {
+    display: none;
+  }
+
+  .ai-marketplace-publish-prompt-label {
+    color: var(--text-primary, #f3f4f6);
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  /* Prompt preview is a native <details>: collapsed by default in batch
+     grids so agent cards stay uniform. */
+  details.ai-marketplace-publish-prompt-block > summary.ai-marketplace-publish-prompt-label {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ai-marketplace-publish-prompt-pre {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.25);
+    color: var(--text-secondary, #d1d5db);
+    font-size: 12px;
+    line-height: 1.5;
+    max-height: 180px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .ai-marketplace-publish-review-note {
+    color: var(--text-tertiary, #9ca3af);
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .ai-marketplace-publish-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .ai-marketplace-publish-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ai-marketplace-publish-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .ai-marketplace-publish-btn-primary {
+    background: var(--accent-primary, #4f94ff);
+    color: #ffffff;
+  }
+
+  .ai-marketplace-publish-btn-primary:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #3d82ee);
+  }
+
+  .ai-marketplace-publish-btn-secondary {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary, #d1d5db);
+  }
+
+  .ai-marketplace-publish-btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-modal {
+    background: rgba(214, 219, 233, 0.9);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-content {
+    background: #ffffff;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, 0.25);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-panel {
+    background: #f6f8fc;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-prompt-pre {
+    background: rgba(15, 23, 42, 0.05);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #334155;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-item {
+    border-color: rgba(15, 23, 42, 0.1);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-group-title,
+  [data-theme="light"] .ai-marketplace-publish-group-summary {
+    color: #64748b;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-item-check {
+    border-color: rgba(15, 23, 42, 0.25);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-item-chip-type {
+    background: rgba(15, 23, 42, 0.06);
+    color: #475569;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-id-badge {
+    background: rgba(15, 23, 42, 0.05);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #334155;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-copy-btn {
+    border-color: rgba(15, 23, 42, 0.15);
+    color: #64748b;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-copy-btn:hover {
+    color: #111827;
+    background: rgba(15, 23, 42, 0.06);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-btn-primary {
+    background: var(--accent-primary, #003a9b);
+    color: #ffffff;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-btn-primary:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #002c75);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-btn-secondary {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #525252;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-btn-secondary:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-close-btn,
+  [data-theme="light"] .ai-marketplace-publish-hide-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #737373;
+  }
+
+  /* Dependent-skill provenance table (reuses the global .agents-publish-skill-*
+     styles from styles.css; these rules scope/compact it for the batch grid). */
+  .ai-marketplace-publish-skills {
+    margin: 10px 0 2px;
+    overflow-x: auto;
+  }
+  .ai-marketplace-publish-skills-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0 0 6px;
+  }
+  .ai-marketplace-publish-skills .agents-publish-skill-table {
+    width: 100%;
+  }
+  .ai-marketplace-publish-skills .agents-publish-skill-table th {
+    white-space: nowrap;
+  }
+  .ai-marketplace-publish-skills-note {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  /* Table-shaped loading skeleton (one shimmer row per skill): pure CSS
+     animation on transient nodes — it dies with the element when the real
+     rows land. Cell widths echo the table's column proportions. */
+  .ai-marketplace-publish-skills-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 0 6px;
+  }
+  .ai-marketplace-publish-skills-skeleton-row {
+    display: flex;
+    gap: 14px;
+  }
+  .ai-marketplace-publish-skills-skeleton-cell {
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(
+      90deg,
+      rgba(148, 163, 184, 0.16) 25%,
+      rgba(148, 163, 184, 0.32) 50%,
+      rgba(148, 163, 184, 0.16) 75%
+    );
+    background-size: 200% 100%;
+    animation: aiMarketplacePublishSkeletonShimmer 1.4s ease-in-out infinite;
+  }
+  .ai-marketplace-publish-skills-skeleton-cell:nth-child(1) {
+    flex: 0 0 40px;
+  }
+  .ai-marketplace-publish-skills-skeleton-cell:nth-child(2) {
+    flex: 0 0 22%;
+  }
+  .ai-marketplace-publish-skills-skeleton-cell:nth-child(3) {
+    flex: 0 0 14%;
+  }
+  .ai-marketplace-publish-skills-skeleton-cell:nth-child(4) {
+    flex: 1 1 auto;
+  }
+  @keyframes aiMarketplacePublishSkeletonShimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+  [data-theme="light"] .ai-marketplace-publish-skills-skeleton-cell {
+    background: linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.08) 25%,
+      rgba(15, 23, 42, 0.16) 50%,
+      rgba(15, 23, 42, 0.08) 75%
+    );
+    background-size: 200% 100%;
+  }
+  .ai-marketplace-publish-item-error {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #f28b82;
+  }
+  [data-theme="light"] .ai-marketplace-publish-skills-label,
+  [data-theme="light"] .ai-marketplace-publish-skills-note {
+    color: rgba(45, 45, 45, 0.6);
+  }
+  [data-theme="light"] .ai-marketplace-publish-item-error {
+    color: #c5221f;
+  }
+
+  [data-theme="light"] .ai-marketplace-publish-close-btn:hover,
+  [data-theme="light"] .ai-marketplace-publish-hide-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #111827;
+  }
+</style>
+
+<div
+  class="ai-marketplace-publish-modal"
+  id="ai-marketplace-publish-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
+  aria-labelledby="ai-marketplace-publish-title"
+  aria-describedby="ai-marketplace-publish-summary"
+>
+  <div class="ai-marketplace-publish-content">
+    <button
+      class="ai-marketplace-publish-hide-btn"
+      id="ai-marketplace-publish-hide-btn"
+      type="button"
+      title="Hide publish approval and return to chat"
+      aria-label="Hide publish approval and return to chat"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
+    <button
+      class="ai-marketplace-publish-close-btn"
+      id="ai-marketplace-publish-close-btn"
+      type="button"
+      aria-label="Close"
+      title="Close"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="ai-marketplace-publish-header">
+      <span class="ai-marketplace-publish-eyebrow">AI Marketplace</span>
+      <h2 class="ai-marketplace-publish-title" id="ai-marketplace-publish-title">
+        Publish to the AI Marketplace
+      </h2>
+    </div>
+
+    <div class="ai-marketplace-publish-panel">
+      <p class="ai-marketplace-publish-summary" id="ai-marketplace-publish-summary"></p>
+      <div class="ai-marketplace-publish-items" id="ai-marketplace-publish-items"></div>
+    </div>
+
+    <div class="ai-marketplace-publish-footer">
+      <button
+        class="ai-marketplace-publish-btn ai-marketplace-publish-btn-secondary"
+        id="ai-marketplace-publish-cancel-btn"
+        type="button"
+      >
+        Cancel
+      </button>
+      <button
+        class="ai-marketplace-publish-btn ai-marketplace-publish-btn-primary"
+        id="ai-marketplace-publish-approve-btn"
+        type="button"
+      >
+        Publish
+      </button>
+    </div>
+  </div>
+</div>

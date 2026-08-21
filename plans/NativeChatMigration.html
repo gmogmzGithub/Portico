@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Native Chat Migration — Removing Docker/OrbStack & Open WebUI</title>
+<style>
+  :root {
+    --page:        #f9f9f7;
+    --surface-1:   #fcfcfb;
+    --surface-2:   #f2f1ee;
+    --ink-1:       #0b0b0b;
+    --ink-2:       #52514e;
+    --ink-muted:   #898781;
+    --grid:        #e1e0d9;
+    --baseline:    #c3c2b7;
+    --border:      rgba(11,11,11,0.10);
+    --border-strong: rgba(11,11,11,0.16);
+    --series-1:    #2a78d6;  /* blue */
+    --series-1-soft: rgba(42,120,214,0.14);
+    --c-aqua:      #1baf7a;
+    --c-yellow:    #eda100;
+    --c-violet:    #4a3aa7;
+    --c-red:       #e34948;
+    --c-orange:    #eb6834;
+    --good:        #006300;
+    --critical:    #d03b3b;
+    --warning:     #b26a00;
+    --shadow:      0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page:        #0d0d0d;
+      --surface-1:   #1a1a19;
+      --surface-2:   #232322;
+      --ink-1:       #ffffff;
+      --ink-2:       #c3c2b7;
+      --ink-muted:   #898781;
+      --grid:        #2c2c2a;
+      --baseline:    #383835;
+      --border:      rgba(255,255,255,0.10);
+      --border-strong: rgba(255,255,255,0.18);
+      --series-1:    #3987e5;
+      --series-1-soft: rgba(57,135,229,0.18);
+      --c-aqua:      #199e70;
+      --c-yellow:    #c98500;
+      --c-violet:    #9085e9;
+      --c-red:       #e66767;
+      --c-orange:    #d95926;
+      --good:        #0ca30c;
+      --critical:    #d03b3b;
+      --warning:     #fab219;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 6px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink-1);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 24px 80px; }
+  header.hero { margin-bottom: 40px; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; }
+  h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.08; margin: 12px 0 10px; letter-spacing: -0.02em; }
+  h1 .strike { text-decoration: line-through; text-decoration-color: var(--critical); text-decoration-thickness: 3px; opacity: .82; }
+  .lede { font-size: 18px; color: var(--ink-2); max-width: 760px; margin: 0 0 20px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-2); }
+  .badge.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, var(--border)); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.g { background: var(--good); } .dot.b { background: var(--series-1); } .dot.r { background: var(--critical); }
+
+  section { margin-top: 44px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .sec-num { font-size: 13px; font-weight: 700; color: var(--series-1); font-variant-numeric: tabular-nums; }
+  h2 { font-size: 21px; margin: 0; letter-spacing: -0.01em; }
+  .sec-sub { color: var(--ink-muted); font-size: 13.5px; margin-left: auto; }
+
+  .grid { display: grid; gap: 16px; }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .cols-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 860px) { .cols-3, .cols-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .cols-2, .cols-3, .cols-4 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 6px; font-size: 15.5px; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+  .card .k { font-size: 12px; color: var(--ink-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+
+  /* stat tiles */
+  .tiles { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  @media (max-width: 860px){ .tiles { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 560px){ .tiles { grid-template-columns: 1fr; } }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px 16px; box-shadow: var(--shadow); }
+  .tile .val { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .tile .val .unit { font-size: 15px; font-weight: 600; color: var(--ink-2); }
+  .tile .lab { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+  .tile .arrow { color: var(--good); font-weight: 700; }
+
+  /* before / after */
+  .ba { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 8px; align-items: stretch; }
+  @media (max-width: 720px){ .ba { grid-template-columns: 1fr; } .ba .arrowcol { transform: rotate(90deg); height: 44px; } }
+  .stack-title { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+  .stack.before .stack-title { color: var(--critical); }
+  .stack.after .stack-title { color: var(--good); }
+  .layerbox { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface-1); height: 100%; box-shadow: var(--shadow); }
+  .chip { display: block; border-radius: 8px; padding: 7px 10px; font-size: 12.5px; margin-bottom: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-2); }
+  .chip b { color: var(--ink-1); font-weight: 600; }
+  .chip.del { border-color: color-mix(in srgb, var(--critical) 32%, var(--border)); }
+  .chip.keep { border-color: color-mix(in srgb, var(--series-1) 34%, var(--border)); }
+  .chip.new { border-color: color-mix(in srgb, var(--good) 36%, var(--border)); }
+  .arrowcol { display: flex; align-items: center; justify-content: center; color: var(--ink-muted); font-size: 26px; }
+  .legend-inline { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; font-size:12px; color:var(--ink-2); }
+  .legend-inline span { display:inline-flex; align-items:center; gap:6px; }
+  .swatch { width:11px; height:11px; border-radius:3px; display:inline-block; border:1px solid var(--border); }
+
+  /* pipeline row */
+  .pipe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  @media (max-width: 860px){ .pipe { grid-template-columns: repeat(1,1fr); } }
+  .pcard { position: relative; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface-1); box-shadow: var(--shadow); }
+  .pcard .n { font-variant-numeric: tabular-nums; font-weight:700; color: var(--series-1); font-size: 13px; }
+  .pcard h3 { margin: 4px 0 6px; font-size: 15px; }
+  .pcard p { margin: 0; font-size: 12.8px; color: var(--ink-2); }
+
+  /* milestone timeline */
+  .timeline { position: relative; }
+  .mrow { display: grid; grid-template-columns: 84px 1fr; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .mrow:first-child { border-top: 0; }
+  .mtag { display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+  .mtag .m { font-weight: 800; font-size: 17px; letter-spacing: -.01em; }
+  .mtag .rag { width: 100%; height: 6px; border-radius: 999px; background: var(--grid); overflow:hidden; }
+  .mtag .rag > i { display:block; height:100%; border-radius:999px; background: var(--series-1); }
+  .mbody h3 { margin: 0 0 3px; font-size: 15px; }
+  .mbody p { margin: 0 0 6px; font-size: 13.2px; color: var(--ink-2); }
+  .gate { font-size: 12px; color: var(--ink-muted); }
+  .gate b { color: var(--ink-2); font-weight: 600; }
+
+  /* burndown chart */
+  .chartcard { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px 20px 12px; box-shadow: var(--shadow); }
+  .chart-title { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  .chart-sub { font-size: 12.5px; color: var(--ink-muted); margin: 0 0 14px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .gline { stroke: var(--grid); stroke-width: 1; }
+  .axis { stroke: var(--baseline); stroke-width: 1; }
+  .tick { fill: var(--ink-muted); font-size: 11px; }
+  .tick.x { text-anchor: middle; } .tick.y { text-anchor: end; }
+  .area { fill: var(--series-1-soft); }
+  .line { fill: none; stroke: var(--series-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .pt { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+  .ptlab { fill: var(--ink-1); font-size: 11.5px; font-weight: 700; text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .hit { fill: transparent; cursor: pointer; }
+  .hit:hover + .pt, .pt.hi { r: 7; }
+  .tipwrap { position: relative; }
+  .tip { position:absolute; pointer-events:none; opacity:0; transform: translate(-50%,-8px); transition: opacity .1s; background: var(--ink-1); color: var(--page);
+    font-size: 12px; padding: 6px 9px; border-radius: 7px; white-space: nowrap; box-shadow: var(--shadow); z-index: 5; }
+  .tip b { font-weight: 700; }
+
+  ul.tight { margin: 8px 0 0; padding-left: 18px; }
+  ul.tight li { margin: 5px 0; font-size: 13.3px; color: var(--ink-2); }
+  ul.tight li b { color: var(--ink-1); font-weight: 600; }
+  .callout { border-left: 3px solid var(--series-1); background: var(--surface-1); border-radius: 0 10px 10px 0; padding: 14px 16px; box-shadow: var(--shadow); }
+  .callout.warn { border-left-color: var(--warning); }
+  .callout .k { font-size: 12px; text-transform: uppercase; letter-spacing:.06em; font-weight:700; color: var(--ink-muted); }
+  .two { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px){ .two { grid-template-columns: 1fr; } }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--ink-muted); font-size: 12.5px; }
+  footer code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--border); color: var(--ink-2); font-size: 12px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Portico · Strategic Migration Plan</div>
+    <h1>Native Chat: removing <span class="strike">Docker/OrbStack</span> &amp; <span class="strike">Open WebUI</span></h1>
+    <p class="lede">Replace a 9-service Docker stack and a patched Open&nbsp;WebUI fork with a chat experience built natively into the Electron app — an OpenAI Agents SDK runtime, a native React UI, one local SQLite store, and host-native sandboxed execution — at full feature parity.</p>
+    <div class="badges">
+      <span class="badge ok"><span class="dot g"></span> Approved · Workbench gpt-5.6-sol (ultra) round 8 + internal 4-critic review</span>
+      <span class="badge"><span class="dot b"></span> 8 adversarial rounds</span>
+      <span class="badge"><span class="dot r"></span> 11 → 0 blockers</span>
+      <span class="badge">Strangler migration · M0–M7</span>
+    </div>
+  </header>
+
+  <!-- WHY -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Why</h2><span class="sec-sub">the cost of the current architecture</span></div>
+    <div class="tiles">
+      <div class="tile">
+        <div class="val">~50<span class="unit">%</span></div>
+        <div class="lab"><span class="arrow">↓</span> host RAM reclaimed — OrbStack is sized to half of machine memory</div>
+      </div>
+      <div class="tile">
+        <div class="val">min → sec</div>
+        <div class="lab"><span class="arrow">↓</span> cold start — no 10-min compose + 9-min readiness gates</div>
+      </div>
+      <div class="tile">
+        <div class="val">~14<span class="unit"> GB</span></div>
+        <div class="lab"><span class="arrow">↓</span> deleted — ~10 GB images + a ~4 GB OWUI fork</div>
+      </div>
+      <div class="tile">
+        <div class="val">1<span class="unit"> language</span></div>
+        <div class="lab">TypeScript owns the product core; Rust kept only where it earns it</div>
+      </div>
+    </div>
+    <div class="grid cols-3" style="margin-top:16px">
+      <div class="card"><div class="k">The fork</div><h3>120 patch files</h3><p>75 Svelte + 45 TS/JS over the OWUI frontend, 34 backend overlays, re-forked on every upstream bump.</p></div>
+      <div class="card"><div class="k">The middleware</div><h3>15,449 lines</h3><p><span class="mono">utils/middleware.py</span> + a 3,561-line filter run the agent loop inside someone else's web app.</p></div>
+      <div class="card"><div class="k">The surface</div><h3>~260 IPC channels</h3><p>plus a 9876 Express server, 8,614-line <span class="mono">docker-mcp.js</span>, and constant status/health polling.</p></div>
+    </div>
+  </section>
+
+  <!-- BEFORE / AFTER -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Before → After</h2><span class="sec-sub">what leaves, what stays, what's new</span></div>
+    <div class="ba">
+      <div class="stack before">
+        <div class="stack-title">Today · Docker / OrbStack</div>
+        <div class="layerbox">
+          <span class="chip del"><b>Open WebUI</b> v0.6.43 (patched) :3789</span>
+          <span class="chip del"><b>Bifrost</b> LLM gateway :4583</span>
+          <span class="chip del"><b>MCPO</b> control plane + aggregator + nginx</span>
+          <span class="chip del">~20 <b>per-server MCP</b> containers</span>
+          <span class="chip del">per-chat <b>agent-VM</b> containers</span>
+          <span class="chip del"><b>Redis</b> · <b>MongoDB</b> · <b>chat-state-api</b></span>
+          <span class="chip del">one-shot <b>health-check</b> container</span>
+        </div>
+      </div>
+      <div class="arrowcol">→</div>
+      <div class="stack after">
+        <div class="stack-title">Native · in the Electron app</div>
+        <div class="layerbox">
+          <span class="chip new"><b>Agent Runtime</b> — @openai/agents (utilityProcess)</span>
+          <span class="chip new"><b>Native Chat UI</b> — React on app://chat</span>
+          <span class="chip new"><b>Local Store</b> — node:sqlite storage worker</span>
+          <span class="chip keep"><b>7 Rust core MCP servers</b> (stdio, per-server srt)</span>
+          <span class="chip keep"><b>OAuth engine + Host MCP Bridge</b> (kept)</span>
+          <span class="chip keep"><b>model_catalog.yaml</b> — single source of truth</span>
+          <span class="chip new"><b>srt sandbox</b> — read-deny exec + artifacts</span>
+        </div>
+      </div>
+    </div>
+    <div class="legend-inline">
+      <span><i class="swatch" style="border-color:color-mix(in srgb,var(--critical) 60%,var(--border))"></i> deleted outright</span>
+      <span><i class="swatch" style="border-color:color-mix(in srgb,var(--series-1) 60%,var(--border))"></i> kept (Rust / config)</span>
+      <span><i class="swatch" style="border-color:color-mix(in srgb,var(--good) 60%,var(--border))"></i> new / native</span>
+    </div>
+  </section>
+
+  <!-- FIVE COMPONENTS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Five new components</h2><span class="sec-sub">the target architecture</span></div>
+    <div class="pipe">
+      <div class="pcard"><div class="n">01</div><h3>Agent Runtime</h3><p>@openai/agents in a Node-22 utilityProcess. Ports the context engine, tool loop, confirmation gate, steering, subagents &amp; scheduling out of OWUI middleware.</p></div>
+      <div class="pcard"><div class="n">02</div><h3>porticoMcpToolAdapter</h3><p>Reproduces mcp-orc's exact 103-tool name manifest, wraps every call in the gate, injects trusted identity via MCP <span class="mono">_meta</span>, vends broker credentials per request.</p></div>
+      <div class="pcard"><div class="n">03</div><h3>Native Chat UI</h3><p>React on a sandboxed, separately-originated <span class="mono">app://chat</span> document with a minimal preload; streams over IPC MessagePorts. O(delta) rendering.</p></div>
+      <div class="pcard"><div class="n">04</div><h3>Local Store</h3><p>One <span class="mono">node:sqlite</span> DB in a dedicated storage worker — replaces webui.db, Redis &amp; Mongo. Durable per-chat state; instr()-based search.</p></div>
+      <div class="pcard"><div class="n">05</div><h3>Host Execution</h3><p>MCP servers &amp; code-exec as host processes under @anthropic-ai/sandbox-runtime — one sandbox per server, read-deny-by-default, descendant-tracked watchdog.</p></div>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <div class="k">LLM routing — the Agents SDK is OpenAI-shaped; two of three providers are not</div>
+      <p style="margin:6px 0 0; color:var(--ink-2); font-size:13.5px">Three custom <span class="mono">Model</span> adapters replace Bifrost, speaking llm-proxy's native protocols directly:
+      <b>Bedrock Converse</b> (Atlas — ports converse.rs stream repairs, adaptive thinking, cache points) ·
+      <b>OpenAI Responses</b> (GPT-5.x — instructions hoisting + tool-namespace caching) ·
+      <b>Vertex</b> (Gemini). All carry the 7 <span class="mono">x-portico-*</span> headers &amp; the Keychain-backed key.</p>
+    </div>
+  </section>
+
+  <!-- MILESTONES -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Phasing</h2><span class="sec-sub">strangler sequence — opt-in native stack, then cut over &amp; delete Docker</span></div>
+    <div class="timeline">
+      <div class="mrow"><div class="mtag"><span class="m">M0</span><span class="rag"><i style="width:12%"></i></span></div>
+        <div class="mbody"><h3>Enablers</h3><p>Tolerant updater (schema-3) + capability-version telemetry to fleet saturation; state exporter ships in the last Docker-full release.</p><div class="gate"><b>Gate:</b> Docker-free payloads safely receivable everywhere.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M1</span><span class="rag"><i style="width:24%"></i></span></div>
+        <div class="mbody"><h3>Native vertical slice (hidden)</h3><p>Chat UI + runtime + model gateway + store behind a dev flag; streamed multi-provider chat; tools via the adapter against packaged core binaries.</p><div class="gate"><b>Gate:</b> P0 smoke + §I model-gateway parity; cache-hit &amp; streaming perf ≥ current.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M2</span><span class="rag"><i style="width:40%"></i></span></div>
+        <div class="mbody"><h3>Middleware parity</h3><p>Context engine, skills, gate + chips + allowlists + scheduled-run provenance, steering, subagents, observability bus. Core servers de-Redis'd.</p><div class="gate"><b>Gate:</b> §D/§G + gate suite; consistency runners at current pass rates.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M3</span><span class="rag"><i style="width:56%"></i></span></div>
+        <div class="mbody"><h3>UI parity</h3><p>Full shell: search, artifacts panel, scheduled-tasks pages, settings, prompt library, deep-link routing, diagnostics.</p><div class="gate"><b>Gate:</b> §B/C/E/F/M/N; V-005/V-011 XSS corpus; perf budgets.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M4</span><span class="rag"><i style="width:70%"></i></span></div>
+        <div class="mbody"><h3>Exec &amp; artifacts native</h3><p>Read-deny srt exec + descendant watchdog + per-chat overlays + sandboxed artifact supervisor.</p><div class="gate"><b>Gate:</b> §J + artifacts; sandbox security review; threat-model-delta sign-off.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M5</span><span class="rag"><i style="width:82%"></i></span></div>
+        <div class="mbody"><h3>MCP fully host-native</h3><p>All feasible integrations + user servers on per-server sandboxes; OAuth container-free; bridge re-targeted &amp; gated; marketplace re-targeted.</p><div class="gate"><b>Gate:</b> §G/§H; OAuth e2e matrix; per-server secret-isolation + direct-port-bypass tests.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M6</span><span class="rag"><i style="width:93%"></i></span></div>
+        <div class="mbody"><h3>Migration &amp; cutover</h3><p>Journaled one-time migration under a maintenance barrier; scheduling lease transfer; native default. Beta first, forward-fix.</p><div class="gate"><b>Gate:</b> shadow-import ≥99.5% (entry) &amp; migration ≥99.5%; rollback-after-migration green.</div></div></div>
+      <div class="mrow"><div class="mtag"><span class="m">M7</span><span class="rag"><i style="width:100%;background:var(--good)"></i></span></div>
+        <div class="mbody"><h3>Deletion</h3><p>Stable rollout; delete the Docker estate; OrbStack/image reclaim; EOL-redirect stragglers; retire legacy installer. One permanent rescue build kept.</p><div class="gate"><b>Gate:</b> full §L security sweep; §A/§K final.</div></div></div>
+    </div>
+  </section>
+
+  <!-- BURNDOWN CHART -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>How the plan was hardened</h2><span class="sec-sub">eight adversarial review rounds to mutual sign-off</span></div>
+    <div class="two">
+      <div class="chartcard tipwrap">
+        <p class="chart-title">Blocker-class findings per review round</p>
+        <p class="chart-sub">Workbench CLI (gpt-5.6-sol, ultra) + internal 4-critic workflow · each fix verified against the repo, not just claimed</p>
+        <div id="tip" class="tip"></div>
+        <svg viewBox="0 0 640 300" role="img" aria-label="Blocker findings per round: round 1 had 11, ending at 0 by rounds 7 and 8.">
+          <!-- gridlines + y ticks (0,3,6,9,12) -->
+          <g id="grid"></g>
+          <!-- axes -->
+          <line class="axis" x1="52" y1="20" x2="52" y2="250"></line>
+          <line class="axis" x1="52" y1="250" x2="620" y2="250"></line>
+          <!-- data drawn by script -->
+          <path id="area" class="area"></path>
+          <path id="line" class="line"></path>
+          <g id="pts"></g>
+          <g id="xlabs"></g>
+        </svg>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <div class="card"><div class="k">Round 1 · 11 blockers</div><p>Tool-name manifest coupling, chat-UI isolation, read-deny sandbox, state exporter, marketplace estate, dual-stack scheduling, rollback fence…</p></div>
+        <div class="card"><div class="k">Rounds 3–4 · deep corrections</div><p>Seatbelt is a filter not a namespace (path contract migrated); servers trusted model <span class="mono">chat_id</span> (identity now injected); 8080 port collisions.</p></div>
+        <div class="card"><div class="k">Rounds 5–7 · the long tail</div><p>Capability-selective fleet handoff; loopback ≠ private without a netns; cookie vs opaque-origin iframe; export credential leakage — each verified in-repo.</p></div>
+        <div class="card" style="border-color:color-mix(in srgb,var(--good) 40%,var(--border))"><div class="k" style="color:var(--good)">Round 8 · APPROVE</div><p>Zero blockers, zero unresolved findings. Residuals are explicitly-accepted trade-offs or named implementation spikes.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKSTREAMS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Ten workstreams</h2><span class="sec-sub">WS0 spikes gate everything; WS4–WS9 gate cutover</span></div>
+    <div class="grid cols-4">
+      <div class="card"><div class="k">WS0</div><h3>Enablers &amp; spikes</h3><p>Tolerant updater, state exporter, 5 spikes (Converse, adapter, renderer perf, sandbox, SQLite).</p></div>
+      <div class="card"><div class="k">WS1</div><h3>Model gateway</h3><p>Three adapters + stream-timeout hardening, catalog loader, pricing unification.</p></div>
+      <div class="card"><div class="k">WS2</div><h3>Agent runtime</h3><p>Context engine, tool loop, gate + provenance, steering, subagents, event bus.</p></div>
+      <div class="card"><div class="k">WS3</div><h3>Native chat UI</h3><p>app://chat, transcript renderer, composer, search, sidebar, settings, modals.</p></div>
+      <div class="card"><div class="k">WS4</div><h3>Persistence &amp; migration</h3><p>Storage worker, state-API, shadow-import, journaled fail-closed migration.</p></div>
+      <div class="card"><div class="k">WS5</div><h3>MCP host-native</h3><p>Per-server sandboxes, adapter, OAuth service API, marketplace re-target.</p></div>
+      <div class="card"><div class="k">WS6</div><h3>Exec &amp; artifacts</h3><p>srt exec backend, per-chat overlays, sandboxed artifact supervisor.</p></div>
+      <div class="card"><div class="k">WS7</div><h3>Config &amp; control plane</h3><p>ConfigReconciler, readiness oracle, diagnostics re-grounding.</p></div>
+      <div class="card"><div class="k">WS8</div><h3>Distribution</h3><p>Install v3, updater Docker-phase removal, CI rewiring, rescue channel.</p></div>
+      <div class="card"><div class="k">WS9</div><h3>Test &amp; security</h3><p>Gate tests, headless runner, 218-scenario editions, security re-audit.</p></div>
+    </div>
+  </section>
+
+  <!-- INVARIANTS + RESIDUALS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Non-negotiables &amp; honest limits</h2><span class="sec-sub">hard-won from the incident record + the review</span></div>
+    <div class="two">
+      <div class="callout">
+        <div class="k">Invariants the rewrite must preserve</div>
+        <ul class="tight">
+          <li><b>The tool-confirmation gate</b> runs below the model on every dispatch route — including the external-client bridge and dev test-invoke.</li>
+          <li><b>Structured contentBlocks</b> are the model-facing source of truth; display strings never are.</li>
+          <li><b>Server-side identity is never model-authored</b> — the runtime injects trusted chat ids; a turn in chat A can't act on chat B.</li>
+          <li><b>One readiness oracle</b> for prompt-building, spec attachment &amp; dispatch; a bad stored tool name must never brick a chat.</li>
+          <li><b>Per-chat state is durable, never evicted;</b> streaming render is O(delta) with one scroll writer.</li>
+        </ul>
+      </div>
+      <div class="callout warn">
+        <div class="k">Explicitly-accepted residuals (signed off)</div>
+        <ul class="tight">
+          <li><b>Loopback ≠ private without a netns:</b> artifact inner servers need a targeted microVM, or a documented same-UID residual with compensating controls.</li>
+          <li><b>No aggregate 2-CPU ceiling</b> for a host process tree (VM-only property); CPU bounded by cumulative-time + wall-clock kill.</li>
+          <li><b>Pre-floor installers</b> can't honor a rollback fence added after they shipped — bounded by the permanent Docker-full rescue build.</li>
+          <li><b>LibreOffice</b> and a VM-vs-sandbox exec backend are named open decisions gated on Spike&nbsp;D.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Source of truth: <code>plans/NativeChatMigration.md</code> (v8, approved). This infographic is a summary — the plan carries the full design decisions (D1–D12 + D6a), the 218-scenario parity ledger, the data-migration mechanics, the security plan, and the deletion inventory. Palette validated for colour-vision-deficiency safety (light &amp; dark). Numbers are grounded in the repository as studied for the plan.</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // Blocker-class findings per review round (round -> count)
+  var data = [
+    {r:1, v:11}, {r:2, v:3}, {r:3, v:4}, {r:4, v:2}, {r:5, v:1}, {r:6, v:1}, {r:7, v:0}, {r:8, v:0}
+  ];
+  var X0=52, X1=620, Y0=20, Y1=250, ymax=12;
+  var sx = function(i){ return X0 + (X1-X0) * (i/(data.length-1)); };
+  var sy = function(v){ return Y1 - (Y1-Y0) * (v/ymax); };
+
+  // gridlines + y ticks
+  var g = document.getElementById('grid');
+  [0,3,6,9,12].forEach(function(t){
+    var y = sy(t);
+    var l = document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('class','gline'); l.setAttribute('x1',X0); l.setAttribute('x2',X1); l.setAttribute('y1',y); l.setAttribute('y2',y);
+    g.appendChild(l);
+    var tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+    tx.setAttribute('class','tick y'); tx.setAttribute('x',X0-8); tx.setAttribute('y',y+4); tx.textContent=t;
+    g.appendChild(tx);
+  });
+
+  // line + area paths
+  var d='', a='';
+  data.forEach(function(p,i){
+    var x=sx(i), y=sy(p.v);
+    d += (i===0?'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+  });
+  a = d + 'L' + sx(data.length-1).toFixed(1) + ' ' + Y1 + ' L' + sx(0).toFixed(1) + ' ' + Y1 + ' Z';
+  document.getElementById('line').setAttribute('d', d.trim());
+  document.getElementById('area').setAttribute('d', a);
+
+  // points + direct labels + x labels + hover hit areas
+  var pts=document.getElementById('pts'), xl=document.getElementById('xlabs'), tip=document.getElementById('tip');
+  var svg = pts.ownerSVGElement;
+  data.forEach(function(p,i){
+    var x=sx(i), y=sy(p.v);
+    // hit area
+    var hit=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    hit.setAttribute('class','hit'); hit.setAttribute('cx',x); hit.setAttribute('cy',y); hit.setAttribute('r',16);
+    pts.appendChild(hit);
+    // point
+    var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('class','pt'); c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',4.5);
+    pts.appendChild(c);
+    // direct label above point
+    var t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('class','ptlab'); t.setAttribute('x',x); t.setAttribute('y', y - 12); t.textContent=p.v;
+    pts.appendChild(t);
+    // x tick
+    var xt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    xt.setAttribute('class','tick x'); xt.setAttribute('x',x); xt.setAttribute('y',Y1+18); xt.textContent='R'+p.r;
+    xl.appendChild(xt);
+    // hover
+    hit.addEventListener('mouseenter', function(){
+      c.classList.add('hi');
+      var rect = svg.getBoundingClientRect();
+      var card = svg.parentElement.getBoundingClientRect();
+      var px = rect.left - card.left + (x/640)*rect.width;
+      var py = rect.top - card.top + (y/300)*rect.height;
+      tip.style.left = px+'px'; tip.style.top = py+'px'; tip.style.opacity='1';
+      tip.innerHTML = 'Round '+p.r+' · <b>'+p.v+'</b> blocker'+(p.v===1?'':'s');
+    });
+    hit.addEventListener('mouseleave', function(){ c.classList.remove('hi'); tip.style.opacity='0'; });
+  });
+  // x axis caption
+  var cap=document.createElementNS('http://www.w3.org/2000/svg','text');
+  cap.setAttribute('class','tick x'); cap.setAttribute('x',(X0+X1)/2); cap.setAttribute('y',Y1+40); cap.textContent='review round →';
+  xl.appendChild(cap);
+})();
+</script>
+</body>
+</html>

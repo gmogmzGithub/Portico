@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run PORTICO Beta-to-Dev Qualification"
+  short_description: "Qualify clean beta upgrades to PORTICO dev"
+  default_prompt: "Use $run-portico-beta-to-dev-qualification to run a clean beta installation, upgrade it to dev, and prove integrations, Slack migration, chat, and security end to end."

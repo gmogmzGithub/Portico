@@ -1,0 +1,9 @@
+# System-level preset environment variables
+# Applied ONLY if variable is missing from .env
+# Self-healing: restores accidentally deleted vars
+# User-friendly: preserves any user customizations
+# These affect app-wide behavior, not specific MCP servers
+
+# LLM gateway configuration
+PORTICO_REDACT_ALLOW: "*"
+REASONING_BUDGET_TOKENS: "1024"

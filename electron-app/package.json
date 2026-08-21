@@ -1,0 +1,178 @@
+{
+  "name": "portico",
+  "version": "1.0.0",
+  "description": "Portico - an AI assistant workbench with MCP integration",
+  "main": "src/services/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "electron . --dev",
+    "start:logged": "./src/scripts/launch-with-logging.sh",
+    "start:silent": "./src/scripts/launch-silent.sh",
+    "prepare:packaged-build": "npm run verify:app-protocol && npm run verify:sandbox-runtime-package && node scripts/prepare-cloudsmith-resource.js && node scripts/bundle-renderer.js",
+    "verify:app-protocol": "node scripts/verify-app-protocol-contract.js",
+    "verify:sandbox-runtime-package": "node scripts/verify-sandbox-runtime-package.js",
+    "bundle": "npm run verify:app-protocol && node scripts/bundle-renderer.js",
+    "build": "npm run prepare:packaged-build && electron-builder",
+    "build:mac": "npm run prepare:packaged-build && electron-builder --mac --x64 --arm64",
+    "build:mac:test": "npm run prepare:packaged-build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64 -c.mac.identity=null -c.afterSign=scripts/noop.js",
+    "build:win": "npm run prepare:packaged-build && electron-builder --win",
+    "build:linux": "npm run prepare:packaged-build && electron-builder --linux",
+    "build:all": "npm run prepare:packaged-build && electron-builder -mwl",
+    "dist": "npm run prepare:packaged-build && electron-builder --publish=never",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "node scripts/run-playwright-tests.js",
+    "test:standalone": "node tests/electron-app.test.js --standalone",
+    "test:headed": "npx playwright test --headed",
+    "test:marketplace-flows": "node --test --test-force-exit src/services/ai-marketplace-flows.integration.test.js",
+    "prestart": "node scripts/bundle-renderer.js"
+  },
+  "author": "Portico contributors",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron/notarize": "^2.5.0",
+    "@playwright/test": "^1.57.0",
+    "electron": "^39.5.1",
+    "electron-builder": "^26.3.0",
+    "esbuild": "^0.27.3"
+  },
+  "build": {
+    "appId": "dev.portico.workbench",
+    "productName": "Portico",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/services/main.js",
+      "src/services/preload.js",
+      "src/**/*",
+      "assets/**/*",
+      "build-info.json",
+      "src/scripts/*.sh"
+    ],
+    "asarUnpack": [
+      "node_modules/@anthropic-ai/sandbox-runtime/**",
+      "node_modules/@pondwader/socks5-server/**",
+      "node_modules/commander/**",
+      "node_modules/node-forge/**",
+      "node_modules/shell-quote/**",
+      "node_modules/zod/**"
+    ],
+    "afterPack": "scripts/verify-sandbox-runtime-package.js",
+    "extraResources": [
+      {
+        "from": "build-info.json",
+        "to": "build-info.json"
+      },
+      {
+        "from": "setup-requirement.json",
+        "to": "setup-requirement.json"
+      },
+      {
+        "from": "../src/scripts",
+        "to": "prereq-scripts"
+      },
+      {
+        "from": "src/scripts/prepare-update-cloudsmith.sh",
+        "to": "prereq-scripts/prepare-update-cloudsmith.sh"
+      },
+      {
+        "from": "../host-mcp-binaries",
+        "to": "host-mcp-binaries"
+      },
+      {
+        "from": "build-resources/cloudsmith.env",
+        "to": "cloudsmith.env"
+      }
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
+      "grantFileProtocolExtraPrivileges": false
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg"
+        }
+      ],
+      "icon": "assets/icon-light.icns",
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "sign": true,
+      "title": "Portico",
+      "background": "assets/dmg-background.tiff",
+      "contents": [
+        {
+          "x": 180,
+          "y": 170
+        },
+        {
+          "x": 480,
+          "y": 170,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 660,
+        "height": 400
+      },
+      "iconSize": 128
+    },
+    "afterSign": "scripts/notarize.js",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon-light.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Development",
+      "icon": "assets/icon-light.png"
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sandbox-runtime": "^0.0.51",
+    "chrome-devtools-mcp": "0.26.0",
+    "electron-prompt": "^1.7.0",
+    "express": "^5.1.0",
+    "js-yaml": "^4.1.1",
+    "marked": "^17.0.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

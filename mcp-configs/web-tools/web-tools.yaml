@@ -1,0 +1,16 @@
+name: "Web Tools"
+id: "web-tools"
+display_name: "Web Tools"
+deployment_type: "docker"
+experimental: false
+is_core: true
+always_enabled: false
+user_installed: false
+description: "Web search via OpenAI with real-time results and citations"
+use_cases:
+  - "Search the web for current information beyond training data"
+  - "Get cited, fact-checked answers from web sources"
+tool_rename_mapping:
+  web_search: "Web Search"
+
+required_env_vars: []

@@ -1,0 +1,13 @@
+{
+  "type": "streamable-http",
+  "url": "https://data-plat-mcp.sandbox.example.invalid/mcp",
+  "oauth": {
+    "server_url": "https://data-plat-mcp.sandbox.example.invalid",
+    "resource": "https://data-plat-mcp.sandbox.example.invalid/mcp",
+    "client_metadata": {
+      "client_name": "Portico",
+      "token_endpoint_auth_method": "none",
+      "scope": "workforce.data_platform.data_asset_metadata.read workforce.data_platform.idash_workspace.write workforce.data_platform.idash_workspace.read workforce.data_platform.query.execute workforce.data_platform.query.generate offline_access"
+    }
+  }
+}

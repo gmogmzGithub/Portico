@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PORTICO: Custom Font - Portico Sans */
+@font-face {
+  font-family: 'Portico Sans';
+  font-style: normal;
+  font-weight: 1 1000;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./assets/fonts/portico-sans/PorticoSansVF.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Portico Sans';
+  font-style: italic;
+  font-weight: 1 1000;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./assets/fonts/portico-sans/PorticoSansVF_It.woff2') format('woff2');
+}
+
+@supports not font-tech(variations) {
+  @font-face {
+    font-family: 'Portico Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('./assets/fonts/portico-sans/PorticoSans_Rg.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Portico Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('./assets/fonts/portico-sans/PorticoSans_Md.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Portico Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('./assets/fonts/portico-sans/PorticoSans_Bd.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Portico Sans';
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url('./assets/fonts/portico-sans/PorticoSans_It.woff2') format('woff2');
+  }
+}
+
+:root {
+  font-family: 'Portico Sans', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 500;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global font override */
+html, body, * {
+  font-family: 'Portico Sans', system-ui, sans-serif !important;
+  font-weight: 500 !important;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* JSON viewer overrides */
+.json-viewer {
+  background-color: #1e293b !important;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  font-size: 12px !important;
+}
+
+/* Pulse animation for live indicator */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

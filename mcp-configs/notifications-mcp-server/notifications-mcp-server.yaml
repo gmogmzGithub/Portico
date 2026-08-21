@@ -1,0 +1,34 @@
+name: Notifications
+id: notifications-mcp-server
+display_name: Notifications
+deployment_type: docker
+description: Provides access to Portico's CommsHub notification system for campaign and template management.
+guided_setup_description: Manage CommsHub campaigns, templates, and delivery data
+user_installed: false
+is_core: false
+required_env_vars: []
+use_cases:
+  - Querying campaign configurations and orchestration status
+  - Analyzing communications across email, push, SMS, and in-app channels
+  - Auditing compliance, recipient data, and delivery history
+tool_rename_mapping:
+  check_orchestration_lock: "Check Orchestration Lock"
+  echo: "Echo"
+  example_with_token_exchange: "Example Token Exchange"
+  get_campaign: "Get Campaign"
+  get_client: "Get Client"
+  get_content_type: "Get Content Type"
+  get_delivery_group: "Get Delivery Group"
+  get_orchestration_status: "Get Orchestration Status"
+  get_preference_category_group: "Get Preference Category Group"
+  get_recipient_data: "Get Recipient Data"
+  get_recipient_metadata: "Get Recipient Metadata"
+  get_recipient_sample: "Get Recipient Sample"
+  get_template: "Get Template"
+  get_template_counts_by_channel: "Get Template Counts by Channel"
+  list_campaigns: "List Campaigns"
+  list_clients_for_user: "List Clients for User"
+  list_content_types: "List Content Types"
+  list_orchestrations: "List Orchestrations"
+  list_recipient_data: "List Recipient Data"
+  list_templates: "List Templates"

@@ -1,0 +1,23 @@
+name: "Scheduling MCP Server"
+id: "scheduling"
+display_name: "Scheduling"
+deployment_type: "docker"
+experimental: false
+is_core: true
+always_enabled: false
+user_installed: false
+description: "Create, update, delete, inspect, and execute scheduled tasks that run through the Subagents MCP server"
+use_cases:
+  - "Schedule recurring prompts with cron expressions"
+  - "Store one-off scheduled prompts for later execution"
+  - "Trigger manual run-now executions for saved scheduled tasks"
+required_env_vars: []
+tool_rename_mapping:
+  cancel_run: "Cancel Run"
+  create_task: "Create Task"
+  delete_task: "Delete Task"
+  finalize_run: "Finalize Run"
+  get_task: "Get Task"
+  list_tasks: "List Tasks"
+  run_task_now: "Run Task Now"
+  update_task: "Update Task"

@@ -1,0 +1,9 @@
+{
+  "command": "uv",
+  "args": [
+    "run",
+    "--directory",
+    "/app/internal-mcp/subagents",
+    "subagents-server"
+  ]
+}

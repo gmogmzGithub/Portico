@@ -1,0 +1,31 @@
+name: Sourcegraph MCP Server
+id: sourcegraph
+display_name: Sourcegraph
+deployment_type: docker
+description:
+  Search and navigate Portico's codebase using Sourcegraph code intelligence
+  - code search, file retrieval, repository exploration, and code navigation
+guided_setup_description: Search and navigate code across Portico repositories
+user_installed: false
+is_core: false
+required_env_vars:
+  - name: SOURCEGRAPH_TOKEN
+    placeholder: "your_sourcegraph_api_key"
+    description: "Your Sourcegraph API Key from Portico Sourcegraph"
+    sensitive: true
+preset_env_vars:
+  - name: SOURCEGRAPH_URL
+    value: https://portico.sourcegraph.com
+use_cases:
+  - Searching code across Portico repositories
+  - Navigating and reading source files
+  - Exploring repository structure and contents
+  - Finding code references and definitions
+  - Code intelligence and symbol search
+experimental: false
+tool_rename_mapping:
+  deepsearch_code: "Deep Search Code"
+  get_file_content: "Get File Content"
+  get_repository: "Get Repository"
+  list_repositories: "List Repositories"
+  search_code: "Search Code"

@@ -1,0 +1,138 @@
+diff --git a/core/providers/anthropic/chat.go b/core/providers/anthropic/chat.go
+index a72ffbe..0582d0e 100644
+--- a/core/providers/anthropic/chat.go
++++ b/core/providers/anthropic/chat.go
+@@ -13,0 +14,16 @@ import (
++func appendAnthropicSystemBlocks(target *[]AnthropicContentBlock, content *AnthropicContent) {
++	if content == nil {
++		return
++	}
++
++	if content.ContentStr != nil && *content.ContentStr != "" {
++		*target = append(*target, AnthropicContentBlock{
++			Type: AnthropicContentBlockTypeText,
++			Text: content.ContentStr,
++		})
++		return
++	}
++
++	*target = append(*target, content.ContentBlocks...)
++}
++
+@@ -351,0 +368,21 @@ func ToAnthropicChatRequest(ctx *schemas.BifrostContext, bifrostReq *schemas.Bif
++		} else if cacheControlRaw, exists := bifrostReq.Params.ExtraParams["cache_control"]; exists {
++			parsed := false
++			switch v := cacheControlRaw.(type) {
++			case *schemas.CacheControl:
++				anthropicReq.CacheControl = v
++				parsed = true
++			case schemas.CacheControl:
++				anthropicReq.CacheControl = &v
++				parsed = true
++			default:
++				if data, err := providerUtils.MarshalSorted(v); err == nil {
++					var cc schemas.CacheControl
++					if sonic.Unmarshal(data, &cc) == nil {
++						anthropicReq.CacheControl = &cc
++						parsed = true
++					}
++				}
++			}
++			if parsed {
++				delete(anthropicReq.ExtraParams, "cache_control")
++			}
+@@ -545 +582 @@ func ToAnthropicChatRequest(ctx *schemas.BifrostContext, bifrostReq *schemas.Bif
+-	var systemContent *AnthropicContent
++	var systemBlocks []AnthropicContentBlock
+@@ -553,0 +591 @@ func ToAnthropicChatRequest(ctx *schemas.BifrostContext, bifrostReq *schemas.Bif
++			var systemContent *AnthropicContent
+@@ -572,0 +611 @@ func ToAnthropicChatRequest(ctx *schemas.BifrostContext, bifrostReq *schemas.Bif
++			appendAnthropicSystemBlocks(&systemBlocks, systemContent)
+@@ -707 +746,3 @@ func ToAnthropicChatRequest(ctx *schemas.BifrostContext, bifrostReq *schemas.Bif
+-	anthropicReq.System = systemContent
++	if len(systemBlocks) > 0 {
++		anthropicReq.System = &AnthropicContent{ContentBlocks: systemBlocks}
++	}
+diff --git a/core/providers/anthropic/chat_test.go b/core/providers/anthropic/chat_test.go
+index 04df3bd..debe09a 100644
+--- a/core/providers/anthropic/chat_test.go
++++ b/core/providers/anthropic/chat_test.go
+@@ -339,0 +340,63 @@ func TestToAnthropicChatRequest_ToolInputKeyOrderPreservation(t *testing.T) {
++func TestToAnthropicChatRequest_PreservesMultipleSystemMessagesAndLegacyTopLevelCacheControl(t *testing.T) {
++	bifrostReq := &schemas.BifrostChatRequest{
++		Provider: schemas.Anthropic,
++		Model:    "atlas-sonnet-4-20250514",
++		Input: []schemas.ChatMessage{
++			{
++				Role:    schemas.ChatMessageRoleSystem,
++				Content: &schemas.ChatMessageContent{ContentStr: schemas.Ptr("<static_context>stable</static_context>")},
++			},
++			{
++				Role:    schemas.ChatMessageRoleSystem,
++				Content: &schemas.ChatMessageContent{ContentStr: schemas.Ptr("model prompt")},
++			},
++			{
++				Role:    schemas.ChatMessageRoleSystem,
++				Content: &schemas.ChatMessageContent{ContentStr: schemas.Ptr("<dynamic_context>today</dynamic_context>")},
++			},
++			{
++				Role:    schemas.ChatMessageRoleUser,
++				Content: &schemas.ChatMessageContent{ContentStr: schemas.Ptr("hello")},
++			},
++		},
++		Params: &schemas.ChatParameters{
++			ExtraParams: map[string]interface{}{
++				"cache_control": map[string]interface{}{"type": "ephemeral"},
++			},
++		},
++	}
++
++	ctx, cancel := schemas.NewBifrostContextWithCancel(nil)
++	defer cancel()
++	result, err := ToAnthropicChatRequest(ctx, bifrostReq)
++	if err != nil {
++		t.Fatalf("unexpected error: %v", err)
++	}
++
++	if result.CacheControl == nil || result.CacheControl.Type != "ephemeral" {
++		t.Fatalf("expected top-level cache_control to be preserved, got %#v", result.CacheControl)
++	}
++	if result.ExtraParams["cache_control"] != nil {
++		t.Fatalf("expected cache_control to be removed from extra params, got %#v", result.ExtraParams["cache_control"])
++	}
++	if result.System == nil || len(result.System.ContentBlocks) != 3 {
++		t.Fatalf("expected 3 system blocks, got %#v", result.System)
++	}
++
++	got := []string{
++		*result.System.ContentBlocks[0].Text,
++		*result.System.ContentBlocks[1].Text,
++		*result.System.ContentBlocks[2].Text,
++	}
++	want := []string{
++		"<static_context>stable</static_context>",
++		"model prompt",
++		"<dynamic_context>today</dynamic_context>",
++	}
++	for i := range want {
++		if got[i] != want[i] {
++			t.Fatalf("system block %d: expected %q, got %q", i, want[i], got[i])
++		}
++	}
++}
++
+diff --git a/core/providers/anthropic/responses.go b/core/providers/anthropic/responses.go
+index cb3528a..8b9bcc4 100644
+--- a/core/providers/anthropic/responses.go
++++ b/core/providers/anthropic/responses.go
+@@ -2823 +2823 @@ func ConvertBifrostMessagesToAnthropicMessages(ctx *schemas.BifrostContext, bifr
+-	var systemContent *AnthropicContent
++	var systemBlocks []AnthropicContentBlock
+@@ -2942 +2942 @@ func ConvertBifrostMessagesToAnthropicMessages(ctx *schemas.BifrostContext, bifr
+-				systemContent = convertBifrostMessageToAnthropicSystemContent(&msg)
++				appendAnthropicSystemBlocks(&systemBlocks, convertBifrostMessageToAnthropicSystemContent(&msg))
+@@ -3303,0 +3304,4 @@ func ConvertBifrostMessagesToAnthropicMessages(ctx *schemas.BifrostContext, bifr
++	var systemContent *AnthropicContent
++	if len(systemBlocks) > 0 {
++		systemContent = &AnthropicContent{ContentBlocks: systemBlocks}
++	}

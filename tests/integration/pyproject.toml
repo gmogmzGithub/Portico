@@ -1,0 +1,54 @@
+[project]
+name = "integration-tests"
+version = "1.0.0"
+description = "Agentic Integration Testing Framework for Open WebUI"
+requires-python = ">=3.11"
+dependencies = [
+    # Atlas Agent SDK for running test agents
+    "atlas-code-sdk>=0.0.25",
+    # HTTP client
+    "httpx>=0.27.0",
+    # Redis client
+    "redis>=5.0.0",
+    # Testing framework
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    # YAML parsing for test spec frontmatter
+    "pyyaml>=6.0",
+    # Docker SDK for container log access
+    "docker>=7.0.0",
+    # Rich terminal output
+    "rich>=14.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["framework"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["."]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

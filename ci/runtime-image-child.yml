@@ -1,0 +1,238 @@
+include:
+  - project: pipeline/gitlab-pipeline
+    file: /templates/container-images.yml
+    ref: 3a7433770258c30e707c28b39db9c422aa1c4f8c
+
+stages:
+  - build
+  - deploy
+
+variables:
+  KANIKO_EXECUTOR_IMAGE: "gcr.io/kaniko-project/executor:v1.22.0-debug@sha256:7b3699e9e105521075812cd3f3f4c62c913cb5cd113c929975502022df3bcf60"
+  MANIFEST_TOOL_IMAGE: "mplatform/manifest-tool:alpine@sha256:566f66687564e125c43bb86e2d035ad9b7fb4449f38814535b691d1a7f8d20db"
+  ARCHITECTURES: amd64
+  OS: linux
+
+default:
+  interruptible: true
+
+workflow:
+  rules:
+    - if: $ARCHITECTURES && $CI_PIPELINE_SOURCE == "parent_pipeline"
+
+Build Image:
+  stage: build
+  extends:
+    - .populate_docker_config
+  image:
+    name: $KANIKO_EXECUTOR_IMAGE
+    entrypoint: [""]
+  tags:
+    - $ARCH
+  parallel:
+    matrix:
+      - ARCH:
+          - amd64
+          - arm64
+  before_script:
+    - export DOCKER_CONFIG=/kaniko/.docker/
+    - !reference [.populate_docker_config, before_script]
+  script:
+    - |
+      set -eu
+      case " ${ARCHITECTURES} " in
+        *" ${ARCH} "*)
+          ;;
+        *)
+          echo "Architecture ${ARCH} is not enabled by ARCHITECTURES=${ARCHITECTURES}"
+          exit 0
+          ;;
+      esac
+      case "${portico_RUNTIME_BUILD_CONTEXT:-}" in
+        .)
+          ;;
+        source)
+          cp -R source/. .
+          ;;
+        *)
+          echo "Unsupported runtime image build context: ${portico_RUNTIME_BUILD_CONTEXT:-missing}" >&2
+          exit 1
+          ;;
+      esac
+      case "${portico_RUNTIME_DOCKERFILE:-}" in
+        Dockerfile.*|source/Dockerfile.*)
+          ;;
+        *)
+          echo "Invalid runtime image Dockerfile path" >&2
+          exit 1
+          ;;
+      esac
+      [ -f "$portico_RUNTIME_DOCKERFILE" ] || {
+        echo "Runtime image Dockerfile does not exist: $portico_RUNTIME_DOCKERFILE" >&2
+        exit 1
+      }
+      cp "$portico_RUNTIME_DOCKERFILE" Dockerfile
+      echo "Selected runtime Dockerfile: $portico_RUNTIME_DOCKERFILE"
+
+      push_images="${portico_RUNTIME_PUSH_IMAGES:-true}"
+      if [ "$push_images" != "true" ]; then
+        # MR validation builds have no docker.io pull credentials, so
+        # unauthenticated pulls rate-limit under concurrency. Rewrite
+        # unqualified FROM images to the anonymously pullable Harbor
+        # docker.io proxy. Stage aliases and registry-qualified images
+        # are left untouched. Protected release builds never take this
+        # branch and keep pulling exactly what the Dockerfile declares.
+        proxy="harbor.example.invalid/dockerhub-proxy"
+        stages=""
+        : > Dockerfile.rewritten
+        while IFS= read -r line; do
+          case "$line" in
+            FROM\ *)
+              rest="${line#FROM }"
+              image="${rest%% *}"
+              remainder="${rest#"$image"}"
+              alias=""
+              case "$rest" in
+                *" AS "*) alias="${rest##* AS }" ;;
+              esac
+              is_stage=false
+              for s in $stages; do
+                [ "$s" = "$image" ] && is_stage=true
+              done
+              if [ "$is_stage" = false ]; then
+                case "$image" in
+                  *.*/*)
+                    # already registry-qualified (host with a dot)
+                    ;;
+                  */*)
+                    image="$proxy/$image"
+                    ;;
+                  *)
+                    image="$proxy/library/$image"
+                    ;;
+                esac
+              fi
+              printf 'FROM %s%s\n' "$image" "$remainder" >> Dockerfile.rewritten
+              if [ -n "$alias" ]; then
+                stages="$stages $alias"
+              fi
+              ;;
+            *)
+              printf '%s\n' "$line" >> Dockerfile.rewritten
+              ;;
+          esac
+        done < Dockerfile
+        mv Dockerfile.rewritten Dockerfile
+        echo "Rewrote unqualified FROM images through ${proxy} for the credential-free validation build"
+        grep '^FROM ' Dockerfile
+      fi
+
+      arch_tag="${CANONICAL_TAG}-${ARCH}-${CI_UPSTREAM_PIPELINE_ID}"
+      image_reference="${DESTINATION}:${arch_tag}"
+      digest_file="${ARCH}.digest"
+
+      set -- /kaniko/executor \
+        --context "$CI_PROJECT_DIR" \
+        --dockerfile "$CI_PROJECT_DIR/Dockerfile" \
+        --destination "$image_reference" \
+        --custom-platform "${OS}/${ARCH}" \
+        --digest-file "$digest_file" \
+        --cache=false \
+        --skip-unused-stages=true
+      if [ "$push_images" != "true" ]; then
+        # MR validation builds have no registry push grants: build the image
+        # fully but never push, and skip the manifest fragment (the manifest
+        # list job is disabled in no-push mode). Base pulls were already
+        # rewritten to the Harbor docker.io proxy above.
+        set -- "$@" --no-push
+      fi
+      for label in ${portico_RUNTIME_IMAGE_LABELS:-}; do
+        set -- "$@" --label "$label"
+      done
+      "$@"
+
+      if [ "$push_images" != "true" ]; then
+        echo "Runtime image push disabled (validation build); built ${image_reference} without pushing."
+        exit 0
+      fi
+
+      digest="$(cat "$digest_file")"
+      case "$digest" in
+        sha256:????????????????????????????????????????????????????????????????)
+          ;;
+        *)
+          echo "Invalid ${ARCH} image digest: ${digest:-empty}" >&2
+          exit 1
+          ;;
+      esac
+      cat >"${ARCH}.manifest" <<EOF
+        - image: ${image_reference}@${digest}
+          platform:
+            architecture: ${ARCH}
+            os: ${OS}
+      EOF
+  artifacts:
+    paths:
+      - "*.manifest"
+    expire_in: 1 day
+
+Generate Manifest List:
+  stage: deploy
+  extends:
+    - .common_docker_config
+  rules:
+    # Manifest lists exist only for pushed images; skip in no-push
+    # (MR validation) mode.
+    - if: '$portico_RUNTIME_PUSH_IMAGES == "true"'
+    - if: '$portico_RUNTIME_PUSH_IMAGES == null'
+  needs:
+    - "Build Image"
+  tags:
+    - arm64
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: $MANIFEST_TOOL_IMAGE
+  before_script:
+    - apk add --no-cache jq
+    - !reference [.common_docker_config, before_script]
+  script:
+    - |
+      set -eu
+      for arch in $ARCHITECTURES; do
+        [ -f "${arch}.manifest" ] || {
+          echo "Expected manifest ${arch}.manifest not found. Check job 'Build Image [${arch}]'." >&2
+          exit 1
+        }
+      done
+      all_tags="$CANONICAL_TAG"
+      if [ -n "${TAGS:-}" ]; then
+        all_tags="$all_tags $TAGS"
+      fi
+      tag_list=""
+      for tag in $all_tags; do
+        if [ -z "$tag_list" ]; then
+          tag_list="$tag"
+        else
+          tag_list="$tag_list,$tag"
+        fi
+      done
+      cat <<EOF > manifest_tool.yaml
+      image: ${DESTINATION}:${CANONICAL_TAG}-${CI_UPSTREAM_PIPELINE_ID}
+      tags: [${tag_list}]
+      annotations:
+        org.opencontainers.image.created: "$(date -Is -u)"
+        org.opencontainers.image.source: "${CI_PROJECT_URL}"
+        org.opencontainers.image.revision: "${CI_COMMIT_SHA}"
+        org.opencontainers.image.ref.name: "${CI_COMMIT_REF_NAME}"
+        org.opencontainers.image.authors: "${GITLAB_USER_LOGIN}"
+      manifests:
+      EOF
+      cat *.manifest >> manifest_tool.yaml
+      sha="$(manifest-tool push --type oci from-spec manifest_tool.yaml | cut -d' ' -f2)"
+      full_image="${DESTINATION}:${CANONICAL_TAG}-${CI_UPSTREAM_PIPELINE_ID}@${sha}"
+      echo "$full_image"
+      echo "DIGEST=$full_image" > digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env

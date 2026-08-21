@@ -1,0 +1,8 @@
+{
+  "type": "streamable-http",
+  "url": "https://portico-be.glean.com/mcp/default",
+  "oauth": {
+    "server_url": "https://portico-be.glean.com",
+    "resource": "https://portico-be.glean.com/mcp/default"
+  }
+}

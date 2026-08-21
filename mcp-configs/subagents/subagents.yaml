@@ -1,0 +1,41 @@
+name: "Subagents MCP Server"
+id: "subagents"
+display_name: "Subagents"
+deployment_type: "docker"
+experimental: false
+is_core: true
+always_enabled: true
+user_installed: false
+description: "Invoke subagents for task delegation, verification, and hierarchical workflows"
+use_cases:
+  - "Delegate specialized tasks to domain-specific models"
+  - "Parallel processing with multiple models"
+  - "Chain of thought with different reasoning models"
+  - "Expert consultation workflows"
+tool_rename_mapping:
+  configure_lm_studio: "Configure LM Studio"
+  copy_agent: "Copy Agent"
+  create_agent: "Create Agent"
+  delete_agent: "Delete Agent"
+  get_agent: "Get Agent"
+  get_agent_system_prompt: "Get Agent System Prompt"
+  get_chat_status: "Get Chat Status"
+  get_lm_studio_status: "Get LM Studio Status"
+  get_marketplace_agent: "Get Marketplace Agent"
+  get_system_information: "Get System Information"
+  install_agent: "Install Agent"
+  list_agents: "List Agents"
+  list_available_tools: "List Available Tools"
+  list_chats: "List Chats"
+  list_published_agents: "List Published Agents"
+  publish_agent: "Publish Agent"
+  reclaim_agent: "Reclaim Agent"
+  reconcile_agent_attribution: "Reconcile Agent Attribution"
+  run_subagent: "Run Subagent"
+  search_marketplace_agents: "Search Marketplace Agents"
+  send_message_to_chat: "Send Message to Chat"
+  start_chat: "Start Chat"
+  unpublish_agent: "Unpublish Agent"
+  update_agent: "Update Agent"
+
+required_env_vars: []

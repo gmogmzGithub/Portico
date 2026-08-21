@@ -1,0 +1,21 @@
+{
+  "command": "__portico_managed_node_package__",
+  "args": [],
+  "managed_node_package": {
+    "schema_version": 1,
+    "server_id": "gitlab-mcp",
+    "package_manager": "npm",
+    "requested_spec": "@zereight/mcp-gitlab@2.1.11",
+    "package_name": "@zereight/mcp-gitlab",
+    "requested_range": "2.1.11",
+    "runtime_args": [],
+    "bin": null,
+    "source": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@zereight/mcp-gitlab"
+      ]
+    }
+  }
+}

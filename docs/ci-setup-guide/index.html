@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portico — GitLab CI/CD Pipeline Setup</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@700;800;900&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-deep: #0a0b0f;
+  --bg-card: #12141a;
+  --bg-card-hover: #181b24;
+  --bg-surface: #1a1d27;
+  --bg-code: #0d0f14;
+  --border: #2a2d3a;
+  --border-active: #4a4d5a;
+  --text-primary: #e8e9ed;
+  --text-secondary: #8b8fa3;
+  --text-muted: #5a5e72;
+  --accent-blue: #2d7ff9;
+  --accent-blue-dim: #1a4d99;
+  --accent-orange: #ff6b2b;
+  --accent-orange-dim: rgba(255, 107, 43, 0.15);
+  --accent-green: #34c759;
+  --accent-green-dim: rgba(52, 199, 89, 0.12);
+  --accent-purple: #9b6dff;
+  --accent-purple-dim: rgba(155, 109, 255, 0.12);
+  --accent-cyan: #32d4de;
+  --accent-cyan-dim: rgba(50, 212, 222, 0.12);
+  --accent-red: #ff453a;
+  --accent-yellow: #ffd60a;
+  --accent-yellow-dim: rgba(255, 214, 10, 0.12);
+  --accent-pink: #ff6eb4;
+  --accent-teal: #10b981;
+  --accent-teal-dim: rgba(16, 185, 129, 0.12);
+  --radius: 8px;
+  --radius-lg: 14px;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+  --display: 'Playfair Display', Georgia, serif;
+  --shadow-card: 0 2px 20px rgba(0,0,0,0.3), 0 0 1px rgba(255,255,255,0.05);
+  --shadow-glow: 0 0 40px rgba(45, 127, 249, 0.08);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 20% 10%, rgba(45, 127, 249, 0.04), transparent),
+    radial-gradient(ellipse 600px 800px at 80% 90%, rgba(155, 109, 255, 0.03), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── GRID LINES BACKGROUND ── */
+.grid-bg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  padding: 80px 40px 60px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -20%; right: -20%;
+  height: 200%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(45, 127, 249, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 10px;
+  background: var(--accent-orange-dim);
+  border: 1px solid rgba(255, 107, 43, 0.25);
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-orange);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+  animation: fadeSlideDown 0.6s ease-out;
+}
+
+.hero-badge::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--accent-orange);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+  animation: fadeSlideDown 0.6s ease-out 0.1s both;
+}
+
+.hero-sub {
+  font-size: 17px;
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin: 0 auto 32px;
+  animation: fadeSlideDown 0.6s ease-out 0.2s both;
+}
+
+.hero-meta {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  animation: fadeSlideDown 0.6s ease-out 0.3s both;
+}
+
+.hero-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.hero-meta-item .val {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── PIPELINE OVERVIEW ── */
+.pipeline-overview {
+  position: relative;
+  z-index: 1;
+  padding: 48px 40px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.pipeline-overview h2 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.pipeline-flow-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin-bottom: 14px;
+  margin-top: 8px;
+}
+
+.pipeline-flow-label:first-of-type {
+  margin-top: 0;
+}
+
+.pipeline-stages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: max-content;
+  padding: 0 20px;
+}
+
+.pipeline-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.pipeline-stage-box {
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.pipeline-stage-box:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+  box-shadow: 0 0 20px rgba(45, 127, 249, 0.1);
+}
+
+.pipeline-stage-box.broker {
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+}
+
+.pipeline-stage-box.broker:hover {
+  border-color: var(--accent-teal);
+  color: var(--text-primary);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+.pipeline-stage-jobs {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 100px;
+}
+
+.pipeline-arrow {
+  width: 28px;
+  height: 1px;
+  background: var(--border);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pipeline-arrow::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -3px;
+  width: 0; height: 0;
+  border-left: 5px solid var(--border);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+}
+
+.pipeline-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin: 24px 0 16px;
+}
+
+/* Bracket for broker sub-pipeline */
+.pipeline-bracket {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+/* ── MAIN CONTENT ── */
+.content {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 24px 120px;
+}
+
+/* ── PHASE ── */
+.phase {
+  position: relative;
+  margin-bottom: 64px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.phase.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Timeline rail */
+.phase::before {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 56px;
+  bottom: -64px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--border) 0%, var(--border) 70%, transparent 100%);
+}
+
+.phase:last-child::before { display: none; }
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  cursor: default;
+}
+
+.phase-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.3s ease;
+}
+
+.phase-header:hover .phase-number {
+  transform: scale(1.1);
+}
+
+.phase-number.blue { background: var(--accent-blue); color: #fff; box-shadow: 0 0 24px rgba(45, 127, 249, 0.3); }
+.phase-number.orange { background: var(--accent-orange); color: #fff; box-shadow: 0 0 24px rgba(255, 107, 43, 0.3); }
+.phase-number.green { background: var(--accent-green); color: #fff; box-shadow: 0 0 24px rgba(52, 199, 89, 0.3); }
+.phase-number.purple { background: var(--accent-purple); color: #fff; box-shadow: 0 0 24px rgba(155, 109, 255, 0.3); }
+.phase-number.cyan { background: var(--accent-cyan); color: #0a0b0f; box-shadow: 0 0 24px rgba(50, 212, 222, 0.3); }
+.phase-number.teal { background: var(--accent-teal); color: #fff; box-shadow: 0 0 24px rgba(16, 185, 129, 0.3); }
+.phase-number.pink { background: var(--accent-pink); color: #fff; box-shadow: 0 0 24px rgba(255, 110, 180, 0.3); }
+.phase-number.yellow { background: var(--accent-yellow); color: #0a0b0f; box-shadow: 0 0 24px rgba(255, 214, 10, 0.3); }
+.phase-number.red { background: var(--accent-red); color: #fff; box-shadow: 0 0 24px rgba(255, 69, 58, 0.3); }
+
+.phase-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phase-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.phase-title {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ── STEP CARDS ── */
+.steps {
+  padding-left: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.step-card:hover {
+  border-color: var(--border-active);
+  background: var(--bg-card-hover);
+}
+
+.step-card.open {
+  border-color: var(--border-active);
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+}
+
+.step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.step-header:hover {
+  background: rgba(255,255,255,0.015);
+}
+
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 28px;
+  padding-top: 2px;
+}
+
+.step-info { flex: 1; }
+
+.step-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.step-brief {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.step-chevron {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.step-card.open .step-chevron {
+  transform: rotate(180deg);
+}
+
+.step-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-card.open .step-detail {
+  max-height: 2000px;
+}
+
+.step-detail-inner {
+  padding: 0 20px 20px 62px;
+}
+
+.step-detail-inner p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.65;
+}
+
+.step-detail-inner strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Code blocks */
+.code-block {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 12px 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--accent-cyan);
+  overflow-x: auto;
+  position: relative;
+  white-space: pre;
+}
+
+.code-block .comment { color: var(--text-muted); }
+.code-block .key { color: var(--accent-orange); }
+.code-block .val { color: var(--accent-green); }
+.code-block .flag { color: var(--accent-purple); }
+
+.code-block .copy-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.code-block .copy-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-active);
+}
+
+/* Tags & chips */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tag.slack {
+  background: var(--accent-purple-dim);
+  color: var(--accent-purple);
+  border: 1px solid rgba(155, 109, 255, 0.2);
+}
+
+.tag.link {
+  background: var(--accent-blue-dim);
+  background: rgba(45, 127, 249, 0.12);
+  color: var(--accent-blue);
+  border: 1px solid rgba(45, 127, 249, 0.2);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.tag.link:hover {
+  background: rgba(45, 127, 249, 0.2);
+}
+
+.tag.warn {
+  background: var(--accent-yellow-dim);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 214, 10, 0.2);
+}
+
+.tag.info {
+  background: var(--accent-cyan-dim);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(50, 212, 222, 0.2);
+}
+
+.tag.secret {
+  background: var(--accent-orange-dim);
+  color: var(--accent-orange);
+  border: 1px solid rgba(255, 107, 43, 0.2);
+}
+
+/* Secrets table */
+.secrets-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 12.5px;
+}
+
+.secrets-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.secrets-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(42, 45, 58, 0.5);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.secrets-table td:first-child {
+  color: var(--accent-orange);
+  font-weight: 500;
+}
+
+.secrets-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Checklist */
+.checklist {
+  list-style: none;
+  margin: 12px 0;
+}
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.checklist li::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-active);
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checklist li.checked::before {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  box-shadow: inset 0 0 0 2px var(--bg-card);
+}
+
+.checklist li:hover::before {
+  border-color: var(--accent-blue);
+}
+
+/* Note callout */
+.callout {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  gap: 10px;
+}
+
+.callout.warn {
+  background: var(--accent-yellow-dim);
+  border: 1px solid rgba(255, 214, 10, 0.15);
+  color: var(--accent-yellow);
+}
+
+.callout.info {
+  background: rgba(45, 127, 249, 0.08);
+  border: 1px solid rgba(45, 127, 249, 0.15);
+  color: var(--accent-blue);
+}
+
+.callout.danger {
+  background: rgba(255, 69, 58, 0.08);
+  border: 1px solid rgba(255, 69, 58, 0.15);
+  color: var(--accent-red);
+}
+
+.callout-icon { flex-shrink: 0; font-size: 16px; }
+
+/* ── NAV SIDEBAR ── */
+.nav-rail {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-dot:hover {
+  background: var(--text-muted);
+  transform: scale(1.3);
+}
+
+.nav-dot.active {
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(45, 127, 249, 0.5);
+}
+
+.nav-dot::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.nav-dot:hover::after {
+  opacity: 1;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 200;
+  background: rgba(255,255,255,0.03);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* ── STEP COMPLETION ── */
+.step-check {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-active);
+  border-radius: 5px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  margin-top: 1px;
+  position: relative;
+  z-index: 2;
+}
+
+.step-check:hover {
+  border-color: var(--accent-green);
+  background: rgba(52, 199, 89, 0.08);
+}
+
+.step-check svg { opacity: 0; transition: opacity 0.2s; }
+
+.step-card.done .step-check {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  box-shadow: 0 0 10px rgba(52, 199, 89, 0.25);
+}
+
+.step-card.done .step-check svg { opacity: 1; }
+
+.step-card.done .step-title {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-muted);
+  color: var(--text-muted);
+}
+
+.step-card.done .step-brief { color: var(--text-muted); }
+
+.step-card.done { opacity: 0.7; }
+.step-card.done:hover { opacity: 1; }
+
+/* ── PROGRESS TRACKER ── */
+.progress-tracker {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  justify-content: center;
+  animation: fadeSlideDown 0.6s ease-out 0.4s both;
+}
+
+.progress-ring {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.progress-ring svg {
+  transform: rotate(-90deg);
+  width: 56px;
+  height: 56px;
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 4;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: var(--accent-green);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+  filter: drop-shadow(0 0 4px rgba(52, 199, 89, 0.3));
+}
+
+.progress-count {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.progress-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-label-main {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progress-label-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.progress-reset {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.progress-reset:hover {
+  color: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
+/* ── FOOTER ── */
+.footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 40px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .hero { padding: 48px 20px 40px; }
+  .hero-meta { gap: 16px; }
+  .content { padding: 40px 16px 80px; }
+  .steps { padding-left: 56px; }
+  .step-detail-inner { padding-left: 42px; }
+  .phase-title { font-size: 22px; }
+  .nav-rail { display: none; }
+  .pipeline-overview { padding: 32px 16px; }
+  .pipeline-stages { justify-content: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .steps { padding-left: 20px; }
+  .step-detail-inner { padding-left: 20px; }
+  .phase::before { left: 11px; }
+  .phase-number { width: 36px; height: 36px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<nav class="nav-rail" id="navRail">
+  <div class="nav-dot" data-phase="0" data-label="macOS Runners"></div>
+  <div class="nav-dot" data-phase="1" data-label="Vault Secrets"></div>
+  <div class="nav-dot" data-phase="2" data-label="Harbor Registry"></div>
+  <div class="nav-dot" data-phase="3" data-label="Broker Setup"></div>
+  <div class="nav-dot" data-phase="4" data-label="Apple Signing"></div>
+  <div class="nav-dot" data-phase="5" data-label="Cloudsmith"></div>
+  <div class="nav-dot" data-phase="6" data-label="Validate & Pilot"></div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero">
+  <div class="hero-badge">Remaining Steps</div>
+  <h1>GitLab CI/CD<br>Pipeline Setup</h1>
+  <p class="hero-sub">
+    Infrastructure foundation complete. These steps cover secrets, credentials, and validation
+    for the Portico macOS release pipeline.
+  </p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">Branch <span class="val">pre-beta-tmp</span></div>
+    <div class="hero-meta-item">Project <span class="val">portico/portico</span></div>
+    <div class="hero-meta-item">Team ID <span class="val">AJDA86F3YP</span></div>
+    <div class="hero-meta-item">Steps <span class="val">19</span></div>
+  </div>
+  <div class="progress-tracker" id="progressTracker">
+    <div class="progress-ring">
+      <svg viewBox="0 0 56 56">
+        <circle class="progress-ring-bg" cx="28" cy="28" r="24"/>
+        <circle class="progress-ring-fill" id="progressRing" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+      </svg>
+      <div class="progress-count" id="progressCount">0</div>
+    </div>
+    <div class="progress-label">
+      <span class="progress-label-main" id="progressText">0 of 19 steps complete</span>
+      <span class="progress-label-sub" id="progressPct">0% done</span>
+    </div>
+    <button class="progress-reset" onclick="resetProgress()" title="Reset all progress">reset</button>
+  </div>
+</header>
+
+<!-- ═══════════ PIPELINE OVERVIEW ═══════════ -->
+<section class="pipeline-overview">
+  <h2>Pipeline Architecture — Two Flows</h2>
+
+  <div class="pipeline-flow-label">MR Pipeline — Signed Per-MR Release</div>
+  <div class="pipeline-stages">
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">metadata</div>
+      <div class="pipeline-stage-jobs">dotenv</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">test</div>
+      <div class="pipeline-stage-jobs">run-tests.sh</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">mr-release</div>
+      <div class="pipeline-stage-jobs">trigger broker</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-bracket">
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-box broker">validate</div>
+        <div class="pipeline-stage-jobs">MR checks</div>
+      </div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-box broker">stage</div>
+        <div class="pipeline-stage-jobs">unsigned build</div>
+      </div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-box broker">sign</div>
+        <div class="pipeline-stage-jobs">notarize</div>
+      </div>
+      <div class="pipeline-arrow"></div>
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-box broker">publish</div>
+        <div class="pipeline-stage-jobs">cloudsmith</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-divider"></div>
+
+  <div class="pipeline-flow-label">Protected Push — Channel Release (pre-beta-tmp/beta)</div>
+  <div class="pipeline-stages">
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">metadata</div>
+      <div class="pipeline-stage-jobs">dotenv</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">test</div>
+      <div class="pipeline-stage-jobs">run-tests.sh</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">host-binaries</div>
+      <div class="pipeline-stage-jobs">linux 2x + darwin</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">runtime-images</div>
+      <div class="pipeline-stage-jobs">7 images x 2 arch</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">verify</div>
+      <div class="pipeline-stage-jobs">attestation</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">package</div>
+      <div class="pipeline-stage-jobs">sign + notarize</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">publish</div>
+      <div class="pipeline-stage-jobs">cloudsmith</div>
+    </div>
+    <div class="pipeline-arrow"></div>
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-box">promote</div>
+      <div class="pipeline-stage-jobs">latest tags</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PHASES ═══════════ -->
+<main class="content">
+
+<!-- ──── PHASE 0 ──── -->
+<section class="phase" data-phase="0">
+  <div class="phase-header">
+    <div class="phase-number green">0</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 0</span>
+      <h2 class="phase-title">macOS Runners (MAP/Orka)</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">01</span>
+        <div class="step-info">
+          <div class="step-title">Request MAP macOS runner linkage</div>
+          <div class="step-brief">Ask the Mobile App Platform team to link the map-macos-vm runner to your project.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The macOS CI jobs (<code>host-darwin</code>, <code>preview-macos</code>, <code>signed-package</code>, <code>publish-cloudsmith</code>) all require the <strong>map-macos-vm</strong> Orka runner tag.</p>
+        <p>This runner is managed by the <strong>Mobile App Platform (MAP)</strong> team:</p>
+        <table class="secrets-table">
+          <tr><th>Detail</th><th>Value</th></tr>
+          <tr><td>Owner team</td><td>jsj-mobile-app-ui-platform-jp</td></tr>
+          <tr><td>Runner repo</td><td>mobile-app-platform/orka-gitlab-runner</td></tr>
+          <tr><td>Runner tag</td><td>map-macos-vm</td></tr>
+          <tr><td>Orka image</td><td>tahoe-26-4-1-xcode-26-5</td></tr>
+        </table>
+        <p><strong>Action:</strong> Contact the MAP team to link <code>map-macos-vm</code> to <code>portico/portico</code>. Request that the runner be available for both MR and protected pipelines.</p>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>The Orka image provides Xcode, codesign, notarytool, stapler, security CLI, Node.js, npm, and rustup. The <code>.orka-macos</code> template in .gitlab-ci.yml prepends <code>/opt/homebrew/bin</code> to PATH.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">02</span>
+        <div class="step-info">
+          <div class="step-title">Verify Orka image availability</div>
+          <div class="step-brief">Confirm tahoe-26-4-1-xcode-26-5 is available and has the required toolchain.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Once the runner is linked, run a minimal test job to verify the image works:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button>
+<span class="comment"># Quick smoke test job (add temporarily to .gitlab-ci.yml)</span>
+orka-test:
+  extends: .orka-macos
+  stage: test
+  script:
+    - xcodebuild -version
+    - node --version
+    - rustup show
+    - codesign --help
+    - security list-keychains
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+        </div>
+        <p>Verify the image includes: <strong>Xcode 26.x</strong>, <strong>Node.js &ge; 22.12.0</strong>, <strong>rustup with toolchain 1.88.0</strong>, <strong>codesign</strong>, <strong>notarytool</strong>, <strong>stapler</strong>, and <strong>ditto</strong>.</p>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──── PHASE 1 ──── -->
+<section class="phase" data-phase="1">
+  <div class="phase-header">
+    <div class="phase-number purple">1</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 1</span>
+      <h2 class="phase-title">Vault Secrets</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">03</span>
+        <div class="step-info">
+          <div class="step-title">Store 6 secrets in Vault</div>
+          <div class="step-brief">Write the release secrets to the configured Vault path (unit exists, values needed).</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Open the <strong>Backstage Secret Units UI</strong> and add each property to <code>gitlab-ci/release-secrets</code>:</p>
+        <div class="tag-row">
+          <a class="tag link" href="https://backstage.example.invalid/secret-units" target="_blank">Backstage Secret Units</a>
+        </div>
+        <ul class="checklist">
+          <li>Select namespace <strong>portico</strong></li>
+          <li>Expand <strong>gitlab-ci</strong> &rarr; click <strong>release-secrets</strong></li>
+          <li>Add each property below (click <strong>+ New Property</strong> for each)</li>
+        </ul>
+        <table class="secrets-table">
+          <tr><th>Property Name</th><th>Value</th><th>Source</th></tr>
+          <tr><td>APPLE_CODESIGN_P12_BASE64</td><td>Base64-encoded .p12 file</td><td>Keychain export (Step 11)</td></tr>
+          <tr><td>APPLE_CODESIGN_P12_PASSWORD</td><td>.p12 export password</td><td>Set during export (Step 11)</td></tr>
+          <tr><td>APPLE_ID</td><td>Apple developer account email</td><td>Apple Developer</td></tr>
+          <tr><td>APPLE_APP_SPECIFIC_PASSWORD</td><td>App-specific password</td><td>appleid.apple.com (Step 12)</td></tr>
+          <tr><td>CLOUDSMITH_API_KEY</td><td>Upload-capable API key</td><td>Cloudsmith (Step 14)</td></tr>
+          <tr><td>CLOUDSMITH_ENTITLEMENT_TOKEN</td><td>Read/download token</td><td>Cloudsmith (Step 15)</td></tr>
+        </table>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>You can also use the <a href="https://vault.example.invalid/ui" target="_blank">Vault web UI</a> or <code>vault kv put</code> CLI, but the Backstage UI is the recommended self-service path at Portico.</span>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──── PHASE 2 ──── -->
+<section class="phase" data-phase="2">
+  <div class="phase-header">
+    <div class="phase-number cyan">2</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 2</span>
+      <h2 class="phase-title">Harbor Registry Setup</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">04</span>
+        <div class="step-info">
+          <div class="step-title">Create Harbor robot account</div>
+          <div class="step-brief">Mint a pull/push robot account for the portico Harbor project.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Navigate to <a href="https://harbor.example.invalid" target="_blank"><strong>harbor.example.invalid</strong></a> &rarr; Login via OIDC &rarr; select the <code>portico</code> project.</p>
+        <ul class="checklist">
+          <li>Go to <strong>Robot Accounts</strong> tab</li>
+          <li>Click <strong>+ New Robot Account</strong></li>
+          <li>Name: <code>portico</code> (the <code>robot$</code> prefix is added automatically)</li>
+          <li>Grant: <strong>Push</strong> and <strong>Pull</strong> permissions for images</li>
+          <li>Save the generated username and password immediately</li>
+        </ul>
+        <p>The resulting username will look like: <code>robot$portico+portico</code></p>
+        <div class="callout warn">
+          <span class="callout-icon">!</span>
+          <span>The username contains a <code>$</code> character. This is critical for the next step -- GitLab variable expansion must be disabled.</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag slack"># help-harbor</span>
+          <a class="tag link" href="https://portico.atlassian.net/wiki/spaces/kube/pages/155582585" target="_blank">Confluence: Harbor Getting Started</a>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">05</span>
+        <div class="step-info">
+          <div class="step-title">Configure GitLab CI variables for Harbor</div>
+          <div class="step-brief">Add HARBOR_USER and HARBOR_TOKEN as protected, masked, raw variables.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Navigate to:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button>
+Settings &rarr; CI/CD &rarr; Variables &rarr; Add variable
+        </div>
+        <p>Add both variables with these exact settings:</p>
+        <table class="secrets-table">
+          <tr><th>Variable</th><th>Protected</th><th>Masked</th><th>Expand</th><th>Type</th></tr>
+          <tr><td>HARBOR_USER</td><td>Yes</td><td>Yes</td><td style="color:var(--accent-red);font-weight:600">No</td><td>Variable</td></tr>
+          <tr><td>HARBOR_TOKEN</td><td>Yes</td><td>Yes</td><td style="color:var(--accent-red);font-weight:600">No</td><td>Variable</td></tr>
+        </table>
+        <div class="callout danger">
+          <span class="callout-icon">!</span>
+          <span><strong>You MUST uncheck "Expand variable reference"</strong> for HARBOR_USER. The <code>$</code> in <code>robot$portico+portico</code> will be interpreted as a variable reference and silently destroyed if expansion is enabled.</span>
+        </div>
+        <p>These variables are <strong>not</strong> stored in Vault because the corporate container-images child pipeline template requires inherited GitLab variables (not Vault-injected ones).</p>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──── PHASE 3 ──── -->
+<section class="phase" data-phase="3">
+  <div class="phase-header">
+    <div class="phase-number teal">3</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 3</span>
+      <h2 class="phase-title">Release Broker Setup</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">06</span>
+        <div class="step-info">
+          <div class="step-title">Protect broker's main branch</div>
+          <div class="step-brief">Only protected main can access signing credentials.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Navigate to the broker project:</p>
+        <div class="code-block">
+Settings &rarr; Repository &rarr; Protected branches
+        </div>
+        <p>Protect <code>main</code>:</p>
+        <ul class="checklist">
+          <li>Allowed to merge: <strong>Maintainers</strong></li>
+          <li>Allowed to push and merge: <strong>No one</strong></li>
+          <li>No direct pushes permitted</li>
+        </ul>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>Because the broker's pipeline always runs on protected <code>main</code>, it has access to Vault secrets and signing credentials. The MR source project never touches these -- only the broker does.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">07</span>
+        <div class="step-info">
+          <div class="step-title">Configure reciprocal job-token access</div>
+          <div class="step-brief">Both projects must allow CI job tokens from each other.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Fine-grained job-token allowlists enable triggering, source cloning, and API access (READ_MERGE_REQUESTS, READ_REPOSITORIES) without long-lived GitLab tokens.</p>
+        <p>Configure in <strong>both</strong> projects:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button>
+Settings &rarr; CI/CD &rarr; Token Access
+        </div>
+        <p><strong>On the source project</strong> (portico/portico):</p>
+        <ul class="checklist">
+          <li>Allow CI job tokens from <code>portico/portico-release-broker</code></li>
+          <li>Grant: READ_MERGE_REQUESTS, READ_REPOSITORIES</li>
+        </ul>
+        <p><strong>On the broker project</strong> (portico/portico-release-broker):</p>
+        <ul class="checklist">
+          <li>Allow CI job tokens from <code>portico/portico</code></li>
+          <li>Grant: Trigger pipelines</li>
+        </ul>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>No long-lived GitLab personal or project tokens are needed. The CI job token scoping provides least-privilege access between the two projects.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">08</span>
+        <div class="step-info">
+          <div class="step-title">Configure broker GitLab CI variables</div>
+          <div class="step-brief">Add HARBOR_USER, HARBOR_TOKEN, and portico_SOURCE_PROJECT_ID to the broker.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Navigate to the broker project:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button>
+Settings &rarr; CI/CD &rarr; Variables &rarr; Add variable
+        </div>
+        <table class="secrets-table">
+          <tr><th>Variable</th><th>Protected</th><th>Masked</th><th>Expand</th><th>Notes</th></tr>
+          <tr><td>HARBOR_USER</td><td>Yes</td><td>Yes</td><td style="color:var(--accent-red);font-weight:600">No</td><td>Same robot account as source project</td></tr>
+          <tr><td>HARBOR_TOKEN</td><td>Yes</td><td>Yes</td><td style="color:var(--accent-red);font-weight:600">No</td><td>Same robot account as source project</td></tr>
+          <tr><td>portico_SOURCE_PROJECT_ID</td><td>Yes</td><td>No</td><td>Yes</td><td>Numeric ID of portico/portico (used by cleanup)</td></tr>
+        </table>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span><code>portico_SOURCE_PROJECT_ID</code> is a non-secret variable set to the application project's numeric GitLab ID. The cleanup script uses it to query MR status via the GitLab API.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">09</span>
+        <div class="step-info">
+          <div class="step-title">Link runners to broker project</div>
+          <div class="step-brief">The broker needs shared-pure, map-macos-vm, and container image build runners.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The broker project requires the same runner set as the source project:</p>
+        <table class="secrets-table">
+          <tr><th>Runner Tag</th><th>Used By</th></tr>
+          <tr><td>shared-pure</td><td>validate, cleanup</td></tr>
+          <tr><td>map-macos-vm</td><td>stage, package (signing), publish</td></tr>
+          <tr><td>amd64 / arm64</td><td>host-binaries, runtime-images</td></tr>
+        </table>
+        <p><strong>Action:</strong> Ask the MAP team to also link <code>map-macos-vm</code> to the broker project (<code>portico/portico-release-broker</code>).</p>
+        <p>Enable shared runners in the broker project's settings.</p>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">10</span>
+        <div class="step-info">
+          <div class="step-title">Add daily cleanup scheduled pipeline</div>
+          <div class="step-brief">Schedule daily pipeline with portico_CLEANUP_ONLY=true for MR release retention.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Navigate to the broker project:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button>
+CI/CD &rarr; Schedules &rarr; New schedule
+        </div>
+        <p>Set the variable <code>portico_CLEANUP_ONLY=true</code> on the schedule. This causes the pipeline to run only the cleanup job.</p>
+        <p><strong>Retention rules:</strong></p>
+        <table class="secrets-table">
+          <tr><th>MR Status</th><th>Rule</th></tr>
+          <tr><td>Open MR</td><td>Keep newest release; delete superseded releases after 7 days</td></tr>
+          <tr><td>Closed / merged MR</td><td>Delete all releases after 7 days</td></tr>
+        </table>
+        <p>The cleanup script deletes Cloudsmith packages first, then removes the corresponding Harbor <code>mr-&lt;IID&gt;-&lt;SHA&gt;</code> image tags.</p>
+        <div class="callout warn">
+          <span class="callout-icon">!</span>
+          <span>Without the scheduled cleanup, MR releases will accumulate indefinitely in Cloudsmith and Harbor. Set a reasonable schedule (daily) and verify it runs successfully after setup.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">11</span>
+        <div class="step-info">
+          <div class="step-title">Backport trigger to maintained branches</div>
+          <div class="step-brief">Branches without the mr-release trigger in .gitlab-ci.yml can't use broker releases.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The <code>mr-release</code> job is defined in the repository's <code>.gitlab-ci.yml</code>. Branches that predate this change will not have the trigger job and therefore cannot produce broker-signed MR releases.</p>
+        <p><strong>Action:</strong> Cherry-pick or merge the updated <code>.gitlab-ci.yml</code> into all maintained branches that should support signed MR releases.</p>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>This is only necessary for branches that existed before the broker pipeline was added. New branches created from <code>pre-beta-tmp</code> will automatically include the <code>mr-release</code> trigger.</span>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──── PHASE 4 ──── -->
+<section class="phase" data-phase="4">
+  <div class="phase-header">
+    <div class="phase-number pink">4</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 4</span>
+      <h2 class="phase-title">Apple Code Signing</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">12</span>
+        <div class="step-info">
+          <div class="step-title">Export Developer ID Application P12</div>
+          <div class="step-brief">Extract the signing certificate and private key as a base64-encoded .p12 file.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The certificate identity must be exactly:</p>
+        <div class="code-block">
+<span class="val">Developer ID Application: Portico, Inc. (AJDA86F3YP)</span>
+        </div>
+        <p><strong>Export from macOS Keychain Access:</strong></p>
+        <ul class="checklist">
+          <li>Open Keychain Access &rarr; search for "Developer ID Application"</li>
+          <li>Expand the certificate to show the private key</li>
+          <li>Select both the certificate AND private key</li>
+          <li>File &rarr; Export Items &rarr; save as .p12 with a strong password</li>
+          <li>Base64-encode: <code>base64 -i cert.p12 > cert.p12.b64</code></li>
+        </ul>
+        <p><strong>Or use an existing Vault path</strong> -- the Rookery team stores this certificate in the <code>community</code> namespace at:</p>
+        <div class="code-block">
+<span class="comment"># Rookery's existing location (community namespace, for reference)</span>
+<span class="key">P12 cert:</span>  <span class="val">secret-units/gitlab-ci/secrets/codesign-p12</span>
+<span class="key">Password:</span> <span class="val">secret-units/gitlab-ci/secrets/codesign-p12-password</span>
+        </div>
+        <p>Copy the P12 and password into our own namespace at <code>gitlab-ci/release-secrets</code> (Step 03).</p>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>This certificate <strong>expires February 1, 2027</strong>. The CI scripts include a preflight warning 60 days before expiry and will fail within 14 days of expiration.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">13</span>
+        <div class="step-info">
+          <div class="step-title">Generate Apple app-specific password</div>
+          <div class="step-brief">Create a dedicated app-specific password for CI notarization.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The <code>APPLE_ID</code> must belong to team <code>AJDA86F3YP</code> (Portico, Inc.).</p>
+        <ul class="checklist">
+          <li>Sign in to <a href="https://appleid.apple.com" target="_blank">appleid.apple.com</a></li>
+          <li>Navigate to Sign-In & Security &rarr; App-Specific Passwords</li>
+          <li>Generate a new password labeled "Portico CI"</li>
+          <li>Save the generated password -- it cannot be viewed again</li>
+        </ul>
+        <p>Store both <code>APPLE_ID</code> (the email) and <code>APPLE_APP_SPECIFIC_PASSWORD</code> in Vault at the release secret path (Step 03).</p>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>The CI script <code>with-apple-signing-key.sh</code> creates an ephemeral keychain, imports the P12, runs the wrapped signing command, and cleans up the keychain on exit -- even on failures.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">14</span>
+        <div class="step-info">
+          <div class="step-title">Verify the signing identity</div>
+          <div class="step-brief">Confirm the P12 resolves to the correct Developer ID certificate.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>After importing the P12 into a test keychain, verify the identity:</p>
+        <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button>
+<span class="comment"># Create temp keychain and import</span>
+security create-keychain -p "" /tmp/test-ci.keychain
+security import cert.p12 -k /tmp/test-ci.keychain \
+  -P "<span class="val">$P12_PASSWORD</span>" -T /usr/bin/codesign
+
+<span class="comment"># Verify the identity is present</span>
+security find-identity -v -p codesigning /tmp/test-ci.keychain
+<span class="comment"># Must show: Developer ID Application: Portico, Inc. (AJDA86F3YP)</span>
+
+<span class="comment"># Cleanup</span>
+security delete-keychain /tmp/test-ci.keychain
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──── PHASE 5 ──── -->
+<section class="phase" data-phase="5">
+  <div class="phase-header">
+    <div class="phase-number yellow">5</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 5</span>
+      <h2 class="phase-title">Cloudsmith Credentials</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">15</span>
+        <div class="step-info">
+          <div class="step-title">Obtain Cloudsmith API key</div>
+          <div class="step-brief">Get or verify the upload-capable API key for the portico service account.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The Cloudsmith configuration for <code>portico</code>:</p>
+        <table class="secrets-table">
+          <tr><th>Detail</th><th>Value</th></tr>
+          <tr><td>Organization</td><td>portico</td></tr>
+          <tr><td>Repository</td><td>portico (raw format)</td></tr>
+          <tr><td>Service account</td><td>portico</td></tr>
+          <tr><td>Read token</td><td>9QfcUgUjk84aWuon</td></tr>
+          <tr><td>Terraform source</td><td>pipeline/cloudsmith repo</td></tr>
+        </table>
+        <p>The <strong>API key</strong> needs these permissions: <code>list</code>, <code>upload</code>, <code>republish</code>, <code>delete</code>.</p>
+        <p>Obtain the API key from the Cloudsmith service account or from the team that manages <code>pipeline/cloudsmith</code>. The Terraform config is at <code>terraform/prod/core/files/repositories.yaml</code>.</p>
+        <div class="callout warn">
+          <span class="callout-icon">!</span>
+          <span>This API key is embedded in distributed apps for update discovery (the existing updater contract). Keep its permissions narrow and rotate it routinely. Monitor for unauthorized uploads.</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag slack"># help-cloudsmith</span>
+          <a class="tag link" href="https://example.invalid/pipeline/cloudsmith" target="_blank">pipeline/cloudsmith repo</a>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">16</span>
+        <div class="step-info">
+          <div class="step-title">Obtain Cloudsmith entitlement token</div>
+          <div class="step-brief">The read/download token embedded in the app for first-launch update discovery.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>The entitlement token is the <strong>read-only download credential</strong>. It's embedded in the signed app bundle and managed-runtime bootstrap resource so first-launch update/repair can authenticate with Cloudsmith.</p>
+        <p>The token can be sourced from:</p>
+        <ul class="checklist">
+          <li>The release environment variable <code>CLOUDSMITH_ENTITLEMENT_TOKEN</code></li>
+          <li>The source <code>cloudsmith.env</code> file</li>
+          <li>The release operator's macOS Keychain (service: <code>portico</code>, account: <code>CLOUDSMITH_ENTITLEMENT_TOKEN</code>)</li>
+        </ul>
+        <p>Store both <code>CLOUDSMITH_API_KEY</code> and <code>CLOUDSMITH_ENTITLEMENT_TOKEN</code> in Vault at the release secret path (Step 03).</p>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──── PHASE 6 ──── -->
+<section class="phase" data-phase="6">
+  <div class="phase-header">
+    <div class="phase-number red">6</div>
+    <div class="phase-title-group">
+      <span class="phase-label">Phase 6</span>
+      <h2 class="phase-title">Validate & Pilot</h2>
+    </div>
+  </div>
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">17</span>
+        <div class="step-info">
+          <div class="step-title">Pilot: MR broker release</div>
+          <div class="step-brief">Verify signed per-MR release via the broker pipeline.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Open an MR targeting <code>pre-beta-tmp</code>. The MR pipeline runs: <strong>metadata</strong>, <strong>test</strong>, <strong>mr-release</strong> (trigger). The broker pipeline then runs validation, staging, signing, and publishing. Every MR commit gets a fully signed, notarized release.</p>
+        <p>Each MR gets channel <code>mr-&lt;IID&gt;</code>, package <code>portico_mr-&lt;IID&gt;</code>, image tag <code>mr-&lt;IID&gt;-&lt;SHA&gt;</code>.</p>
+        <p><strong>Verify each stage:</strong></p>
+        <table class="secrets-table">
+          <tr><th>Stage</th><th>Expected Result</th></tr>
+          <tr><td>metadata</td><td>Emits release.env with channel=mr-&lt;IID&gt;</td></tr>
+          <tr><td>test</td><td>All tests pass</td></tr>
+          <tr><td>mr-release</td><td>Triggers broker, mirrors result back</td></tr>
+          <tr><td>Broker validate</td><td>MR is open, same-project, SHA matches</td></tr>
+          <tr><td>Broker stage</td><td>Unsigned app bundles built, no credentials</td></tr>
+          <tr><td>Broker package</td><td>Signed, notarized, stapled</td></tr>
+          <tr><td>Broker publish</td><td>Uploaded to portico_mr-&lt;IID&gt;</td></tr>
+        </table>
+        <p><strong>Checklist:</strong></p>
+        <ul class="checklist">
+          <li>App signed with Developer ID Application: Portico, Inc. (AJDA86F3YP)</li>
+          <li>No secrets visible in MR pipeline logs (secrets only in broker)</li>
+          <li>Fork MR is blocked (only metadata + test run)</li>
+          <li>Client configured on mr-&lt;IID&gt; channel discovers the update</li>
+        </ul>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">18</span>
+        <div class="step-info">
+          <div class="step-title">Pilot: Cleanup verification</div>
+          <div class="step-brief">Verify daily cleanup removes expired MR releases.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>After the scheduled cleanup pipeline runs (daily with <code>portico_CLEANUP_ONLY=true</code>), verify the retention rules are applied:</p>
+        <ul class="checklist">
+          <li>Superseded MR releases older than 7 days are purged from Cloudsmith</li>
+          <li>Closed/merged MR releases older than 7 days are purged from Cloudsmith</li>
+          <li>Corresponding Harbor <code>mr-&lt;IID&gt;-&lt;SHA&gt;</code> image tags are removed</li>
+          <li>The newest release for each open MR is preserved</li>
+        </ul>
+        <div class="callout info">
+          <span class="callout-icon">i</span>
+          <span>Trigger the cleanup manually the first time to verify it works: run a pipeline on the broker's <code>main</code> with the variable <code>portico_CLEANUP_ONLY=true</code>.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-check" onclick="toggleDone(event, this)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="step-num">19</span>
+        <div class="step-info">
+          <div class="step-title">Pilot: Protected merge and beta promotion</div>
+          <div class="step-brief">Merge to pre-beta-tmp and verify the full signed release pipeline, then promote to beta.</div>
+        </div>
+        <div class="step-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="step-detail"><div class="step-detail-inner">
+        <p>Merge the MR into <code>pre-beta-tmp</code>. This triggers the complete protected push release chain:</p>
+        <div class="code-block">
+metadata &rarr; test &rarr; host-binaries &rarr; runtime-images (x7)
+  &rarr; verify &rarr; signed-package &rarr; publish-cloudsmith &rarr; promote-latest
+        </div>
+        <p><strong>Verify each stage:</strong></p>
+        <ul class="checklist">
+          <li>All 7 runtime images pushed to Harbor with full-SHA tag</li>
+          <li>Attestation JSON validates 7 images x 2 platforms</li>
+          <li>Apps signed with <code>Developer ID Application: Portico, Inc. (AJDA86F3YP)</code></li>
+          <li>Both .app bundles pass <code>codesign --verify --deep --strict</code></li>
+          <li>Both .app bundles pass <code>spctl --assess</code> (Gatekeeper)</li>
+          <li>Notarization tickets stapled via <code>xcrun stapler validate</code></li>
+          <li>Release ZIP uploaded to Cloudsmith <code>portico_dev</code></li>
+          <li>All 7 Harbor images promoted to <code>latest</code> tag</li>
+        </ul>
+        <p><strong>Beta promotion:</strong> Merge <code>pre-beta-tmp</code> into <code>beta</code>. Verify channel is <code>beta</code>, package is <code>portico_beta</code>, both architectures present, and end-to-end update discovery works.</p>
+        <p><strong>Idempotence and serialization:</strong> Retry <code>publish-cloudsmith</code> to verify <code>--republish</code> idempotence. Push two rapid commits to verify <code>assert-release-branch-tip.sh</code> staleness protection. Confirm <code>resource_group</code> serialization prevents concurrent releases.</p>
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>Portico · GitLab CI/CD Pipeline Setup Guide · Remaining steps for secrets, credentials, and validation</p>
+  <p style="margin-top: 8px; color: var(--text-muted);">Protected branches: pre-beta-tmp (dev channel), beta · Source: .gitlab-ci.yml · ci/release-broker-project/ · RELEASING.md · Portico Confluence</p>
+  <p style="margin-top: 8px;">
+    <a class="tag link" href="https://portico-04250e.portico.gitlab-dedicated.site/" target="_blank">Engineering Handbook</a>
+    <a class="tag link" href="https://portico-04250e.portico.gitlab-dedicated.site/ci-setup-guide/" target="_blank">CI Setup Guide</a>
+  </p>
+</footer>
+
+<script>
+const STORAGE_KEY = 'portico-ci-setup-progress-v2';
+const TOTAL_STEPS = 19;
+const CIRCUMFERENCE = 2 * Math.PI * 24;
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+
+function saveProgress(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function getStepId(card) {
+  const num = card.querySelector('.step-num');
+  return num ? num.textContent.trim() : null;
+}
+
+function updateProgressUI() {
+  const state = loadProgress();
+  const done = Object.keys(state).filter(k => state[k]).length;
+  const pct = Math.round((done / TOTAL_STEPS) * 100);
+
+  document.getElementById('progressCount').textContent = done;
+  document.getElementById('progressText').textContent = done + ' of ' + TOTAL_STEPS + ' steps complete';
+  document.getElementById('progressPct').textContent = pct + '% done';
+
+  var ring = document.getElementById('progressRing');
+  ring.style.strokeDashoffset = CIRCUMFERENCE - (CIRCUMFERENCE * done / TOTAL_STEPS);
+
+  var fill = document.getElementById('progressFill');
+  fill.style.width = pct + '%';
+  fill.style.background = done === TOTAL_STEPS
+    ? 'linear-gradient(90deg, #34c759, #10b981)'
+    : 'linear-gradient(90deg, #2d7ff9, #9b6dff)';
+}
+
+function restoreProgress() {
+  var state = loadProgress();
+  document.querySelectorAll('.step-card').forEach(function(card) {
+    var id = getStepId(card);
+    if (id && state[id]) card.classList.add('done');
+  });
+  updateProgressUI();
+}
+
+function toggleDone(e, checkEl) {
+  e.stopPropagation();
+  var card = checkEl.closest('.step-card');
+  card.classList.toggle('done');
+
+  var state = loadProgress();
+  var id = getStepId(card);
+  if (id) {
+    state[id] = card.classList.contains('done');
+    if (!state[id]) delete state[id];
+    saveProgress(state);
+  }
+  updateProgressUI();
+}
+
+function resetProgress() {
+  if (!confirm('Reset all progress? This cannot be undone.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  document.querySelectorAll('.step-card.done').forEach(function(c) { c.classList.remove('done'); });
+  updateProgressUI();
+}
+
+function toggleStep(header) {
+  var card = header.closest('.step-card');
+  card.classList.toggle('open');
+}
+
+function copyCode(btn) {
+  var block = btn.closest('.code-block');
+  var text = block.innerText.replace(/^copy$/gmi, '').replace(/^copied$/gmi, '').trim();
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'copied';
+    setTimeout(function() { btn.textContent = 'copy'; }, 1500);
+  });
+}
+
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.checklist li')) {
+    e.target.closest('.checklist li').classList.toggle('checked');
+  }
+});
+
+var phases = document.querySelectorAll('.phase');
+var navDots = document.querySelectorAll('.nav-dot');
+
+function onScroll() {
+  phases.forEach(function(phase) {
+    var rect = phase.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.8) {
+      phase.classList.add('visible');
+    }
+  });
+
+  var activePhase = 0;
+  phases.forEach(function(phase, i) {
+    var rect = phase.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.5) {
+      activePhase = i;
+    }
+  });
+  navDots.forEach(function(dot, i) {
+    dot.classList.toggle('active', i === activePhase);
+  });
+}
+
+navDots.forEach(function(dot) {
+  dot.addEventListener('click', function() {
+    var phaseIndex = parseInt(dot.dataset.phase);
+    phases[phaseIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll, { passive: true });
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'e' && e.ctrlKey) {
+    e.preventDefault();
+    var cards = document.querySelectorAll('.step-card');
+    var allOpen = Array.from(cards).every(function(c) { return c.classList.contains('open'); });
+    cards.forEach(function(c) { c.classList.toggle('open', !allOpen); });
+  }
+});
+
+restoreProgress();
+setTimeout(onScroll, 100);
+</script>
+</body>
+</html>

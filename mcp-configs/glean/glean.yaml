@@ -1,0 +1,44 @@
+name: "Glean MCP Server"
+id: "glean"
+display_name: "Glean"
+deployment_type: "docker"
+experimental: false
+always_enabled: false
+user_installed: false
+description: "Provides access to Portico's internal knowledge base"
+guided_setup_description: "Search Portico internal docs and company knowledge"
+use_cases:
+  - "Finding company documentation"
+  - "Searching policies"
+  - "Accessing technical guides"
+tool_rename_mapping:
+  Asana_MCP_Interactive_add_comment: "Asana Add Comment"
+  Asana_MCP_Interactive_create_project: "Asana Create Project"
+  Asana_MCP_Interactive_create_project_status_up: "Asana Create Status Update"
+  Asana_MCP_Interactive_create_tasks: "Asana Create Tasks"
+  Asana_MCP_Interactive_delete_task: "Asana Delete Task"
+  Asana_MCP_Interactive_update_tasks: "Asana Update Tasks"
+  Slack_MCP_slack_create_canvas: "Slack Create Canvas"
+  Slack_MCP_slack_schedule_message: "Slack Schedule Message"
+  Slack_MCP_slack_send_message: "Slack Send Message"
+  Slack_MCP_slack_send_message_draft: "Slack Draft Message"
+  Slack_MCP_slack_update_canvas: "Slack Update Canvas"
+  Zoom_MCP_create_new_file_with_markdown: "Zoom Create Markdown File"
+  Zoom_MCP_get_file_content: "Zoom Get File Content"
+  Zoom_MCP_get_meeting_assets: "Zoom Get Meeting Assets"
+  Zoom_MCP_get_recording_resource: "Zoom Get Recording Resource"
+  Zoom_MCP_recordings_list: "Zoom List Recordings"
+  Zoom_MCP_search_meetings: "Zoom Search Meetings"
+  chat: "Chat with Company Knowledge"
+  employee_search: "Search Employees"
+  gmail_search: "Search Gmail"
+  meeting_lookup: "Lookup Meetings"
+  memory: "Manage User Memory"
+  memory_schema: "Get Memory Schema"
+  search: "Search Company Knowledge"
+  user_activity: "Get User Activity"
+
+oauth:
+  type: "non-dcr"
+  provider: "glean"
+  requires_user_authorization: true

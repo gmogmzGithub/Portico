@@ -1,0 +1,648 @@
+<!-- Shared OAuth Authorization Modal Component -->
+<!-- This modal can be included in any page that needs OAuth functionality -->
+
+<style>
+  /* OAuth Modal Styles - Flat Minimal Design */
+  .oauth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(30, 35, 36, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .oauth-modal.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .oauth-modal-content {
+    background: var(--bg-secondary, #2D3233);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 650px;
+    width: 95%;
+    text-align: center;
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  .oauth-header {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .oauth-header-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-primary, #003a9b);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .oauth-header-icon {
+    display: flex;
+    align-items: center;
+  }
+
+  .oauth-header-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--text-secondary, #a3a3a3);
+    fill: none;
+  }
+
+  .oauth-header-description {
+    font-size: 13px;
+    color: var(--text-secondary, #a3a3a3);
+    line-height: 1.6;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Server Preview Bar */
+  .oauth-server-preview {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+  }
+
+  .oauth-preview-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    min-width: 80px;
+    background: transparent;
+  }
+
+  .oauth-preview-card:hover {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.08);
+  }
+
+  .oauth-preview-card.current {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.12);
+  }
+
+  .oauth-preview-card.done {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.08);
+  }
+
+  .oauth-preview-card.failed {
+    background: rgba(248, 113, 113, 0.08);
+  }
+
+  .oauth-preview-card.skipped {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .oauth-preview-card.skipped:hover {
+    background: transparent;
+  }
+
+  .oauth-preview-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    object-fit: contain;
+    background: var(--bg-dark, #1E2324);
+    padding: 4px;
+    margin-bottom: 6px;
+  }
+
+  .oauth-preview-name {
+    font-size: 10px;
+    color: var(--text-secondary, #a3a3a3);
+    text-align: center;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .oauth-preview-card.current .oauth-preview-name {
+    color: var(--accent-primary, #003a9b);
+    font-weight: 600;
+  }
+
+  .oauth-preview-card.done .oauth-preview-name {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  .oauth-preview-status {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .oauth-preview-card.current .oauth-preview-status {
+    color: var(--accent-primary, #003a9b);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .oauth-preview-card.done .oauth-preview-status {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  .oauth-preview-card.failed .oauth-preview-status {
+    color: var(--status-error, #f87171);
+  }
+
+  .oauth-preview-card.skipped .oauth-preview-status {
+    color: var(--text-muted, #525252);
+  }
+
+  .oauth-preview-card.pending .oauth-preview-status {
+    color: var(--text-muted, #525252);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Current Server Display */
+  .oauth-current-server {
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 20px;
+  }
+
+  .oauth-server-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 15px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: var(--bg-dark, #1E2324);
+    padding: 10px;
+    display: block;
+  }
+
+  .oauth-server-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary, #e5e5e5);
+    margin-bottom: 8px;
+  }
+
+  .oauth-server-description {
+    font-size: 13px;
+    color: var(--text-secondary, #a3a3a3);
+    line-height: 1.5;
+    margin-bottom: 12px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .oauth-progress-text {
+    font-size: 12px;
+    color: var(--accent-primary, #003a9b);
+    font-weight: 500;
+  }
+
+  /* Button Container */
+  .oauth-buttons-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .oauth-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .oauth-btn {
+    background: var(--accent-primary, #003a9b);
+    color: #ffffff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .oauth-btn:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #002c75);
+  }
+
+  .oauth-btn.secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  .oauth-btn.secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .oauth-btn.nav-btn {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary, #e5e5e5);
+    padding: 10px 16px;
+    font-size: 16px;
+  }
+
+  .oauth-btn.nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .oauth-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .oauth-btn.oauth-skip-all-btn {
+    font-size: 12px;
+    padding: 8px 16px;
+    color: var(--text-secondary, #a3a3a3);
+    background: transparent;
+    border: none;
+  }
+
+  .oauth-btn.oauth-skip-all-btn:hover {
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--status-error, #f87171);
+  }
+
+  .oauth-waiting {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 15px;
+  }
+
+  .oauth-waiting.visible {
+    display: flex;
+  }
+
+  .oauth-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: var(--accent-primary, #003a9b);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .oauth-waiting-text {
+    color: var(--text-secondary, #a3a3a3);
+    font-size: 13px;
+  }
+
+  .oauth-waiting-hint {
+    font-size: 11px;
+    color: var(--accent-primary, #003a9b);
+    margin-top: 5px;
+  }
+
+  .oauth-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 15px;
+  }
+
+  .oauth-success.visible {
+    display: flex;
+  }
+
+  .oauth-success-icon {
+    font-size: 40px;
+    animation: successPulse 0.6s ease-out;
+  }
+
+  @keyframes successPulse {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .oauth-success-text {
+    color: var(--accent-primary, #003a9b);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* Completion Summary */
+  .oauth-completion-summary {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+  }
+
+  .oauth-completion-summary.visible {
+    display: flex;
+  }
+
+  .oauth-completion-icon {
+    font-size: 48px;
+  }
+
+  .oauth-completion-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  .oauth-completion-stats {
+    display: flex;
+    gap: 20px;
+    color: var(--text-secondary, #a3a3a3);
+    font-size: 13px;
+  }
+
+  .oauth-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .oauth-stat.done { color: var(--accent-primary, #003a9b); }
+  .oauth-stat.skipped { color: var(--text-muted, #525252); }
+  .oauth-stat.failed { color: var(--status-error, #f87171); }
+
+  .oauth-done-btn {
+    margin-top: 10px;
+  }
+
+  /* Single server mode - hide multi-server navigation elements */
+  .oauth-modal.single-server .oauth-server-preview,
+  .oauth-modal.single-server .oauth-progress-text,
+  .oauth-modal.single-server #oauth-prev-btn,
+  .oauth-modal.single-server #oauth-next-btn,
+  .oauth-modal.single-server #oauth-skip-btn,
+  .oauth-modal.single-server #oauth-skip-all-btn {
+    display: none !important;
+  }
+
+  /* Dark mode contrast boosts */
+  [data-theme="dark"] .oauth-progress-text {
+    color: var(--text-primary, #e5e5e5);
+    font-weight: 600;
+  }
+
+  [data-theme="dark"] .oauth-btn {
+    color: #ffffff;
+  }
+
+  [data-theme="dark"] .oauth-btn.secondary {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+
+  [data-theme="dark"] .oauth-btn.secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  [data-theme="dark"] .oauth-btn.oauth-skip-all-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e5e5e5;
+  }
+
+  [data-theme="dark"] .oauth-btn.oauth-skip-all-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+
+  /* Light mode fixes */
+  [data-theme="light"] .oauth-modal {
+    background: rgba(245, 245, 245, 0.95);
+  }
+
+  [data-theme="light"] .oauth-modal-content {
+    background: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  [data-theme="light"] .oauth-header {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-header-title {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-header-description {
+    color: #4b5563;
+  }
+
+  [data-theme="light"] .oauth-progress-text {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-btn {
+    background: var(--accent-primary, #003a9b);
+    color: #ffffff;
+  }
+
+  [data-theme="light"] .oauth-btn:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #002c75);
+  }
+
+  [data-theme="light"] .oauth-btn.secondary {
+    background: rgba(0, 0, 0, 0.04);
+    color: #1f2937;
+  }
+
+  [data-theme="light"] .oauth-btn.secondary:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-btn.nav-btn {
+    background: rgba(0, 0, 0, 0.04);
+    color: #1f2937;
+  }
+
+  [data-theme="light"] .oauth-btn.nav-btn:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-server-preview {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  [data-theme="light"] .oauth-preview-card:hover {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+  }
+
+  [data-theme="light"] .oauth-preview-card.current {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.15);
+    border: 2px solid var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-preview-card.current .oauth-preview-name {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-preview-card.current .oauth-preview-status {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-preview-name {
+    color: #4b5563;
+  }
+
+  [data-theme="light"] .oauth-current-server {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-server-name {
+    color: #1f2937;
+  }
+
+  [data-theme="light"] .oauth-server-description {
+    color: #4b5563;
+  }
+
+  [data-theme="light"] .oauth-spinner {
+    border-color: rgba(0, 0, 0, 0.1);
+    border-top-color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-waiting-text {
+    color: #4b5563;
+  }
+
+  [data-theme="light"] .oauth-waiting-hint {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-success-text {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-stat.done {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-completion-title {
+    color: #1f2937;
+  }
+
+  [data-theme="light"] .oauth-completion-stats {
+    color: #4b5563;
+  }
+</style>
+
+<!-- OAuth Authorization Modal HTML -->
+<div class="oauth-modal" id="oauth-modal">
+  <div class="oauth-modal-content">
+    <!-- Generic header with explanation -->
+    <div class="oauth-header">
+      <h2 class="oauth-header-title">
+        <span class="oauth-header-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </span>
+        OAuth Authorization Required
+      </h2>
+      <p class="oauth-header-description">
+        One or more of your configured MCP servers requires OAuth authentication.
+        This is a secure, one-time setup that will be remembered for future sessions.
+      </p>
+    </div>
+
+    <!-- Server Preview Bar - shows all servers needing auth -->
+    <div class="oauth-server-preview" id="oauth-server-preview">
+      <!-- Dynamically populated with server cards -->
+    </div>
+
+    <!-- Current Server Display -->
+    <div class="oauth-current-server" id="oauth-current-server">
+      <img class="oauth-server-icon" id="oauth-server-icon" src="" alt="Server Icon" />
+      <h2 class="oauth-server-name" id="oauth-server-name">Server Name</h2>
+      <p class="oauth-server-description" id="oauth-server-description">Server description</p>
+      <p class="oauth-progress-text" id="oauth-progress-text">Server 1 of 1</p>
+    </div>
+
+    <!-- Buttons Container -->
+    <div class="oauth-buttons-container">
+      <div class="oauth-buttons" id="oauth-buttons">
+        <button class="oauth-btn nav-btn" id="oauth-prev-btn" disabled title="Previous server">◀</button>
+        <button class="oauth-btn" id="oauth-authorize-btn">Authorize Access</button>
+        <button class="oauth-btn secondary" id="oauth-skip-btn">Skip</button>
+        <button class="oauth-btn nav-btn" id="oauth-next-btn" title="Next server">▶</button>
+      </div>
+      <button class="oauth-btn oauth-skip-all-btn" id="oauth-skip-all-btn">Skip All Remaining</button>
+    </div>
+
+    <div class="oauth-waiting" id="oauth-waiting">
+      <div class="oauth-spinner"></div>
+      <p class="oauth-waiting-text">Waiting for authorization in browser...</p>
+      <p class="oauth-waiting-hint">Complete the authorization in your browser, then return here.</p>
+    </div>
+
+    <div class="oauth-success" id="oauth-success">
+      <div class="oauth-success-icon">✓</div>
+      <p class="oauth-success-text">Authorization successful!</p>
+    </div>
+
+    <!-- Completion Summary (shown when all servers processed) -->
+    <div class="oauth-completion-summary" id="oauth-completion-summary">
+      <div class="oauth-completion-icon">🎉</div>
+      <h3 class="oauth-completion-title">OAuth Setup Complete</h3>
+      <div class="oauth-completion-stats">
+        <span class="oauth-stat done" id="oauth-stat-done">✓ 0 authorized</span>
+        <span class="oauth-stat skipped" id="oauth-stat-skipped">⊘ 0 skipped</span>
+        <span class="oauth-stat failed" id="oauth-stat-failed">✗ 0 failed</span>
+      </div>
+      <button class="oauth-btn oauth-done-btn" id="oauth-done-btn">Continue</button>
+    </div>
+  </div>
+</div>

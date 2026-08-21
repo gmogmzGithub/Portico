@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent !important;
+      }
+
+      body {
+        display: block;
+      }
+
+      .artifact-version-popup {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+      }
+
+      .artifact-version-popup-menu {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        display: block !important;
+        width: 100%;
+        min-width: 0 !important;
+        max-width: none !important;
+        max-height: none !important;
+        height: 100%;
+        box-sizing: border-box;
+        pointer-events: auto !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="artifact-version-popup">
+      <div
+        class="version-dropdown-menu artifact-version-popup-menu"
+        id="artifact-version-popup-menu"
+        role="listbox"
+        aria-label="Artifact versions"
+      ></div>
+    </div>
+    <script>
+      (() => {
+        const menu = document.getElementById('artifact-version-popup-menu');
+        let currentVersion = null;
+
+        function getLabel(item) {
+          if (!item) {
+            return '';
+          }
+          return item.label || `v${item.version}`;
+        }
+
+        function render(state = {}) {
+          if (!menu) {
+            return;
+          }
+
+          const versions = Array.isArray(state.versions) ? state.versions : [];
+          currentVersion = Number.isFinite(Number(state.currentVersion))
+            ? Number(state.currentVersion)
+            : null;
+          document.documentElement.setAttribute('data-theme', state.theme || 'dark');
+          menu.innerHTML = '';
+
+          for (const item of versions) {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'version-dropdown-option';
+            option.dataset.version = item.version;
+            option.setAttribute('role', 'option');
+            if (Number(item.version) === currentVersion) {
+              option.classList.add('selected');
+              option.setAttribute('aria-selected', 'true');
+            } else {
+              option.setAttribute('aria-selected', 'false');
+            }
+
+            const indicator = document.createElement('span');
+            indicator.className = `version-indicator ${item.running ? 'running' : 'stopped'}`;
+            indicator.textContent = item.running ? '\u25CF' : '\u25CB';
+
+            const text = document.createElement('span');
+            text.className = 'version-text';
+            text.textContent = getLabel(item);
+
+            option.appendChild(indicator);
+            option.appendChild(text);
+            option.addEventListener('click', () => {
+              window.artifactVersionMenuAPI?.chooseVersion?.(Number(item.version));
+            });
+
+            menu.appendChild(option);
+          }
+
+          const selected = menu.querySelector('.version-dropdown-option.selected');
+          (selected || menu.querySelector('.version-dropdown-option'))?.focus?.();
+        }
+
+        window.artifactVersionMenuAPI?.onState?.((state) => {
+          render(state);
+        });
+      })();
+    </script>
+  </body>
+</html>

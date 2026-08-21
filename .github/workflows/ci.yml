@@ -1,0 +1,33 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Rust smoke suite
+    runs-on: ubuntu-latest
+    env:
+      RUN_RUST: "1"
+      RUN_NODE: "0"
+      RUN_PYTHON: "0"
+      RUN_SHELL: "0"
+      RUN_SMALL_INTEGRATION: "0"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust build cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run canonical smoke suite
+        run: ./run-tests.sh

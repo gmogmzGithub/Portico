@@ -1,0 +1,9 @@
+{
+  "command": "uv",
+  "args": [
+    "run",
+    "--directory",
+    "/app/internal-mcp/mcp-assistant",
+    "mcp-assistant-server"
+  ]
+}

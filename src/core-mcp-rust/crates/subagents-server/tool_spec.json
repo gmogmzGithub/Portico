@@ -1,0 +1,759 @@
+[
+  {
+    "name": "run_subagent",
+    "title": null,
+    "description": "Invoke an Open WebUI model or agent as a sub-agent to perform a task. ONLY use this when the user explicitly asked for a subagent or delegation — parallelism, task size, or wanting a result sooner are NOT reasons to delegate on your own, and user-requested multi-chat workflows go through subagents_start_chat and subagents_send_message_to_chat instead. You can delegate to specialized agents (custom models) or use base models. You decide which tools to provide to the sub-agent based on the task requirements. You can also pass skill_ids to auto-activate relevant skills for the sub-agent chat. When skill_ids are provided, keep the delegated prompt outcome-focused and constraint-focused; do not micromanage low-level tool sequences, query lists, or compaction workflows that the activated skill already knows how to handle. This orchestrates the complete chat flow including folder creation, chat setup, completion generation, polling, and message alignment.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "The model or agent ID to use (e.g., 'Atlas Sonnet 5', 'GPT-5.6 Sol', 'portico_agent_mcp-context-resolver'). Can be a base model or a specialized agent. If not provided, the system default model will be used."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The task or question to send to the sub-agent. Prefer concise objective + scope + output requirements. When skill_ids are provided, avoid embedding detailed tool-by-tool procedures or long query playbooks in this prompt; let the activated skills drive the exact workflow."
+        },
+        "image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional image URLs to send as actual multimodal image inputs with the prompt. Use this for visual QA or image analysis; markdown links in the prompt are not enough for pixel inspection. Maximum 20 images per call. Workspace image URLs may be provided as localhost links; they are normalized to host.docker.internal for container fetches.",
+          "default": [],
+          "maxItems": 20
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of MCP tool server IDs to enable for the sub-agent (e.g., ['server:glean', 'server:slack']). Decide which integrations the sub-agent needs based on its task. Use subagents_list_available_tools to see available tool servers. Use mcp_assistant_get_chat_tools to see currently enabled tool servers. Core servers (mcp-assistant, subagents, skills) are enabled and merged automatically unless include_core_tools is false.",
+          "default": []
+        },
+        "skill_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of skill IDs to activate for this sub-agent chat. Provide skill_ids when the sub-agent will benefit from those skills (e.g., ['company-knowledge', 'web-search', 'code-execution']). Activated skills are stored per chat.",
+          "default": []
+        },
+        "include_core_tools": {
+          "type": "boolean",
+          "description": "Whether to automatically include the core MCP assistant, subagents, and skills tools. Defaults to true. Set false for text-only local-model smoke tests.",
+          "default": true
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "max"
+          ],
+          "description": "Reasoning effort for the sub-agent (UI-friendly values: low, medium, high, or max). By default, pass the SAME reasoning effort as the current chat (see <reasoning_effort> in the injected context) unless the user's prompt, your system prompt, or an activated skill specifies otherwise. Omit only for non-reasoning models."
+        },
+        "parent_tool_call_id": {
+          "type": "string",
+          "description": "Internal identifier for the parent tool call. Used to map a sub-agent chat to its originating tool call for live UI updates."
+        },
+        "parent_chat_id": {
+          "type": "string",
+          "description": "Internal host-injected identifier for the chat that invoked this sub-agent. The assistant should omit this field; the host uses it to bind sub-agent workspaces to the root parent chat workspace."
+        },
+        "folder_name": {
+          "type": "string",
+          "description": "Optional Open WebUI folder name to store the sub-agent chat in. Defaults to 'Sub-agents'. Override this when a workflow needs chats grouped into a different folder such as 'Scheduled Tasks'."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "configure_lm_studio",
+    "title": "Configure LM Studio",
+    "description": "Configure LM Studio local models for Open WebUI. Probes the LM Studio OpenAI-compatible /v1/models endpoint, persists lm-studio.json in Application Support, registers or updates one OpenAI-compatible connection, syncs app-owned local model wrappers, and requests an immediate model-list refresh in the chat UI.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer",
+          "description": "LM Studio local server port. Defaults to 1234."
+        },
+        "host_base_url": {
+          "type": "string",
+          "description": "Optional host-side LM Studio base URL. Defaults to http://127.0.0.1:<port>/v1."
+        },
+        "docker_base_url": {
+          "type": "string",
+          "description": "Optional Docker-side LM Studio base URL. Defaults to http://host.docker.internal:<port>/v1."
+        },
+        "api_key": {
+          "type": "string",
+          "description": "Optional API key for the LM Studio server. Leave empty for the default local LM Studio server."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_lm_studio_status",
+    "title": "Get LM Studio Status",
+    "description": "Report LM Studio configuration, reachability, Docker/host base URLs, and currently discovered local model IDs.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer",
+          "description": "Optional LM Studio port to probe instead of the persisted/default port."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_system_information",
+    "title": "Get System Information",
+    "description": "Return local machine information from the Electron app for model recommendations, including OS, CPU architecture, Apple Silicon versus Intel where applicable, CPU cores, memory, and GPU summary.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "create_agent",
+    "title": null,
+    "description": "Create a new local agent (custom model) in Open WebUI. Creator attribution is resolved automatically from the authenticated desktop session and cannot be supplied by the model.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for the agent"
+        },
+        "model_id": {
+          "type": "string",
+          "description": "Optional stable local agent/model ID. If omitted, the ID is derived from the display name."
+        },
+        "base_model_id": {
+          "type": "string",
+          "description": "Base model ID to use (e.g., 'Atlas Sonnet 5', 'GPT-5.6 Sol')"
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System prompt for the agent (stored in params.system)"
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of MCP tool server IDs to save as the default integrations for subagents launched with this agent (e.g., ['server:glean', 'server:slack'])."
+        },
+        "skill_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of skill IDs to save as the default activated skills for subagents launched with this agent."
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "max"
+          ],
+          "description": "Optional default reasoning effort for subagents launched with this agent. If omitted, reasoning-capable models default to medium and non-reasoning models omit it."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the agent's purpose"
+        }
+      },
+      "required": [
+        "name",
+        "base_model_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "copy_agent",
+    "title": "Copy Agent",
+    "description": "Create a new editable current-user agent from an existing local user or installed Marketplace agent. The source remains unchanged. The copy preserves the base model, system prompt, description, reasoning effort, skills, and tool servers while resetting creator and Marketplace provenance: creation_source=local, marketplace_relationship=null, marketplace_solution_id=null, and is_read_only=false. For an installed copy of a listing the current viewer authored, prefer reclaim_agent: it converts the copy in place instead of forking a duplicate. Unknown source ids return success:false with code agent_not_found.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_agent_id": {
+          "type": "string",
+          "description": "Exact existing custom agent id returned by list_agents."
+        },
+        "new_agent_id": {
+          "type": "string",
+          "description": "Unique stable local id for the new editable agent."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional display name for the copy. Defaults to the source display name followed by Copy."
+        }
+      },
+      "required": [
+        "source_agent_id",
+        "new_agent_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_agent",
+    "title": null,
+    "description": "Get details about an agent, including authoritative creator and Marketplace provenance. Inspect creation_source, created_by_email, marketplace_relationship, marketplace_solution_id, and is_read_only; linked agents also carry has_unpublished_changes and marketplace_remote_updated_at (compare with get_marketplace_agent's updated_at for update-available). is_local is never an ownership signal. Unknown ids return success:false with code agent_not_found. Does NOT include system prompt - use subagents_get_agent_system_prompt for that.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "description": "Agent/model ID to fetch (e.g., 'manager-eval-agent-v2')"
+        }
+      },
+      "required": [
+        "model_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_agent_system_prompt",
+    "title": null,
+    "description": "Get ONLY the system prompt for an agent. Use this when you need to read or analyze the system prompt. System prompts can be very large, so they are not included in subagents_get_agent or subagents_list_agents responses. Unknown ids return success:false with code agent_not_found; an empty system_prompt is only ever returned for an agent that exists.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "description": "Agent/model ID to fetch system prompt for"
+        }
+      },
+      "required": [
+        "model_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "update_agent",
+    "title": null,
+    "description": "Update an existing editable user agent's configuration. Installed Marketplace agents and unknown/contradictory linked copies are read only; convert a self-authored installed copy in place with reclaim_agent, or create a user copy with copy_agent for third-party agents, before customizing them. Base models and system-delivered agents cannot be modified.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "description": "Agent/model ID to update"
+        },
+        "name": {
+          "type": "string",
+          "description": "New name for the agent (optional)"
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "New system prompt (optional, stored in params.system)"
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "New default MCP tool server IDs for subagents launched with this agent. Replaces the existing saved tool server defaults when provided."
+        },
+        "skill_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "New default skill IDs for subagents launched with this agent. Replaces the existing saved skill defaults when provided."
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "max"
+          ],
+          "description": "New default reasoning effort for subagents launched with this agent. Replaces the existing saved default when provided."
+        },
+        "base_model_id": {
+          "type": "string",
+          "description": "Change the base model (optional)"
+        },
+        "description": {
+          "type": "string",
+          "description": "New description (optional)"
+        }
+      },
+      "required": [
+        "model_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "delete_agent",
+    "title": null,
+    "description": "Delete a local custom agent from Open WebUI. Requires confirm=true — set it only after the user explicitly confirmed the deletion. This removes only the local agent and local Marketplace link; it never unpublishes or deletes a remote Marketplace solution. Installed copies may be deleted locally. Base models and system-delivered agents cannot be deleted. Unknown ids return success:false with code agent_not_found.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "description": "Agent/model ID to delete"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be true; pass only after the user explicitly confirmed deleting this agent",
+          "default": false
+        }
+      },
+      "required": [
+        "model_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "list_agents",
+    "title": null,
+    "description": "List agents/models with minimal data and authoritative creation/Marketplace provenance. By default, only returns custom agents (derived models). The is_local field describes only whether a BASE MODEL comes from local LM Studio; it never indicates ownership, publication, or Marketplace installation. Use creation_source, marketplace_relationship, marketplace_solution_id, created_by_email, and is_read_only. Linked agents also carry has_unpublished_changes (local edits since publish/install), marketplace_remote_updated_at (the baseline stamped at install), and has_update — the verdict persisted by the LAST check_marketplace_skill_updates sweep, which may be stale or never have run: treat has_update=false as absence of evidence, not proof of freshness. To verify, compare marketplace_remote_updated_at with the listing's updated_timestamp from get_marketplace_agent, or simply refresh in place via install_marketplace_agent with existing_agent_id. Search/get tools are discovery-only; list_published_agents is authoritative for remote ownership. Does NOT include system prompts or base64 images.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "filter_type": {
+          "type": "string",
+          "enum": [
+            "all",
+            "base",
+            "derived"
+          ],
+          "description": "Filter type: 'all' (all models), 'base' (base models only), 'derived' (custom agents only). Default: 'derived'"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "reconcile_agent_attribution",
+    "title": "Reconcile Agent Attribution",
+    "description": "Idempotently reconcile agent creator and Marketplace provenance from the authenticated desktop session and the app-owned link registry. This maintenance operation does not accept identity input.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "list_available_tools",
+    "title": null,
+    "description": "List all available tools that can be assigned to agents, including their IDs, names, descriptions, and use cases from MCP server configurations",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "publish_agent",
+    "title": null,
+    "description": "Publish an existing editable current-user agent to the AI Marketplace. Installed agents are read-only publish payloads even when the viewer owns the remote listing; convert a self-authored installed copy in place with reclaim_agent (then republish), or create a user copy for third-party agents. A fresh publish whose normalized name already exists for an agent solution returns solution_name_conflict before confirmation or mutation. Republish is the only collision exception and requires the already-linked correct-type solution returned by list_published_agents. Search/get results, solution-link presence, and is_local never prove ownership. Foreign targets return not_owner and are never silently forked. Invalid provenance, ownership, or type fails before confirmation. Concurrent confirmation-gated marketplace writes aggregate into a single in-app approval dialog listing every pending request, so parallel calls are fine - do not serialize on the confirmation; each call returns its own outcome. The success result includes a skills array naming every dependent skill with its outcome (published|updated|adopted|referenced|unchanged|repaired|gitReferenced|system) and marketplace solution_id (git-marketplace skills carry git_origin instead); copy those ids exactly for follow-up calls such as unpublish_skill instead of re-deriving them from listings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "The local agent id to publish (from subagents_list_agents / subagents_get_agent)."
+        },
+        "allowed_emails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional visibility allowlist. Omit for the marketplace's default discoverability.",
+          "default": []
+        },
+        "existing_solution_id": {
+          "type": "string",
+          "description": "Optional. A viewer-owned agent solution id from list_published_agents. It must match any existing local published link."
+        }
+      },
+      "required": [
+        "agent_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "unpublish_agent",
+    "title": null,
+    "description": "Unpublish a viewer-owned agent solution from the AI Marketplace. list_published_agents is the sole ownership authority; search/get are discovery-only. Foreign or wrong-type ids fail before confirmation. Installed local copies are unaffected. Concurrent confirmation-gated marketplace writes aggregate into a single in-app approval dialog listing every pending request, so parallel calls are fine - do not serialize on the confirmation; each call returns its own outcome. The success result names the removed solution and carries local_agent_ids_unlinked plus dependent_skill_listings - the skill listings this agent referenced that remain published, with their solution ids; use those ids directly if the skills should be unpublished next.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The viewer-owned marketplace solution id to unpublish, from list_published_agents."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "install_agent",
+    "title": null,
+    "description": "Install an agent from the AI Marketplace. Installation rejects a solution that already has any extant local installed or published representation. existing_agent_id may refresh only the exact local agent whose authoritative relationship is installed and whose solution link matches. That refresh is a sanctioned in-place update to the listing's latest version (agent payload AND dependent skills) — the safe way to force-update an installed copy even when has_update reads false.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The marketplace solution id to install (from search_marketplace_agents)."
+        },
+        "existing_agent_id": {
+          "type": "string",
+          "description": "Optional. Refresh this exact read-only installed local agent; user, published, unrelated, and mismatched ids are rejected."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "reclaim_agent",
+    "title": "Convert Installed Agent To Editable Copy",
+    "description": "Convert a self-authored installed Marketplace agent copy into the author-side editable copy, in place — use this instead of copy_agent whenever the current viewer owns the listing (it appears in list_published_agents) and wants the installed copy editable. The same local agent id is kept and no duplicate is created: the local link flips installed to published, provenance normalizes to creation_source=local and is_read_only=false, the Installed badge is removed, and Edit + Republish then update the existing listing. Use copy_agent only for third-party listings or an explicitly requested fork. Local-only and non-destructive, so there is no confirmation dialog; reinstalling the listing restores an installed copy. Fails closed: marketplace_relationship_mismatch (not an installed Marketplace copy, or already converted), marketplace_relationship_unknown (install attribution pending — retry after the install settles), not_owner (viewer does not own the local agent or the listing — use copy_agent), solution_not_found, solution_type_mismatch.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "The installed local agent id to convert (marketplace_relationship=installed in subagents_get_agent / subagents_list_agents)."
+        }
+      },
+      "required": [
+        "agent_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "search_marketplace_agents",
+    "title": null,
+    "description": "Search the native AI Marketplace (a.k.a. the solutions marketplace — the canonical default catalog) for agents available to install. Discovery-only: results do not prove ownership. Use list_published_agents, never search/get, before ownership-sensitive republish or unpublish actions.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Optional free-text search query. Omit to browse all available agents.",
+          "default": ""
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_marketplace_agent",
+    "title": null,
+    "description": "Discovery-only read of one AI Marketplace agent solution. Validates the agent solution type but does not prove current-viewer ownership; use list_published_agents for ownership-sensitive actions.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The marketplace solution id."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "list_published_agents",
+    "title": null,
+    "description": "Authoritative list of agent solutions owned by the current viewer. Use this result—not is_local, local solution links, search, or get—to choose republish and unpublish targets.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "list_chats",
+    "title": null,
+    "description": "List the user's Open WebUI chats with id, title, the model or agent currently driving each chat, and created/updated timestamps. Defaults to chats created in the last 7 days; pass days to widen the window. Use subagents_send_message_to_chat to deliver a message into one of the listed chats.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "integer",
+          "description": "Look-back window in days over chat creation time. Defaults to 7; clamped to 1-365.",
+          "default": 7,
+          "minimum": 1,
+          "maximum": 365
+        },
+        "owner_user_id": {
+          "type": "string",
+          "description": "Internal host-injected identifier for the user whose chats are listed. The assistant should omit this field; the host injects it from the current session."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_chat_status",
+    "title": null,
+    "description": "Check whether another chat is busy (a model turn is running or a persisted turn is still unfinished) or idle, plus its title, driving model, queued-prompt count, and last-update time. Use this to check on a chat started with subagents_start_chat instead of messaging it — a status check never triggers a turn in that chat, while every subagents_send_message_to_chat does. NEVER wait or poll in a loop for a peer chat to finish: its reply arrives automatically as a new prompt in your chat; end your turn instead.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Id of the chat to check (e.g. from subagents_start_chat or subagents_list_chats)."
+        }
+      },
+      "required": [
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "start_chat",
+    "title": null,
+    "description": "Start a NEW chat in the user's own sidebar, driven by a chosen model or agent, and deliver a first message to it. Fire-and-forget: returns the new chat_id immediately; the model's reply and an auto-generated title land in the new chat. The first message is automatically prefixed with the sending chat's identity. By default the new chat SHARES this chat's workspace: it follows the root chat's current workspace folder, including any later workspace changes. Use this and subagents_send_message_to_chat for ALL rounds of a user-requested multi-chat workflow; do NOT substitute subagents_run_subagent (delegation is reserved for explicit user requests). Unknown skill ids are ignored. Up to 4 chats tile automatically in the user's window (this chat + 3 started chats); a 5th start is rejected. ONLY the ROOT (orchestrator) chat of a workflow may start chats — chats that were themselves started by start_chat must NOT call this tool and should reply to their peer with subagents_send_message_to_chat instead.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "The model or agent ID to drive the new chat (e.g., 'Atlas Sonnet 5', 'GPT-5.6 Sol', 'portico_agent_mcp-context-resolver'). Can be a base model or a specialized agent. If not provided, the system default model will be used."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The first message to send in the new chat. Prefer concise objective + scope + output requirements. When skill_ids are provided, avoid embedding detailed tool-by-tool procedures; let the activated skills drive the exact workflow."
+        },
+        "image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional image URLs to send as actual multimodal image inputs with the first message. Maximum 20 images per call. Workspace image URLs may be provided as localhost links; they are normalized to host.docker.internal for container fetches.",
+          "default": [],
+          "maxItems": 20
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of MCP tool server IDs to enable for the new chat (e.g., ['server:glean', 'server:slack']). Use subagents_list_available_tools to see available tool servers. Use mcp_assistant_get_chat_tools to see currently enabled tool servers. Core servers (mcp-assistant, subagents, skills) are enabled and merged automatically unless include_core_tools is false.",
+          "default": []
+        },
+        "skill_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of skill IDs to activate for the new chat (e.g., ['company-knowledge', 'web-search', 'code-execution']). Activated skills are stored per chat.",
+          "default": []
+        },
+        "include_core_tools": {
+          "type": "boolean",
+          "description": "Whether to automatically enable the core tool servers (mcp-assistant, subagents, skills, agent-vm) for the new chat. Defaults to true.",
+          "default": true
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "max"
+          ],
+          "description": "Optional reasoning effort for the new chat's model. Validated against the model's capabilities; omit to use the model's default."
+        },
+        "folder_name": {
+          "type": "string",
+          "description": "Optional sidebar folder to file the new chat under (created for the user if missing). Defaults to 'Sub-agents', the same folder delegated subagent chats use."
+        },
+        "share_workspace": {
+          "type": "boolean",
+          "description": "Whether the new chat shares the calling chat's workspace. When true (the default), the new chat follows the ROOT chat's current workspace folder, including later workspace changes, so both chats work on the same files. Set false to give the new chat its own independent generated workspace.",
+          "default": true
+        },
+        "source_chat_id": {
+          "type": "string",
+          "description": "Internal host-injected identifier for the chat starting this new chat. The assistant should omit this field; the host injects it to attribute the first message."
+        },
+        "source_model_name": {
+          "type": "string",
+          "description": "Internal host-injected display name of the model or agent driving the sending chat. The assistant should omit this field."
+        },
+        "source_is_agent": {
+          "type": "boolean",
+          "description": "Internal host-injected flag that is true when the sending chat is driven by a custom agent. The assistant should omit this field."
+        },
+        "display_name": {
+          "type": "string",
+          "description": "REQUIRED. A one-word display name for the new chat's tile badge (1-24 characters: letters, digits, hyphens, underscores; e.g. 'Reviewer', 'Critic', 'Researcher'). Must not be 'Orchestrator' — that name is reserved for the root chat. Shown as a colored badge on the chat's pane in the tiled multi-chat view."
+        },
+        "source_display_name": {
+          "type": "string",
+          "description": "Internal host-injected display name of the SENDING chat's pane badge ('Orchestrator' for a root chat). The assistant should omit this field."
+        },
+        "source_model_id": {
+          "type": "string",
+          "description": "Internal host-injected id of the model or agent driving the sending chat. The assistant should omit this field."
+        }
+      },
+      "required": [
+        "prompt",
+        "display_name"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "send_message_to_chat",
+    "title": null,
+    "description": "Send a message into another existing Open WebUI chat, delivered as if the user typed it there. Fire-and-forget: returns a delivery receipt immediately and never waits for the target chat's reply; if the target chat is busy the message queues and dispatches automatically when its current turn finishes. The delivered prompt is automatically prefixed with the sending chat's identity, so do not add your own provenance header.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "target_chat_id": {
+          "type": "string",
+          "description": "Id of the existing chat to deliver the message into. Use subagents_list_chats to discover chat ids. Must differ from the current chat."
+        },
+        "message": {
+          "type": "string",
+          "description": "The message to deliver. Must be non-empty. It is prefixed automatically with the source chat identity before delivery."
+        },
+        "source_chat_id": {
+          "type": "string",
+          "description": "Internal host-injected identifier for the chat sending this message. The assistant should omit this field; the host injects it to attribute the message."
+        },
+        "source_model_name": {
+          "type": "string",
+          "description": "Internal host-injected display name of the model or agent driving the sending chat. The assistant should omit this field."
+        },
+        "source_is_agent": {
+          "type": "boolean",
+          "description": "Internal host-injected flag that is true when the sending chat is driven by a custom agent. The assistant should omit this field."
+        },
+        "source_display_name": {
+          "type": "string",
+          "description": "Internal host-injected display name of the SENDING chat's pane badge ('Orchestrator' for a root chat). The assistant should omit this field."
+        },
+        "source_model_id": {
+          "type": "string",
+          "description": "Internal host-injected id of the model or agent driving the sending chat. The assistant should omit this field."
+        }
+      },
+      "required": [
+        "target_chat_id",
+        "message"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  }
+]

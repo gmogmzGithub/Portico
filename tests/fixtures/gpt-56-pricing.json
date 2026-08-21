@@ -1,0 +1,79 @@
+{
+  "rateProvenance": {
+    "source": "OpenAI list rates live-validated against Responses usage cost headers",
+    "validatedOn": "2026-07-10",
+    "coverage": ["uncached", "cache-write", "cache-read", "high-context"],
+    "discountMultiplierApplied": false
+  },
+  "thresholdPromptTokens": 272000,
+  "cacheReadTokens": 80000,
+  "cacheWriteTokens": 80000,
+  "completionTokens": 20000,
+  "promptTokenCases": [271999, 272000, 272001],
+  "models": [
+    {
+      "rustModel": "gpt-5.6-sol",
+      "displayName": "GPT-5.6 Sol",
+      "base": {
+        "inputPerMillion": 4.25,
+        "outputPerMillion": 25.5,
+        "cacheReadPerMillion": 0.425,
+        "cacheWritePerMillion": 5.3125
+      },
+      "highContext": {
+        "inputPerMillion": 8.5,
+        "outputPerMillion": 38.25,
+        "cacheReadPerMillion": 0.85,
+        "cacheWritePerMillion": 10.625
+      }
+    },
+    {
+      "rustModel": "gpt-5.6-sol-pro",
+      "displayName": "GPT-5.6 Sol Pro",
+      "base": {
+        "inputPerMillion": 4.25,
+        "outputPerMillion": 25.5,
+        "cacheReadPerMillion": 0.425,
+        "cacheWritePerMillion": 5.3125
+      },
+      "highContext": {
+        "inputPerMillion": 8.5,
+        "outputPerMillion": 38.25,
+        "cacheReadPerMillion": 0.85,
+        "cacheWritePerMillion": 10.625
+      }
+    },
+    {
+      "rustModel": "gpt-5.6-terra",
+      "displayName": "GPT-5.6 Terra",
+      "base": {
+        "inputPerMillion": 2.125,
+        "outputPerMillion": 12.75,
+        "cacheReadPerMillion": 0.2125,
+        "cacheWritePerMillion": 2.65625
+      },
+      "highContext": {
+        "inputPerMillion": 4.25,
+        "outputPerMillion": 19.125,
+        "cacheReadPerMillion": 0.425,
+        "cacheWritePerMillion": 5.3125
+      }
+    },
+    {
+      "rustModel": "gpt-5.6-luna",
+      "displayName": "GPT-5.6 Luna",
+      "base": {
+        "inputPerMillion": 0.85,
+        "outputPerMillion": 5.1,
+        "cacheReadPerMillion": 0.085,
+        "cacheWritePerMillion": 1.0625
+      },
+      "highContext": {
+        "inputPerMillion": 1.7,
+        "outputPerMillion": 7.65,
+        "cacheReadPerMillion": 0.17,
+        "cacheWritePerMillion": 2.125
+      }
+    }
+  ]
+}

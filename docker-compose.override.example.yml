@@ -1,0 +1,14 @@
+# Example docker-compose override for development
+# Copy this to docker-compose.override.yml to expose internal services
+
+services:
+  llm-gateway:
+    ports:
+      - "4567:4000"
+    environment:
+      - LOG_LEVEL=DEBUG
+
+  open-webui:
+    environment:
+      - WEBUI_AUTH=False  # Disable auth for development
+      - GLOBAL_LOG_LEVEL=DEBUG

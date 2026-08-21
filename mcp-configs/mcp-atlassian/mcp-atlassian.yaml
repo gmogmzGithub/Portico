@@ -1,0 +1,77 @@
+name: "Atlassian MCP Server"
+id: "mcp-atlassian"
+display_name: "Atlassian"
+deployment_type: "docker"
+experimental: false
+user_installed: false
+description: "Interact with Jira issues and Confluence pages"
+guided_setup_description: "Manage Jira tickets and Confluence pages"
+use_cases:
+  - "Creating/updating tickets"
+  - "Searching documentation"
+  - "Project management"
+tool_call_timeout: 60
+retryable_tools:
+  - atlassianUserInfo
+  - fetch
+  - getAccessibleAtlassianResources
+  - getCompassComponent
+  - getCompassComponents
+  - getCompassCustomFieldDefinitions
+  - getConfluenceCommentChildren
+  - getConfluencePage
+  - getConfluencePageDescendants
+  - getConfluencePageFooterComments
+  - getConfluencePageInlineComments
+  - getConfluenceSpaces
+  - getIssueLinkTypes
+  - getJiraIssue
+  - getJiraIssueRemoteIssueLinks
+  - getJiraIssueTypeMetaWithFields
+  - getJiraProjectIssueTypesMetadata
+  - getPagesInConfluenceSpace
+  - getTeamworkGraphContext
+  - getTeamworkGraphObject
+  - getTransitionsForJiraIssue
+  - getVisibleJiraProjects
+  - lookupJiraAccountId
+  - search
+  - searchConfluenceUsingCql
+  - searchJiraIssuesUsingJql
+tool_rename_mapping:
+  Addcommenttojiraissue: "Add Comment to JIRA Issue"
+  Addworklogtojiraissue: "Add Worklog to JIRA Issue"
+  Atlassianuserinfo: "Atlassian User Info"
+  Createconfluencefootercomment: "Create Confluence Footer Comment"
+  Createconfluenceinlinecomment: "Create Confluence Inline Comment"
+  Createconfluencepage: "Create Confluence Page"
+  Createjiraissue: "Create JIRA Issue"
+  Editjiraissue: "Edit JIRA Issue"
+  Fetch: "Fetch"
+  Getaccessibleatlassianresources: "Get Accessible Atlassian Resources"
+  Getconfluencepage: "Get Confluence Page"
+  getConfluenceCommentChildren: "Get Confluence Comment Children"
+  Getconfluencepagedescendants: "Get Confluence Page Descendants"
+  Getconfluencepagefootercomments: "Get Confluence Page Footer Comments"
+  Getconfluencepageinlinecomments: "Get Confluence Page Inline Comments"
+  Getconfluencespaces: "Get Confluence Spaces"
+  Getjiraissue: "Get JIRA Issue"
+  Getjiraissueremoteissuelinks: "Get JIRA Issue Remote Issue Links"
+  Getjiraissuetypemetawithfields: "Get JIRA Issue Type Meta with Fields"
+  Getjiraprojectissuetypesmetadata: "Get JIRA Project Issue Types Metadata"
+  Getpagesinconfluencespace: "Get Pages in Confluence Space"
+  Gettransitionsforjiraissue: "Get Transitions for JIRA Issue"
+  Getvisiblejiraprojects: "Get Visible JIRA Projects"
+  Lookupjiraaccountid: "Lookup JIRA Account ID"
+  jiraRead: "JIRA Read"
+  jiraWrite: "JIRA Write"
+  Search: "Search"
+  Searchconfluenceusingcql: "Search Confluence Using CQL"
+  Searchjiraissuesusingjql: "Search JIRA Issues Using JQL"
+  Transitionjiraissue: "Transition JIRA Issue"
+  Updateconfluencepage: "Update Confluence Page"
+
+oauth:
+  type: "non-dcr"
+  provider: "atlassian"
+  requires_user_authorization: true

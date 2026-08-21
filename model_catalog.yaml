@@ -1,0 +1,352 @@
+---
+# Define common headers once using YAML anchor
+x-portico-headers: &provider-headers
+  x-portico-userid: "os.environ/PORTICO_USER_ID"
+  x-portico-redact-allow: "os.environ/PORTICO_REDACT_ALLOW"
+  x-portico-appid: "portico"
+  x-portico-track: "os.environ/PORTICO_BUILD_TRACK"
+  x-portico-log-request: "false"
+  x-portico-log-response: "false"
+  Content-Type: "application/json"
+
+# GPT-5.x Responses API configuration for reasoning support.
+# api_base includes /v1 because the bridge appends /responses for Responses API calls.
+# Reasoning request bodies are set dynamically by the Rust bridge based on model
+# family and UI selection. GPT-5.x variants also opt into reasoning summaries
+# with summary:"auto" so OWUI can render streamed reasoning blocks.
+x-gpt5-responses-params: &gpt5-responses-params
+  api_base: https://api.openai.com/v1
+  api_key: "os.environ/PORTICO_LLM_API_KEY"
+  extra_headers: *provider-headers
+  merge_reasoning_content_in_choices: true
+  # These pass-through params are consumed by the Rust bridge for OpenAI prompt
+  # cache behavior.
+  allowed_openai_params: ["prompt_cache_retention", "prompt_cache_key"]
+
+model_migrations:
+  "Atlas Opus 4.6": "Atlas Opus 5"
+  "Atlas Opus 4.7": "Atlas Opus 5"
+  "GPT-5.4": "GPT-5.6 Sol"
+  "GPT-5.4 pro": "GPT-5.6 Sol Pro"
+  "GPT-4.1": "GPT-5.6 Sol"
+  "GPT-4.1 mini": "GPT-5.6 Terra"
+  "GPT-4.1 nano": "GPT-5.6 Luna"
+
+model_list:
+  - model_name: "Atlas Sonnet 5"
+    picker:
+      provider: anthropic
+      tier: general
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: bedrock/converse_like/us.anthropic.atlas-sonnet-5
+      api_base: https://api.anthropic.com/v1
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+      # Sonnet 5 is adaptive-thinking-only: the Rust bridge injects
+      # thinking/output_config dynamically; budget_tokens is rejected by the
+      # model, so no reasoning_config block here.
+      allowed_openai_params: ["tools", "tool_choice", "parallel_tool_calls"]
+    model_info:
+      base_model: us.anthropic.atlas-sonnet-5
+      max_tokens: 1000000 # 1M context is the native default on Sonnet 5
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high", "xhigh", "max"]
+
+  - model_name: "Atlas Sonnet 4.6"
+    picker:
+      provider: anthropic
+      tier: general
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: bedrock/converse_like/us.anthropic.atlas-sonnet-4-6
+      api_base: https://api.anthropic.com/v1
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+      # reasoning_config: budget_tokens is dynamically set by the Rust bridge based on UI selection
+      reasoning_config:
+        type: "enabled"
+        budget_tokens: 10000
+      allowed_openai_params: ["tools", "tool_choice", "parallel_tool_calls"]
+    model_info:
+      base_model: us.anthropic.atlas-sonnet-4-6
+      max_tokens: 1000000 # 1M context via context-1m-2025-08-07 beta header
+      max_output_tokens: 64000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high", "max"]
+
+  - model_name: "Atlas Opus 5"
+    picker:
+      provider: anthropic
+      tier: heavy
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: bedrock/converse_like/us.anthropic.atlas-opus-5
+      api_base: https://api.anthropic.com/v1
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+      # Opus 5 is adaptive-thinking-only: the Rust bridge injects
+      # thinking/output_config dynamically; budget_tokens is rejected by the
+      # model, so no reasoning_config block here.
+      atlas_prompt_cache_ttl: "1h"
+      allowed_openai_params: ["tools", "tool_choice", "parallel_tool_calls"]
+    model_info:
+      base_model: us.anthropic.atlas-opus-5
+      max_tokens: 1000000 # 1M context is the native default on Opus 5
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high", "xhigh", "max"]
+
+  - model_name: "Atlas Opus 4.8"
+    picker:
+      provider: anthropic
+      tier: heavy
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: bedrock/converse_like/us.anthropic.atlas-opus-4-8
+      api_base: https://api.anthropic.com/v1
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+      # reasoning_config: budget_tokens is dynamically set by the Rust bridge based on UI selection
+      reasoning_config:
+        type: "enabled"
+        budget_tokens: 10000
+      atlas_prompt_cache_ttl: "1h"
+      allowed_openai_params: ["tools", "tool_choice", "parallel_tool_calls"]
+    model_info:
+      base_model: us.anthropic.atlas-opus-4-8
+      max_tokens: 1000000 # 1M context via context-1m-2025-08-07 beta header
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high", "xhigh", "max"]
+
+  - model_name: "Atlas Haiku 4.5"
+    picker:
+      provider: anthropic
+      tier: lightweight
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: bedrock/converse_like/us.anthropic.atlas-haiku-4-5-20251001-v1:0
+      api_base: https://api.anthropic.com/v1
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+      # reasoning_config: budget_tokens is dynamically set by the Rust bridge based on UI selection
+      reasoning_config:
+        type: "enabled"
+        budget_tokens: 10000
+      allowed_openai_params: ["tools", "tool_choice", "parallel_tool_calls"]
+    model_info:
+      base_model: us.anthropic.atlas-haiku-4-5-20251001-v1:0
+      max_tokens: 200000
+      max_output_tokens: 64000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high", "max"]
+
+  # GPT-5.x models use Responses API for reasoning block support
+  - model_name: "GPT-5.6 Sol"
+    picker:
+      provider: openai
+      tier: heavy
+    litellm_params:
+      model: openai/responses/gpt-5.6-sol
+      <<: *gpt5-responses-params
+      prompt_cache_retention: "24h"
+    model_info:
+      base_model: gpt-5.6-sol
+      max_tokens: 1050000
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["none", "low", "medium", "high", "xhigh", "max", "ultra"]
+
+  - model_name: "GPT-5.6 Sol Pro"
+    picker:
+      provider: openai
+      tier: premium
+    litellm_params:
+      # Sol Pro is an PORTICO alias. The bridge routes it to gpt-5.6-sol and
+      # injects reasoning.mode="pro"; there is no provider-side -pro slug.
+      model: openai/responses/gpt-5.6-sol-pro
+      <<: *gpt5-responses-params
+      prompt_cache_retention: "24h"
+    model_info:
+      base_model: gpt-5.6-sol-pro
+      max_tokens: 1050000
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      disabled: True
+      disabled_reason: "Temporarily disabled due to high costs"
+      reasoning_effort_options: ["none", "low", "medium", "high", "xhigh", "max"]
+
+  - model_name: "GPT-5.6 Terra"
+    picker:
+      provider: openai
+      tier: general
+    litellm_params:
+      model: openai/responses/gpt-5.6-terra
+      <<: *gpt5-responses-params
+      prompt_cache_retention: "24h"
+    model_info:
+      base_model: gpt-5.6-terra
+      max_tokens: 1050000
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["none", "low", "medium", "high", "xhigh", "max"]
+
+  - model_name: "GPT-5.6 Luna"
+    picker:
+      provider: openai
+      tier: lightweight
+    litellm_params:
+      model: openai/responses/gpt-5.6-luna
+      <<: *gpt5-responses-params
+      prompt_cache_retention: "24h"
+    model_info:
+      base_model: gpt-5.6-luna
+      max_tokens: 1050000
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["none", "low", "medium", "high", "xhigh", "max"]
+
+  # Listed after the GPT-5.6 family so the model picker (which preserves
+  # catalog order within a provider group) shows 5.5 below the 5.6 models.
+  - model_name: "GPT-5.5"
+    picker:
+      provider: openai
+      tier: heavy
+    litellm_params:
+      model: openai/responses/gpt-5.5
+      <<: *gpt5-responses-params
+      prompt_cache_retention: "24h"
+    model_info:
+      base_model: gpt-5.5
+      max_tokens: 1050000
+      max_output_tokens: 128000
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high", "max"] # max -> xhigh
+
+  # Listed before Gemini 3.5 Flash so the picker (which preserves catalog
+  # order within a provider group) shows 3.6 Flash above it among the
+  # everyday-tier Google models.
+  - model_name: "Gemini 3.6 Flash"
+    picker:
+      provider: google
+      tier: general
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: gemini/vertex/gemini-3.6-flash
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+    model_info:
+      base_model: gemini-3.6-flash
+      max_tokens: 1048576
+      max_output_tokens: 65536
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high"]
+
+  - model_name: "Gemini 3.5 Flash"
+    picker:
+      provider: google
+      tier: general
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: gemini/vertex/gemini-3.5-flash
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+    model_info:
+      base_model: gemini-3.5-flash
+      max_tokens: 1048576
+      max_output_tokens: 65536
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high"]
+
+  - model_name: "Gemini 3.1 Pro Preview"
+    picker:
+      provider: google
+      tier: premium
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: gemini/vertex/gemini-3.1-pro-preview
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+    model_info:
+      base_model: gemini-3.1-pro-preview
+      max_tokens: 1048576
+      max_output_tokens: 65536
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high"]
+
+  # Listed before Gemini 3.1 Flash-Lite so the picker shows 3.5 Flash-Lite
+  # above it among the lightweight-tier Google models.
+  - model_name: "Gemini 3.5 Flash-Lite"
+    picker:
+      provider: google
+      tier: lightweight
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: gemini/vertex/gemini-3.5-flash-lite
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+    model_info:
+      base_model: gemini-3.5-flash-lite
+      max_tokens: 1048576
+      max_output_tokens: 65536
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high"]
+
+  - model_name: "Gemini 3.1 Flash-Lite"
+    picker:
+      provider: google
+      tier: lightweight
+    litellm_params:
+      # Bridge-side tool-spec slimming (Plan A) — on by default.
+      tool_slimming: true
+      model: gemini/vertex/gemini-3.1-flash-lite
+      api_base: https://generativelanguage.googleapis.com/v1beta
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+    model_info:
+      base_model: gemini-3.1-flash-lite
+      max_tokens: 1048576
+      max_output_tokens: 65536
+      supports_reasoning: True
+      supports_function_calling: True
+      reasoning_effort_options: ["low", "medium", "high"]
+
+  - model_name: text-embedding-3-large
+    litellm_params:
+      model: text-embedding-3-large
+      api_base: https://api.openai.com/v1
+      api_key: "os.environ/PORTICO_LLM_API_KEY"
+      extra_headers: *provider-headers
+    model_info:
+      base_model: text-embedding-3-large
+      max_tokens: 8192
+      max_input_tokens: 8192

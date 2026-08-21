@@ -1,0 +1,1222 @@
+<!-- OAuth Wizard Modal Component -->
+<!-- Full-featured OAuth wizard with step-by-step progress, matching guided setup UX -->
+
+<style>
+  /* ============================================
+     OAUTH WIZARD MODAL STYLES
+     Extracted from guided-setup.css
+     ============================================ */
+
+  /* Modal Container */
+  .oauth-wizard-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(30, 35, 36, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .oauth-wizard-modal.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  .platform-darwin .oauth-wizard-modal.visible {
+    -webkit-app-region: drag;
+  }
+
+  .oauth-wizard-content {
+    background: var(--bg-secondary, #2D3233);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: wizardSlideIn 0.3s ease-out;
+    position: relative;
+  }
+
+  .platform-darwin .oauth-wizard-content,
+  .platform-darwin .oauth-wizard-content * {
+    -webkit-app-region: no-drag;
+  }
+
+  @keyframes wizardSlideIn {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Close Button */
+  .oauth-wizard-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary, #737373);
+    transition: all 0.2s ease;
+  }
+
+  .oauth-wizard-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  /* Header */
+  .oauth-wizard-header {
+    margin-bottom: 20px;
+  }
+
+  .oauth-wizard-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0 0 10px 0;
+  }
+
+  .oauth-wizard-description {
+    font-size: 15px;
+    color: var(--text-secondary, #a3a3a3);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* Preview Bar */
+  .oauth-wizard-preview-container {
+    margin-bottom: 20px;
+  }
+
+  .oauth-wizard-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px;
+    background: var(--bg-surface, #323738);
+    border-radius: 0.5rem;
+  }
+
+  .oauth-wizard-preview-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 15px;
+    background: var(--bg-card, #2D3233);
+    border: 1px solid transparent;
+    box-sizing: border-box;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 100px;
+  }
+
+  .oauth-wizard-preview-card:hover {
+    background: var(--bg-elevated, #3A3F40);
+  }
+
+  .oauth-wizard-preview-card.current {
+    background: var(--bg-elevated, #3A3F40);
+    box-shadow: 0 0 0 2px var(--accent-primary, #003a9b);
+  }
+
+  .oauth-wizard-preview-card.done {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.08);
+  }
+
+  .oauth-wizard-preview-card.failed {
+    background: rgba(248, 113, 113, 0.1);
+  }
+
+  .oauth-wizard-preview-card.skipped {
+    background: rgba(251, 191, 36, 0.1);
+    opacity: 0.7;
+  }
+
+  .oauth-wizard-preview-card.starting,
+  .oauth-wizard-preview-card.waiting {
+    background: rgba(147, 51, 234, 0.1);
+    animation: oauth-pulse 1.5s ease-in-out infinite;
+  }
+
+  .oauth-wizard-preview-card.preconfigured {
+    opacity: 0.85;
+  }
+
+  @keyframes oauth-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes oauth-pulse-dark {
+    0%, 100% {
+      background-color: rgba(147, 51, 234, 0.24);
+      border-color: rgba(167, 139, 250, 0.55);
+    }
+    50% {
+      background-color: rgba(147, 51, 234, 0.38);
+      border-color: rgba(196, 181, 253, 0.85);
+    }
+  }
+
+  /* Icon Container with Badge */
+  .oauth-wizard-icon-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .oauth-wizard-preview-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: var(--bg-dark, #1E2324);
+    padding: 4px;
+  }
+
+  .oauth-wizard-status-badge {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    border: 2px solid var(--bg-secondary, #2D3233);
+  }
+
+  .oauth-wizard-status-badge.done {
+    background: var(--accent-primary, #003a9b);
+    color: white;
+  }
+
+  .oauth-wizard-status-badge.done.preconfigured {
+    background: #6b7280;
+    color: white;
+  }
+
+  .oauth-wizard-status-badge.failed {
+    background: var(--status-error, #f87171);
+    color: white;
+  }
+
+  .oauth-wizard-status-badge.skipped {
+    background: var(--status-warning, #fbbf24);
+    color: white;
+    font-size: 10px;
+  }
+
+  .oauth-wizard-preview-name {
+    font-size: 11px;
+    color: var(--text-tertiary, #737373);
+    text-align: center;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .oauth-wizard-preview-card.current .oauth-wizard-preview-name {
+    color: var(--accent-primary, #003a9b);
+    font-weight: 600;
+  }
+
+  /* Current Server Display */
+  .oauth-wizard-current-server {
+    background: var(--bg-surface, #323738);
+    border-radius: 0.5rem;
+    padding: 25px;
+    margin-bottom: 20px;
+  }
+
+  .oauth-wizard-server-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .oauth-wizard-server-icon {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: var(--bg-card, #2D3233);
+    padding: 8px;
+  }
+
+  .oauth-wizard-server-details h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary, #e5e5e5);
+    margin: 0 0 5px 0;
+  }
+
+  .oauth-wizard-server-details p {
+    font-size: 14px;
+    color: var(--text-tertiary, #737373);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .oauth-wizard-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .oauth-wizard-progress-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .oauth-wizard-progress-text {
+    font-size: 13px;
+    color: var(--text-muted, #525252);
+  }
+
+  .oauth-wizard-nav-buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .oauth-wizard-status-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-primary, #003a9b);
+  }
+
+  /* Buttons */
+  .oauth-wizard-btn {
+    padding: 10px 20px;
+    border-radius: 0.375rem;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .oauth-wizard-btn-primary {
+    background: var(--accent-primary, #003a9b);
+    color: var(--bg-dark, #1E2324);
+  }
+
+  .oauth-wizard-btn-primary:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #002c75);
+  }
+
+  .oauth-wizard-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .oauth-wizard-btn-secondary {
+    background: var(--btn-secondary-bg, rgba(255, 255, 255, 0.05));
+    color: var(--text-secondary, #a3a3a3);
+  }
+
+  .oauth-wizard-btn-secondary:hover:not(:disabled) {
+    background: var(--btn-secondary-hover, rgba(255, 255, 255, 0.1));
+  }
+
+  .oauth-wizard-btn-small {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .oauth-wizard-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .oauth-wizard-action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Skip button tooltip */
+  .oauth-wizard-skip-btn[data-tooltip] {
+    position: relative;
+  }
+
+  .oauth-wizard-skip-btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    background: var(--bg-elevated, #3A3F40);
+    color: var(--text-secondary, #a3a3a3);
+    padding: 8px 12px;
+    border-radius: 0.375rem;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    width: max-content;
+    max-width: 90vw;
+    white-space: normal;
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .oauth-wizard-skip-btn[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ============================================
+     TESTING PROGRESS UI
+     ============================================ */
+
+  .oauth-wizard-testing {
+    background: var(--bg-surface, #323738);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  .oauth-wizard-test-steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.9rem;
+    align-items: stretch;
+  }
+
+  .oauth-wizard-test-step {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-height: 9rem;
+    padding: 1rem 0.95rem;
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.02));
+    border-radius: 0.9rem;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .oauth-wizard-test-step.active {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.08);
+    transform: translateY(-1px);
+  }
+
+  .oauth-wizard-test-icon {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.12);
+  }
+
+  .oauth-wizard-test-icon.pending {
+    color: var(--text-muted, #525252);
+  }
+
+  .oauth-wizard-test-icon.running {
+    color: var(--accent-primary, #003a9b);
+    animation: oauth-spin 1s linear infinite;
+  }
+
+  .oauth-wizard-test-icon.success {
+    color: var(--success-text-color, var(--accent-primary, #003a9b));
+  }
+
+  .oauth-wizard-test-icon.failed {
+    color: var(--status-error, #f87171);
+  }
+
+  @keyframes oauth-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .oauth-wizard-test-content {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .oauth-wizard-test-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+  }
+
+  .oauth-wizard-test-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #a3a3a3);
+    margin: 0;
+  }
+
+  .oauth-wizard-test-step.active .oauth-wizard-test-title {
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  .oauth-wizard-test-detail {
+    font-size: 12px;
+    color: var(--text-tertiary, #737373);
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .oauth-wizard-test-action-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    width: 100%;
+    margin-top: 0.1rem;
+  }
+
+  .oauth-wizard-restart-auth-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    padding: 0.28rem 0.7rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.12);
+    color: var(--accent-text-color, var(--accent-primary, #003a9b));
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .oauth-wizard-restart-auth-btn:hover,
+  .oauth-wizard-restart-auth-btn:focus-visible {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.18);
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  .oauth-wizard-restart-auth-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* Tools list */
+  .oauth-wizard-tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .oauth-wizard-tool-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent-primary, #003a9b);
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* ============================================
+     ERROR PANEL
+     ============================================ */
+
+  .oauth-wizard-test-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .oauth-wizard-steps-panel {
+    width: 100%;
+  }
+
+  .oauth-wizard-error-panel {
+    width: 100%;
+    min-width: 0;
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .oauth-wizard-error-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .oauth-wizard-error-icon {
+    color: var(--status-error, #f87171);
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .oauth-wizard-error-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--status-error, #f87171);
+    margin: 0;
+  }
+
+  /* Logs container */
+  .oauth-wizard-logs-container {
+    background: var(--bg-dark, #1E2324);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .oauth-wizard-logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-surface, #323738);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .oauth-wizard-logs-header span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-tertiary, #737373);
+  }
+
+  .oauth-wizard-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-secondary, #a3a3a3);
+    transition: all 0.2s ease;
+  }
+
+  .oauth-wizard-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  .oauth-wizard-logs-content {
+    padding: 12px;
+    margin: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--text-secondary, #a3a3a3);
+  }
+
+  .oauth-wizard-error-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  /* ============================================
+     SUCCESS PANEL
+     ============================================ */
+
+  .oauth-wizard-success {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+    border: 1px solid rgba(var(--accent-primary-rgb, 0, 58, 155), 0.2);
+    border-radius: 0.5rem;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .oauth-wizard-success-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    animation: oauth-success-pulse 0.6s ease-out;
+  }
+
+  @keyframes oauth-success-pulse {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .oauth-wizard-success-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent-primary, #003a9b);
+    margin-bottom: 8px;
+  }
+
+  .oauth-wizard-success-detail {
+    font-size: 13px;
+    color: var(--text-secondary, #a3a3a3);
+    margin-bottom: 16px;
+  }
+
+  .oauth-wizard-next-btn {
+    margin-top: 8px;
+  }
+
+  /* ============================================
+     COMPLETION SUMMARY
+     ============================================ */
+
+  .oauth-wizard-completion {
+    background: var(--bg-surface, #323738);
+    border-radius: 0.5rem;
+    padding: 30px;
+    text-align: center;
+  }
+
+  .oauth-wizard-completion-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px auto;
+    border-radius: 50%;
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .oauth-wizard-completion-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--accent-primary, #003a9b);
+    fill: none;
+  }
+
+  .oauth-wizard-completion-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary, #e5e5e5);
+    margin: 0 0 16px 0;
+  }
+
+  .oauth-wizard-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 25px;
+  }
+
+  .oauth-wizard-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .oauth-wizard-stat.done {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  .oauth-wizard-stat.skipped {
+    color: var(--status-warning, #fbbf24);
+  }
+
+  .oauth-wizard-stat.failed {
+    color: var(--status-error, #f87171);
+  }
+
+  /* Finalizing state */
+  .oauth-wizard-finalizing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 0;
+  }
+
+  .oauth-wizard-finalizing-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(var(--accent-primary-rgb, 0, 58, 155), 0.2);
+    border-top-color: var(--accent-primary, #003a9b);
+    border-radius: 50%;
+    animation: oauth-wizard-spin 0.8s linear infinite;
+  }
+
+  @keyframes oauth-wizard-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .oauth-wizard-finalizing-text {
+    font-size: 14px;
+    color: var(--text-secondary, #a3a3a3);
+  }
+
+  /* ============================================
+     SINGLE SERVER MODE
+     ============================================ */
+
+  .oauth-wizard-modal.single-server .oauth-wizard-preview-container,
+  .oauth-wizard-modal.single-server .oauth-wizard-progress-text,
+  .oauth-wizard-modal.single-server .oauth-wizard-nav-buttons {
+    display: none !important;
+  }
+
+  /* ============================================
+     DARK THEME OVERRIDES
+     ============================================ */
+
+  [data-theme="dark"] .oauth-wizard-description,
+  [data-theme="dark"] .oauth-wizard-server-details p,
+  [data-theme="dark"] .oauth-wizard-preview-name,
+  [data-theme="dark"] .oauth-wizard-test-title,
+  [data-theme="dark"] .oauth-wizard-test-detail,
+  [data-theme="dark"] .oauth-wizard-logs-header span,
+  [data-theme="dark"] .oauth-wizard-logs-content,
+  [data-theme="dark"] .oauth-wizard-success-detail,
+  [data-theme="dark"] .oauth-wizard-finalizing-text {
+    color: #cbd5e1;
+  }
+
+  [data-theme="dark"] .oauth-wizard-test-step {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  [data-theme="dark"] .oauth-wizard-test-step.active {
+    background: rgba(var(--accent-primary-rgb, 79, 148, 255), 0.16);
+  }
+
+  [data-theme="dark"] .oauth-wizard-test-icon.pending {
+    color: #94a3b8;
+  }
+
+  [data-theme="dark"] .oauth-wizard-preview-card.starting,
+  [data-theme="dark"] .oauth-wizard-preview-card.waiting {
+    background: rgba(147, 51, 234, 0.28);
+    border-color: rgba(167, 139, 250, 0.7);
+    animation: oauth-pulse-dark 1.5s ease-in-out infinite;
+  }
+
+  [data-theme="dark"] .oauth-wizard-preview-card.starting .oauth-wizard-preview-name,
+  [data-theme="dark"] .oauth-wizard-preview-card.waiting .oauth-wizard-preview-name {
+    color: #e9d5ff;
+    font-weight: 600;
+  }
+
+  [data-theme="dark"] .oauth-wizard-status-badge.done {
+    background: var(--accent-primary, #4f94ff);
+    color: #f8fafc;
+  }
+
+  [data-theme="dark"] .oauth-wizard-progress-text {
+    color: var(--text-primary, #e5e5e5);
+    font-weight: 600;
+  }
+
+  [data-theme="dark"] .oauth-wizard-btn-primary {
+    color: #ffffff;
+  }
+
+  [data-theme="dark"] .oauth-wizard-btn-secondary {
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--text-primary, #e5e5e5);
+  }
+
+  [data-theme="dark"] .oauth-wizard-btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* ============================================
+     LIGHT THEME OVERRIDES
+     ============================================ */
+
+  [data-theme="light"] .oauth-wizard-modal {
+    background: rgba(245, 245, 245, 0.95);
+  }
+
+  [data-theme="light"] .oauth-wizard-content {
+    background: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  [data-theme="light"] .oauth-wizard-header {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-wizard-title {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card.current {
+    box-shadow: 0 0 0 2px var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card.current .oauth-wizard-preview-name {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-btn-primary {
+    background: var(--accent-primary, #003a9b);
+    color: #ffffff;
+  }
+
+  [data-theme="light"] .oauth-wizard-btn-primary:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #002c75);
+  }
+
+  [data-theme="light"] .oauth-wizard-status-text {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-test-step.active {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.08);
+  }
+
+  /* Light mode: Preview bar and cards */
+  [data-theme="light"] .oauth-wizard-preview {
+    background: #f5f5f5;
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card:hover {
+    background: #fafafa;
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card.current {
+    background: #ffffff;
+    border: 2px solid var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card.done {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.08);
+    border-color: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.3);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card.failed {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.3);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-card.skipped {
+    background: rgba(217, 119, 6, 0.08);
+    border-color: rgba(217, 119, 6, 0.3);
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-icon {
+    background: #f5f5f5;
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-icon[data-logo-kind="portico"] {
+    padding: 6px;
+    border-radius: 10px;
+    background: #153f90;
+    filter: none;
+  }
+
+  [data-theme="light"] .oauth-wizard-preview-name {
+    color: #525252;
+  }
+
+  /* Light mode: Current server display */
+  [data-theme="light"] .oauth-wizard-current-server {
+    background: #f5f5f5;
+  }
+
+  [data-theme="light"] .oauth-wizard-server-icon {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-wizard-server-icon[data-logo-kind="portico"] {
+    padding: 10px;
+    border-radius: 12px;
+    background: #153f90;
+    border: none;
+    filter: none;
+  }
+
+  [data-theme="light"] .oauth-wizard-server-details h2 {
+    color: #171717;
+  }
+
+  [data-theme="light"] .oauth-wizard-server-details p {
+    color: #525252;
+  }
+
+  [data-theme="light"] .oauth-wizard-progress-text {
+    color: #737373;
+  }
+
+  /* Light mode: Buttons */
+  [data-theme="light"] .oauth-wizard-btn-secondary {
+    background: rgba(0, 0, 0, 0.04);
+    color: #525252;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-wizard-btn-secondary:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .oauth-wizard-close-btn {
+    background: rgba(0, 0, 0, 0.04);
+    color: #737373;
+  }
+
+  [data-theme="light"] .oauth-wizard-close-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #171717;
+  }
+
+  /* Light mode: Testing pane */
+  [data-theme="light"] .oauth-wizard-testing {
+    background: #f5f5f5;
+  }
+
+  [data-theme="light"] .oauth-wizard-test-step {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  [data-theme="light"] .oauth-wizard-test-title {
+    color: #525252;
+  }
+
+  [data-theme="light"] .oauth-wizard-test-step.active .oauth-wizard-test-title {
+    color: #171717;
+  }
+
+  [data-theme="light"] .oauth-wizard-test-detail {
+    color: #737373;
+  }
+
+  /* Light mode: Completion */
+  [data-theme="light"] .oauth-wizard-completion {
+    background: #f5f5f5;
+  }
+
+  [data-theme="light"] .oauth-wizard-completion-title {
+    color: #171717;
+  }
+
+  [data-theme="light"] .oauth-wizard-stat.done {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-success-title {
+    color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-stat.skipped {
+    color: #d97706;
+  }
+
+  [data-theme="light"] .oauth-wizard-stat.failed {
+    color: #dc2626;
+  }
+
+  [data-theme="light"] .oauth-wizard-completion-icon {
+    background: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.1);
+  }
+
+  [data-theme="light"] .oauth-wizard-completion-icon svg {
+    stroke: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-finalizing-spinner {
+    border-color: rgba(var(--accent-primary-rgb, 0, 58, 155), 0.2);
+    border-top-color: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-finalizing-text {
+    color: #525252;
+  }
+
+  /* Light mode: Status badge border */
+  [data-theme="light"] .oauth-wizard-status-badge {
+    border-color: #ffffff;
+  }
+
+  [data-theme="light"] .oauth-wizard-status-badge.done {
+    background: var(--accent-primary, #003a9b);
+  }
+
+  [data-theme="light"] .oauth-wizard-status-badge.failed {
+    background: #dc2626;
+  }
+
+  [data-theme="light"] .oauth-wizard-status-badge.skipped {
+    background: #d97706;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+
+  @media (max-width: 1100px) {
+    .oauth-wizard-test-steps {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .oauth-wizard-test-step {
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .oauth-wizard-content {
+      padding: 20px;
+    }
+
+    .oauth-wizard-server-info {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .oauth-wizard-progress {
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+<!-- OAuth Wizard Modal HTML -->
+<div class="oauth-wizard-modal" id="oauth-wizard-modal">
+  <div class="oauth-wizard-content">
+    <!-- Close Button -->
+    <button class="oauth-wizard-close-btn" id="oauth-wizard-close-btn" title="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <!-- Header -->
+    <div class="oauth-wizard-header">
+      <h2 class="oauth-wizard-title">Connect</h2>
+      <p class="oauth-wizard-description" id="oauth-wizard-description">
+        Let's connect your integrations. You'll be asked to sign in for each one.
+      </p>
+    </div>
+
+    <!-- Main Content Container -->
+    <div id="oauth-wizard-main-content">
+      <!-- Server Preview Bar -->
+      <div class="oauth-wizard-preview-container">
+        <div class="oauth-wizard-preview" id="oauth-wizard-preview">
+          <!-- Preview cards rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Current Server Display -->
+      <div class="oauth-wizard-current-server" id="oauth-wizard-current-server">
+        <div class="oauth-wizard-server-info">
+          <img class="oauth-wizard-server-icon" id="oauth-wizard-server-icon" src="" alt="" style="display: none;">
+          <div class="oauth-wizard-server-details">
+            <h2 id="oauth-wizard-server-name">Server Name</h2>
+            <p id="oauth-wizard-server-description">Server description</p>
+          </div>
+        </div>
+        <div class="oauth-wizard-progress">
+          <div class="oauth-wizard-progress-left">
+            <span class="oauth-wizard-progress-text" id="oauth-wizard-progress-text">Server 1 of N</span>
+            <div class="oauth-wizard-nav-buttons">
+              <button class="oauth-wizard-btn oauth-wizard-btn-secondary oauth-wizard-btn-small" id="oauth-wizard-prev-btn" style="display: none;">Prev</button>
+              <button class="oauth-wizard-btn oauth-wizard-btn-secondary oauth-wizard-btn-small oauth-wizard-skip-btn" id="oauth-wizard-next-btn"
+                      data-tooltip="You can always connect more integrations later.">Skip</button>
+              <button class="oauth-wizard-btn oauth-wizard-btn-secondary oauth-wizard-btn-small oauth-wizard-skip-btn" id="oauth-wizard-skip-all-btn"
+                      data-tooltip="You can always connect more integrations later.">Skip All</button>
+            </div>
+          </div>
+          <span class="oauth-wizard-status-text" id="oauth-wizard-status-text" style="display: none;"></span>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="oauth-wizard-buttons" id="oauth-wizard-buttons">
+        <div class="oauth-wizard-action-buttons">
+          <button class="oauth-wizard-btn oauth-wizard-btn-primary" id="oauth-wizard-authorize-btn">Connect</button>
+        </div>
+      </div>
+
+      <!-- Testing Progress Pane (hidden by default) -->
+      <div class="oauth-wizard-testing" id="oauth-wizard-testing" style="display: none;">
+        <div id="oauth-wizard-testing-content">
+          <!-- Testing steps rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Completion Summary (hidden by default) -->
+    <div class="oauth-wizard-completion" id="oauth-wizard-completion" style="display: none;">
+      <div class="oauth-wizard-completion-icon" id="oauth-wizard-completion-icon">
+        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h3 class="oauth-wizard-completion-title" id="oauth-wizard-completion-title">OAuth Setup Complete</h3>
+      <div class="oauth-wizard-stats" id="oauth-wizard-stats">
+        <span class="oauth-wizard-stat done" id="oauth-wizard-stat-done">✓ 0 authorized</span>
+        <span class="oauth-wizard-stat skipped" id="oauth-wizard-stat-skipped">⊘ 0 skipped</span>
+        <span class="oauth-wizard-stat failed" id="oauth-wizard-stat-failed" style="display: none;">✗ 0 failed</span>
+      </div>
+      <div class="oauth-wizard-finalizing" id="oauth-wizard-finalizing" style="display: none;">
+        <div class="oauth-wizard-finalizing-spinner"></div>
+        <span class="oauth-wizard-finalizing-text">Wrapping things up...</span>
+      </div>
+      <button class="oauth-wizard-btn oauth-wizard-btn-primary" id="oauth-wizard-done-btn">Done</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,527 @@
+const MODEL_PRICING = [
+  {
+    key: "gpt-5.6-sol-pro",
+    displayName: "GPT-5.6 Sol Pro",
+    inputPerMillion: 4.25,
+    outputPerMillion: 25.5,
+    cacheReadPerMillion: 0.425,
+    cacheWritePerMillion: 5.3125,
+    highContext: {
+      thresholdPromptTokens: 272000,
+      inputPerMillion: 8.5,
+      outputPerMillion: 38.25,
+      cacheReadPerMillion: 0.85,
+      cacheWritePerMillion: 10.625,
+    },
+    aliases: [
+      "GPT-5.6 Sol Pro",
+      "gpt-5.6-sol-pro",
+      "openai/responses/gpt-5.6-sol-pro",
+    ],
+    matchers: [/\bgpt 5 6 sol pro\b/],
+  },
+  {
+    key: "gpt-5.6-sol",
+    displayName: "GPT-5.6 Sol",
+    inputPerMillion: 4.25,
+    outputPerMillion: 25.5,
+    cacheReadPerMillion: 0.425,
+    cacheWritePerMillion: 5.3125,
+    highContext: {
+      thresholdPromptTokens: 272000,
+      inputPerMillion: 8.5,
+      outputPerMillion: 38.25,
+      cacheReadPerMillion: 0.85,
+      cacheWritePerMillion: 10.625,
+    },
+    aliases: [
+      "GPT-5.6 Sol",
+      "gpt-5.6-sol",
+      "openai/responses/gpt-5.6-sol",
+      "portico-openai/gpt-5.6-sol",
+    ],
+    matchers: [/\bgpt 5 6 sol\b/],
+  },
+  {
+    key: "gpt-5.6-terra",
+    displayName: "GPT-5.6 Terra",
+    inputPerMillion: 2.125,
+    outputPerMillion: 12.75,
+    cacheReadPerMillion: 0.2125,
+    cacheWritePerMillion: 2.65625,
+    highContext: {
+      thresholdPromptTokens: 272000,
+      inputPerMillion: 4.25,
+      outputPerMillion: 19.125,
+      cacheReadPerMillion: 0.425,
+      cacheWritePerMillion: 5.3125,
+    },
+    aliases: [
+      "GPT-5.6 Terra",
+      "gpt-5.6-terra",
+      "openai/responses/gpt-5.6-terra",
+      "portico-openai/gpt-5.6-terra",
+    ],
+    matchers: [/\bgpt 5 6 terra\b/],
+  },
+  {
+    key: "gpt-5.6-luna",
+    displayName: "GPT-5.6 Luna",
+    inputPerMillion: 0.85,
+    outputPerMillion: 5.1,
+    cacheReadPerMillion: 0.085,
+    cacheWritePerMillion: 1.0625,
+    highContext: {
+      thresholdPromptTokens: 272000,
+      inputPerMillion: 1.7,
+      outputPerMillion: 7.65,
+      cacheReadPerMillion: 0.17,
+      cacheWritePerMillion: 2.125,
+    },
+    aliases: [
+      "GPT-5.6 Luna",
+      "gpt-5.6-luna",
+      "openai/responses/gpt-5.6-luna",
+      "portico-openai/gpt-5.6-luna",
+    ],
+    matchers: [/\bgpt 5 6 luna\b/],
+  },
+  {
+    key: "gpt-5.5",
+    displayName: "GPT-5.5",
+    inputPerMillion: 5,
+    outputPerMillion: 30,
+    cacheReadPerMillion: 0.5,
+    aliases: ["GPT-5.5", "gpt-5.5", "openai/responses/gpt-5.5"],
+    matchers: [/\bgpt 5 5\b/],
+  },
+  {
+    key: "gpt-5.4",
+    displayName: "GPT-5.4",
+    inputPerMillion: 2.5,
+    outputPerMillion: 15,
+    cacheReadPerMillion: 0.25,
+    aliases: ["GPT-5.4", "gpt-5.4", "openai/responses/gpt-5.4"],
+    matchers: [/\bgpt 5 4\b/],
+  },
+  {
+    key: "gpt-5.4-pro",
+    displayName: "GPT-5.4 pro",
+    inputPerMillion: 30,
+    outputPerMillion: 180,
+    aliases: ["GPT-5.4 pro", "gpt-5.4-pro", "openai/responses/gpt-5.4-pro"],
+    matchers: [/\bgpt 5 4 pro\b/],
+  },
+  {
+    key: "gpt-4.1",
+    displayName: "GPT-4.1",
+    inputPerMillion: 2,
+    outputPerMillion: 8,
+    cacheReadPerMillion: 0.5,
+    aliases: ["GPT-4.1", "gpt-4.1"],
+    matchers: [/\bgpt 4 1\b/],
+  },
+  {
+    key: "gpt-4.1-mini",
+    displayName: "GPT-4.1 mini",
+    inputPerMillion: 0.4,
+    outputPerMillion: 1.6,
+    cacheReadPerMillion: 0.1,
+    aliases: ["GPT-4.1 mini", "gpt-4.1-mini"],
+    matchers: [/\bgpt 4 1 mini\b/],
+  },
+  {
+    key: "gpt-4.1-nano",
+    displayName: "GPT-4.1 nano",
+    inputPerMillion: 0.1,
+    outputPerMillion: 0.4,
+    cacheReadPerMillion: 0.025,
+    aliases: ["GPT-4.1 nano", "gpt-4.1-nano"],
+    matchers: [/\bgpt 4 1 nano\b/],
+  },
+  {
+    key: "atlas-sonnet-5",
+    displayName: "Atlas Sonnet 5",
+    inputPerMillion: 3,
+    outputPerMillion: 15,
+    cacheReadPerMillion: 0.3,
+    cacheWritePerMillion: 3.75,
+    aliases: [
+      "Atlas Sonnet 5",
+      "bedrock/converse_like/us.anthropic.atlas-sonnet-5",
+      "us.anthropic.atlas-sonnet-5",
+      "us.anthropic.atlas-sonnet-5:0",
+    ],
+    matchers: [/\batlas sonnet 5\b/],
+  },
+  {
+    key: "atlas-sonnet-4.6",
+    displayName: "Atlas Sonnet 4.6",
+    inputPerMillion: 3,
+    outputPerMillion: 15,
+    cacheReadPerMillion: 0.3,
+    cacheWritePerMillion: 3.75,
+    aliases: [
+      "Atlas Sonnet 4.6",
+      "bedrock/converse_like/us.anthropic.atlas-sonnet-4-6",
+      "us.anthropic.atlas-sonnet-4-6",
+      "us.anthropic.atlas-sonnet-4-6:0",
+    ],
+    matchers: [/\batlas sonnet 4 6\b/],
+  },
+  {
+    key: "atlas-opus-5",
+    displayName: "Atlas Opus 5",
+    inputPerMillion: 5,
+    outputPerMillion: 25,
+    cacheReadPerMillion: 0.5,
+    cacheWritePerMillion: 6.25,
+    aliases: [
+      "Atlas Opus 5",
+      "bedrock/converse_like/us.anthropic.atlas-opus-5",
+      "us.anthropic.atlas-opus-5",
+      "us.anthropic.atlas-opus-5:0",
+    ],
+    matchers: [/\batlas opus 5\b/],
+  },
+  {
+    key: "atlas-opus-4.8",
+    displayName: "Atlas Opus 4.8",
+    inputPerMillion: 5,
+    outputPerMillion: 25,
+    cacheReadPerMillion: 0.5,
+    cacheWritePerMillion: 6.25,
+    aliases: [
+      "Atlas Opus 4.8",
+      "bedrock/converse_like/us.anthropic.atlas-opus-4-8",
+      "us.anthropic.atlas-opus-4-8",
+      "bedrock/converse_like/us.anthropic.atlas-opus-4-8-v1",
+      "us.anthropic.atlas-opus-4-8-v1",
+      "us.anthropic.atlas-opus-4-8-v1:0",
+    ],
+    matchers: [/\batlas opus 4 8\b/],
+  },
+  {
+    key: "atlas-opus-4.7",
+    displayName: "Atlas Opus 4.7",
+    inputPerMillion: 5,
+    outputPerMillion: 25,
+    cacheReadPerMillion: 0.5,
+    cacheWritePerMillion: 6.25,
+    aliases: [
+      "Atlas Opus 4.7",
+      "bedrock/converse_like/us.anthropic.atlas-opus-4-7",
+      "us.anthropic.atlas-opus-4-7",
+      "bedrock/converse_like/us.anthropic.atlas-opus-4-7-v1",
+      "us.anthropic.atlas-opus-4-7-v1",
+      "us.anthropic.atlas-opus-4-7-v1:0",
+    ],
+    matchers: [/\batlas opus 4 7\b/],
+  },
+  {
+    key: "atlas-opus-4.6",
+    displayName: "Atlas Opus 4.6",
+    inputPerMillion: 5,
+    outputPerMillion: 25,
+    cacheReadPerMillion: 0.5,
+    cacheWritePerMillion: 6.25,
+    aliases: [
+      "Atlas Opus 4.6",
+      "bedrock/converse_like/us.anthropic.atlas-opus-4-6-v1",
+      "us.anthropic.atlas-opus-4-6-v1",
+      "us.anthropic.atlas-opus-4-6-v1:0",
+    ],
+    matchers: [/\batlas opus 4 6\b/],
+  },
+  {
+    key: "atlas-haiku-4.5",
+    displayName: "Atlas Haiku 4.5",
+    inputPerMillion: 1,
+    outputPerMillion: 5,
+    cacheReadPerMillion: 0.1,
+    cacheWritePerMillion: 1.25,
+    aliases: [
+      "Atlas Haiku 4.5",
+      "bedrock/converse_like/us.anthropic.atlas-haiku-4-5-20251001-v1:0",
+      "us.anthropic.atlas-haiku-4-5-20251001-v1:0",
+    ],
+    matchers: [/\batlas haiku 4 5\b/],
+  },
+  {
+    key: "gemini-3.6-flash",
+    displayName: "Gemini 3.6 Flash",
+    inputPerMillion: 2.7,
+    outputPerMillion: 13.5,
+    cacheReadPerMillion: 0.27,
+    aliases: [
+      "Gemini 3.6 Flash",
+      "gemini-3.6-flash",
+      "gemini/vertex/gemini-3.6-flash",
+      "portico-gemini-vertex/gemini-3.6-flash",
+    ],
+    matchers: [/\bgemini 3 6 flash\b/],
+  },
+  {
+    // Listed before Gemini 3.5 Flash: the fuzzy fallback scans in table
+    // order and /\bgemini 3 5 flash\b/ also matches "gemini 3 5 flash lite"
+    // (same shadowing rule as GPT-5.6 Sol Pro before Sol).
+    key: "gemini-3.5-flash-lite",
+    displayName: "Gemini 3.5 Flash-Lite",
+    inputPerMillion: 0.54,
+    outputPerMillion: 4.5,
+    cacheReadPerMillion: 0.054,
+    aliases: [
+      "Gemini 3.5 Flash-Lite",
+      "gemini-3.5-flash-lite",
+      "gemini/vertex/gemini-3.5-flash-lite",
+      "portico-gemini-vertex/gemini-3.5-flash-lite",
+    ],
+    matchers: [/\bgemini 3 5 flash lite\b/],
+  },
+  {
+    key: "gemini-3.5-flash",
+    displayName: "Gemini 3.5 Flash",
+    inputPerMillion: 2.7,
+    outputPerMillion: 16.2,
+    cacheReadPerMillion: 0.27,
+    aliases: [
+      "Gemini 3.5 Flash",
+      "gemini-3.5-flash",
+      "gemini/vertex/gemini-3.5-flash",
+      "portico-gemini-vertex/gemini-3.5-flash",
+    ],
+    matchers: [/\bgemini 3 5 flash\b/],
+  },
+  {
+    key: "gemini-3.1-pro-preview",
+    displayName: "Gemini 3.1 Pro Preview",
+    inputPerMillion: 3.6,
+    outputPerMillion: 21.6,
+    cacheReadPerMillion: 0.36,
+    highContext: {
+      thresholdPromptTokens: 200000,
+      inputPerMillion: 7.2,
+      outputPerMillion: 32.4,
+      cacheReadPerMillion: 0.72,
+    },
+    aliases: [
+      "Gemini 3.1 Pro Preview",
+      "gemini-3.1-pro-preview",
+      "gemini/vertex/gemini-3.1-pro-preview",
+      "portico-gemini-vertex/gemini-3.1-pro-preview",
+    ],
+    matchers: [/\bgemini 3 1 pro preview\b/],
+  },
+  {
+    key: "gemini-3.1-flash-lite",
+    displayName: "Gemini 3.1 Flash-Lite",
+    inputPerMillion: 0.45,
+    outputPerMillion: 2.7,
+    cacheReadPerMillion: 0.045,
+    aliases: [
+      "Gemini 3.1 Flash-Lite",
+      "gemini-3.1-flash-lite",
+      "gemini/vertex/gemini-3.1-flash-lite",
+      "portico-gemini-vertex/gemini-3.1-flash-lite",
+    ],
+    matchers: [/\bgemini 3 1 flash lite\b/],
+  },
+];
+
+const NORMALIZED_ALIAS_TO_SPEC = new Map(
+  MODEL_PRICING.flatMap((spec) =>
+    spec.aliases.map((alias) => [normalizeLookupValue(alias), spec]),
+  ),
+);
+
+function normalizeLookupValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function toFiniteNumber(value, fallback = 0) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function toInteger(value, fallback = 0) {
+  return Math.max(0, Math.floor(toFiniteNumber(value, fallback)));
+}
+
+function roundCurrency(value) {
+  return Math.round((value + Number.EPSILON) * 1000000) / 1000000;
+}
+
+function resolveModelPricing(modelId, modelName) {
+  const candidates = [modelName, modelId]
+    .map((value) => normalizeLookupValue(value))
+    .filter((value) => value.length > 0);
+
+  for (const candidate of candidates) {
+    const exact = NORMALIZED_ALIAS_TO_SPEC.get(candidate);
+    if (exact) {
+      return exact;
+    }
+  }
+
+  for (const candidate of candidates) {
+    for (const spec of MODEL_PRICING) {
+      if (spec.matchers.some((matcher) => matcher.test(candidate))) {
+        return spec;
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveEffectivePricingSpec(spec, promptTokens) {
+  const highContext = spec.highContext;
+  if (!highContext || promptTokens <= highContext.thresholdPromptTokens) {
+    return spec;
+  }
+
+  return {
+    ...spec,
+    inputPerMillion: highContext.inputPerMillion,
+    outputPerMillion: highContext.outputPerMillion,
+    cacheReadPerMillion:
+      highContext.cacheReadPerMillion ?? spec.cacheReadPerMillion,
+    cacheWritePerMillion:
+      highContext.cacheWritePerMillion ?? spec.cacheWritePerMillion,
+  };
+}
+
+function calculatePromptCacheMetrics(input = {}) {
+  const spec = resolveModelPricing(input.modelId, input.modelName);
+  const promptTokens = toInteger(input.promptTokens);
+  const completionTokens = toInteger(input.completionTokens);
+  const actualCost = Math.max(0, toFiniteNumber(input.actualCost, 0));
+
+  if (!spec) {
+    return {
+      modelKey: null,
+      modelName: input.modelName ? String(input.modelName) : null,
+      supportsPricing: false,
+      supportsCacheSavings: false,
+      promptTokens,
+      completionTokens,
+      actualCost,
+      effectiveActualCost: actualCost,
+      estimatedActualCost: actualCost,
+      estimatedCostWithoutCache: actualCost,
+      netCacheSavings: 0,
+      savingsRate: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      actualCacheReadCost: 0,
+      actualCacheWriteCost: 0,
+      uncachedEquivalentReadCost: 0,
+      uncachedEquivalentWriteCost: 0,
+      grossCacheReadSavings: 0,
+      cacheWritePremium: 0,
+    };
+  }
+
+  const cacheReadTokens = Math.max(
+    toInteger(input.cachedTokens),
+    toInteger(input.cacheReadInputTokens),
+  );
+  const cacheWriteTokens = Math.max(
+    toInteger(input.cacheCreationInputTokens),
+    toInteger(input.cacheWriteInputTokens),
+  );
+  const effectiveSpec = resolveEffectivePricingSpec(spec, promptTokens);
+  const inputRatePerToken = effectiveSpec.inputPerMillion / 1000000;
+  const outputRatePerToken = effectiveSpec.outputPerMillion / 1000000;
+  const cacheReadRatePerToken =
+    effectiveSpec.cacheReadPerMillion != null
+      ? effectiveSpec.cacheReadPerMillion / 1000000
+      : null;
+  const cacheWriteRatePerToken =
+    effectiveSpec.cacheWritePerMillion != null
+      ? effectiveSpec.cacheWritePerMillion / 1000000
+      : null;
+  const promptTokenEquivalent = Math.max(
+    promptTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
+  );
+
+  const uncachedEquivalentReadCost = roundCurrency(cacheReadTokens * inputRatePerToken);
+  const actualCacheReadCost = roundCurrency(
+    cacheReadRatePerToken != null
+      ? cacheReadTokens * cacheReadRatePerToken
+      : uncachedEquivalentReadCost,
+  );
+  const grossCacheReadSavings = roundCurrency(
+    uncachedEquivalentReadCost - actualCacheReadCost,
+  );
+
+  const uncachedEquivalentWriteCost = roundCurrency(cacheWriteTokens * inputRatePerToken);
+  const actualCacheWriteCost = roundCurrency(
+    cacheWriteRatePerToken != null
+      ? cacheWriteTokens * cacheWriteRatePerToken
+      : uncachedEquivalentWriteCost,
+  );
+  const cacheWritePremium = roundCurrency(
+    actualCacheWriteCost - uncachedEquivalentWriteCost,
+  );
+
+  const estimatedCostWithoutCache = roundCurrency(
+    promptTokenEquivalent * inputRatePerToken + completionTokens * outputRatePerToken,
+  );
+  const estimatedActualCost = roundCurrency(
+    Math.max(0, estimatedCostWithoutCache - grossCacheReadSavings + cacheWritePremium),
+  );
+  const effectiveActualCost = actualCost > 0 ? actualCost : estimatedActualCost;
+  const netCacheSavings = roundCurrency(grossCacheReadSavings - cacheWritePremium);
+  const effectiveNoCacheCost = roundCurrency(
+    Math.max(0, effectiveActualCost + netCacheSavings),
+  );
+  const savingsRate =
+    effectiveNoCacheCost > 0 ? netCacheSavings / effectiveNoCacheCost : 0;
+
+  return {
+    modelKey: spec.key,
+    modelName: spec.displayName,
+    supportsPricing: true,
+    supportsCacheSavings:
+      (cacheReadRatePerToken != null || cacheWriteRatePerToken != null) &&
+      (cacheReadTokens > 0 || cacheWriteTokens > 0),
+    promptTokens,
+    completionTokens,
+    actualCost,
+    effectiveActualCost: roundCurrency(effectiveActualCost),
+    estimatedActualCost,
+    estimatedCostWithoutCache: roundCurrency(effectiveNoCacheCost),
+    netCacheSavings,
+    savingsRate,
+    cacheReadTokens,
+    cacheWriteTokens,
+    actualCacheReadCost,
+    actualCacheWriteCost,
+    uncachedEquivalentReadCost,
+    uncachedEquivalentWriteCost,
+    grossCacheReadSavings,
+    cacheWritePremium,
+  };
+}
+
+module.exports = {
+  MODEL_PRICING,
+  resolveModelPricing,
+  calculatePromptCacheMetrics,
+};

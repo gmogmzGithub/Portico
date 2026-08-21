@@ -1,0 +1,15 @@
+services:
+  llm-gateway:
+    environment:
+      - TZ=${TZ:-UTC}
+      - PORTICO_BUILD_TRACK=${PORTICO_BUILD_TRACK:-dev-build}
+      - PROMPT_CACHE_ATLAS_ENABLED=${PROMPT_CACHE_ATLAS_ENABLED:-true}
+
+  mcpo:
+    command: ["./start-mcpo.sh"]
+    # Additional configuration for Docker-based MCP servers
+    environment:
+      - TZ=${TZ:-UTC}
+      - DOCKER_HOST=tcp://docker-socket-proxy:2375
+      - CONFIG_FILE=mcp_config_advanced.json
+      - LOG_LEVEL=info  # Override .env to enable HTTP request logs

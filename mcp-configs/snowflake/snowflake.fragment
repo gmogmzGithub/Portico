@@ -1,0 +1,10 @@
+{
+  "args": [
+    "snowflake-labs-mcp",
+    "--service-config-file",
+    "/app/runtime/mcp_config.yaml",
+    "--connection-name",
+    "default"
+  ],
+  "command": "uvx"
+}

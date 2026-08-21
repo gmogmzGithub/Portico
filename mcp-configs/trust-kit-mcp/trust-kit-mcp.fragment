@@ -1,0 +1,11 @@
+{
+  "type": "streamable-http",
+  "url": "https://trust-kit-mcp.sandbox.example.invalid",
+  "oauth": {
+    "server_url": "https://trust-kit-mcp.sandbox.example.invalid",
+    "resource": "https://trust-kit-mcp.sandbox.example.invalid"
+  },
+  "headers": {
+    "waldoapikey": "${waldoapikey}"
+  }
+}

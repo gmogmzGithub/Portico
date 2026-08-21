@@ -1,0 +1,8 @@
+{
+  "type": "streamable-http",
+  "url": "https://google-workspace-mcp.sandbox.example.invalid/mcp",
+  "oauth": {
+    "server_url": "https://google-workspace-mcp.sandbox.example.invalid",
+    "resource": "https://google-workspace-mcp.sandbox.example.invalid/mcp"
+  }
+}

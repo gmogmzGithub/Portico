@@ -1,0 +1,16 @@
+deployment_type: docker
+description: Portico UX Content Design MCP - guidance on Portico terminology, labels, tone, and user-facing text
+display_name: Content Design MCP
+id: content-design-mcp
+is_core: false
+name: Content Design MCP
+required_env_vars: []
+user_installed: false
+tool_rename_mapping:
+  get_component_guidelines: "Get Component Guidelines"
+  get_guidelines: "Get Guidelines"
+  get_word_list: "Get Word List"
+  list_disciplines: "List Disciplines"
+  list_products: "List Products"
+  search_guidelines: "Search Guidelines"
+  search_word_list: "Search Word List"

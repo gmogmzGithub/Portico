@@ -1,0 +1,7 @@
+skill_name: external-data-sharing
+domain: central-analytics
+topic: data-sharing
+description: Risk matrix rules and guidelines for external data sharing decisions
+owner: central-analytics
+is_public: true
+required_scopes: []

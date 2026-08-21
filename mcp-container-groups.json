@@ -1,0 +1,13 @@
+{
+  "groups": {
+    "core": [
+      "agent-vm",
+      "artifacts",
+      "mcp-assistant",
+      "scheduling",
+      "skills",
+      "subagents",
+      "web-tools"
+    ]
+  }
+}

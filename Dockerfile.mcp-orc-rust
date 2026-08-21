@@ -1,0 +1,158 @@
+# syntax=docker/dockerfile:1.7
+
+ARG RUST_VERSION=1.96.0
+FROM rust:${RUST_VERSION}-slim-trixie AS mcp-workspace-builder
+
+ARG RUST_VERSION
+ARG TARGETARCH
+
+ENV PATH=/usr/local/cargo/bin:$PATH \
+    CARGO_NET_RETRY=5 \
+    CARGO_HTTP_MULTIPLEXING=false \
+    CARGO_HTTP_TIMEOUT=120 \
+    CARGO_HTTP_LOW_SPEED_LIMIT=1
+
+WORKDIR /build
+COPY src/mcp-orc-rust /build/src/mcp-orc-rust
+COPY src/core-mcp-rust /build/src/core-mcp-rust
+WORKDIR /build/src/mcp-orc-rust
+# The target-dir cache persists across branches/clones while cargo trusts
+# mtimes for freshness, so it can silently reuse stale workspace artifacts
+# built from different sources (E0050-style trait/impl mismatches). Touch all
+# sources so workspace crates always rebuild; registry dep caches stay warm.
+RUN --mount=type=cache,id=portico-cargo-registry-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=portico-cargo-git-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=portico-rust-target-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/build/src/mcp-orc-rust/target,sharing=locked \
+    find /build/src -type f -not -path '*/target/*' -exec touch {} + && \
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')" && \
+    cargo build --release --locked --offline --workspace && \
+    for binary in mcp-orc openapi-aggregator health-check; do \
+      install -Dm755 "target/release/${binary}" "/out/${binary}"; \
+    done
+
+FROM mcp-workspace-builder AS rust-builder
+
+WORKDIR /build/src/core-mcp-rust
+RUN --mount=type=cache,id=portico-cargo-registry-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=portico-cargo-git-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=portico-rust-target-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/build/src/core-mcp-rust/target,sharing=locked \
+    find /build/src -type f -not -path '*/target/*' -exec touch {} + && \
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')" && \
+    cargo build --release --locked --offline --workspace && \
+    for binary in \
+        agent-vm-server \
+        artifacts-server \
+        mcp-assistant-server \
+        scheduling-server \
+        scheduling-daemon \
+        skills-server \
+        subagents-server \
+        web-tools-server; do \
+      install -Dm755 "target/release/${binary}" "/out/${binary}"; \
+    done
+
+FROM node:22-bookworm-slim AS node-runtime
+
+FROM docker:cli AS docker-cli
+
+FROM python:3.11-slim-trixie
+ARG TARGETARCH
+ARG INCLUDE_NODE=1
+ARG INCLUDE_DOCKER_CLI=1
+ARG ENABLE_SUPERVISOR=1
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV MCP_ORC_BACKEND=rust \
+    MCP_ORC_NATIVE_MODE=native
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ca-certificates gettext-base jq unzip; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    python_packages="uv"; \
+    if [ "$ENABLE_SUPERVISOR" = "1" ]; then \
+        python_packages="$python_packages supervisor"; \
+    fi; \
+    python -m pip install --no-cache-dir --no-compile $python_packages
+
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Pre-install the GitLab MCP server at build time (pinned).
+# Runtime package mutation in this image is intentionally disallowed
+# (see start-mcpo.sh), yet gitlab-mcp shipped as `npx -y @zereight/mcp-gitlab`,
+# which fetched the package from the Cloudsmith npm proxy on EVERY container
+# start. When that proxy intermittently returned `E403`, the server could not
+# start at all. Baking the binary in makes gitlab-mcp startup fully offline and
+# deterministic; the only network fetch now happens once, here, at build time.
+ARG GITLAB_MCP_VERSION=2.1.18
+RUN npm install -g "@zereight/mcp-gitlab@${GITLAB_MCP_VERSION}" \
+    && command -v mcp-gitlab
+
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+
+COPY --from=rust-builder /out/mcp-orc /usr/local/bin/mcp-orc
+COPY --from=rust-builder /out/agent-vm-server /usr/local/bin/agent-vm-server
+COPY --from=rust-builder /out/artifacts-server /usr/local/bin/artifacts-server
+COPY --from=rust-builder /out/mcp-assistant-server /usr/local/bin/mcp-assistant-server
+COPY --from=rust-builder /out/scheduling-server /usr/local/bin/scheduling-server
+COPY --from=rust-builder /out/scheduling-daemon /usr/local/bin/scheduling-daemon
+COPY --from=rust-builder /out/skills-server /usr/local/bin/skills-server
+COPY --from=rust-builder /out/subagents-server /usr/local/bin/subagents-server
+COPY --from=rust-builder /out/web-tools-server /usr/local/bin/web-tools-server
+
+RUN ln -sf /usr/local/bin/mcp-orc /usr/local/bin/mcpo
+
+WORKDIR /app
+
+RUN mkdir -p /app/mcp-servers
+COPY electron-app/assets/icon_raw.png /app/assets/agent-icon.png
+
+RUN set -eux; \
+    printf '%s\n' '{"mcpServers":{}}' > /app/mcp_config.json; \
+    cp /app/mcp_config.json /app/mcp_config_advanced.json; \
+    cp /app/mcp_config.json /app/mcp_config_core.json; \
+    cp /app/mcp_config.json /app/mcp_config_host_sideload.json
+COPY model_catalog.yaml /app/model_catalog.yaml
+COPY src/scripts/start-mcpo.sh ./start-mcpo.sh
+COPY docker/mcpo-multi-server-entrypoint.sh ./mcpo-multi-server-entrypoint.sh
+COPY docker/mcpo-core-rust-group-entrypoint.sh ./mcpo-core-rust-group-entrypoint.sh
+COPY docker/render-mcpo-multi-supervisor.py ./render-mcpo-multi-supervisor.py
+RUN chmod +x start-mcpo.sh mcpo-multi-server-entrypoint.sh mcpo-core-rust-group-entrypoint.sh
+
+COPY mcp-configs/slack/slack-mcp-server-linux-arm64 /app/mcp-servers/slack/slack-mcp-server-linux-arm64
+COPY mcp-configs/slack/slack-mcp-server-linux-amd64 /app/mcp-servers/slack/slack-mcp-server-linux-amd64
+# Slack OAuth credentials are delivered at runtime via Docker secrets
+# (SLACK_OAUTH_CLIENT_{ID,SECRET}_FILE -> /run/secrets/...), not baked into
+# the image. The bundled_credentials.py shim was removed intentionally so no
+# plaintext client secret lands in a layer. See docs/security-hardening-overview.md.
+RUN set -e; \
+    build_arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
+    case "$build_arch" in \
+      aarch64) build_arch="arm64" ;; \
+      x86_64) build_arch="amd64" ;; \
+    esac; \
+    case "$build_arch" in \
+      arm64) SLACK_BINARY="/app/mcp-servers/slack/slack-mcp-server-linux-arm64" ;; \
+      amd64) SLACK_BINARY="/app/mcp-servers/slack/slack-mcp-server-linux-amd64" ;; \
+      *) echo "Unsupported build architecture for Slack MCP binary: $build_arch" >&2; exit 1 ;; \
+    esac; \
+    [ -f "$SLACK_BINARY" ] || { echo "Missing Slack MCP binary: $SLACK_BINARY" >&2; exit 1; }; \
+    cp "$SLACK_BINARY" /app/mcp-servers/slack-mcp-server; \
+    chmod +x /app/mcp-servers/slack-mcp-server
+
+EXPOSE 8000
+EXPOSE 3834
+EXPOSE 8100 8101 8102 8103 8104 8105 8106
+
+CMD ["./start-mcpo.sh"]
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true" \
+      com.portico.ai-chat.image-role="mcp-orc-rust"

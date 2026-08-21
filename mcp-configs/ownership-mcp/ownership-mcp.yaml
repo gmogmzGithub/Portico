@@ -1,0 +1,21 @@
+name: Ownership MCP Server
+id: ownership-mcp
+display_name: Ownership
+deployment_type: docker
+description:
+  Query ownership data for Portico systems, services, and resources - fuzzy
+  search for resources, look up owners by team or LDAP, and discover supported namespaces.
+guided_setup_description: Find owners for services, systems, and resources
+user_installed: false
+is_core: false
+required_env_vars: []
+use_cases:
+  - Find who owns a service or resource
+  - Search resources by keyword
+  - Look up all resources owned by a team or individual
+  - Discover supported ownership namespaces
+tool_rename_mapping:
+  Getresources: "Get Resources"
+  Getsupportednamespaces: "Get Supported Namespaces"
+  Searchresourcesbyowner: "Search Resources by Owner"
+  Searchresourcesbyrelevance: "Search Resources by Relevance"

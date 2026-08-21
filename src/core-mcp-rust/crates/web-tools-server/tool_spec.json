@@ -1,0 +1,60 @@
+[
+  {
+    "name": "web_search",
+    "title": null,
+    "description": "Search the web for current information using OpenAI's web search capability.\n\nReturns real-time search results with URLs, titles, and citations.\nUse this tool when you need up-to-date information beyond your training data.\n\nExamples:\n- \"What is the current weather in New York?\"\n- \"Latest news about AI regulations\"\n- \"Current stock price of AAPL\"\n\nThe search is powered by GPT and returns cited, fact-checked results.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The search query to execute"
+        },
+        "allowed_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Only include results from these domains (e.g., ['wikipedia.org', 'github.com']). Cannot be used with blocked_domains. Max 100 domains."
+        },
+        "blocked_domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Exclude results from these domains. Cannot be used with allowed_domains."
+        },
+        "user_location": {
+          "type": "object",
+          "description": "Approximate user location for geo-relevant results",
+          "properties": {
+            "country": {
+              "type": "string",
+              "description": "Two-letter ISO country code (e.g., 'US', 'GB')"
+            },
+            "city": {
+              "type": "string",
+              "description": "City name (e.g., 'San Francisco')"
+            },
+            "region": {
+              "type": "string",
+              "description": "Region/state name (e.g., 'California')"
+            },
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone (e.g., 'America/Los_Angeles')"
+            }
+          }
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  }
+]

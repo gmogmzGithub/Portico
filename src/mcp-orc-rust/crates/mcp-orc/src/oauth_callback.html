@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+  <style>
+    :root {{
+      color-scheme: light;
+      --page-bg: #cdd4e0;
+      --text: #171717;
+      --text-secondary: #525252;
+      --text-tertiary: #737373;
+      --accent: #003a9b;
+    }}
+    * {{
+      box-sizing: border-box;
+    }}
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      padding: clamp(20px, 3.5vw, 36px);
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: "Portico Sans", -apple-system, BlinkMacSystemFont, "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }}
+    body.error {{
+      --accent: #c62828;
+    }}
+    .page {{
+      width: min(760px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }}
+    .eyebrow {{
+      margin: 0 0 0.75rem 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }}
+    .header {{
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1rem;
+    }}
+    h1 {{
+      margin: 0;
+      max-width: 9ch;
+      font-size: clamp(2.6rem, 6.3vw, 4.15rem);
+      line-height: 0.92;
+      letter-spacing: -0.06em;
+      font-weight: 700;
+      color: var(--accent);
+      text-wrap: balance;
+    }}
+    .message {{
+      margin: 0;
+      width: min(100%, 34rem);
+      font-size: 1rem;
+      line-height: 1.65;
+      color: var(--text-secondary);
+    }}
+    .message:empty {{
+      display: none;
+    }}
+    .handoff-copy {{
+      margin: 0.9rem 0 0;
+      width: min(100%, 32rem);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: var(--text-tertiary);
+    }}
+    @media (max-width: 860px) {{
+      body {{
+        align-items: flex-start;
+      }}
+      h1 {{
+        max-width: 100%;
+      }}
+    }}
+  </style>
+</head>
+<body class="{status_class}">
+  <main class="page">
+    <div class="header">
+      <p class="eyebrow">Portico</p>
+      <h1>{heading}</h1>
+    </div>
+    <p class="message">{message}</p>
+    <p class="handoff-copy">Switch back to the app. This browser step is already complete.</p>
+  </main>
+</body>
+</html>

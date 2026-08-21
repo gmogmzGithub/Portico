@@ -1,0 +1,209 @@
+{
+  "mcpServers": {
+    "agent-vm": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/agent-vm",
+        "agent-vm-server"
+      ],
+      "tool_rename_mapping": {
+        "bash": "Run Bash Command",
+        "create": "Create Agent VM",
+        "create_file": "Create File",
+        "create_files": "Create Files",
+        "delete_file": "Delete File",
+        "destroy": "Destroy Agent VM",
+        "display_files": "Display Files in Chat",
+        "edit_file": "Edit File",
+        "edit_files": "Edit Files",
+        "execute_skill_script": "Execute Skill Script",
+        "find_files": "Find Files",
+        "get_status": "Get VM Status",
+        "get_workspace_file_link": "Get Workspace File Link",
+        "grep": "Search File Contents",
+        "grep_file": "Search Single File",
+        "list_files": "List Files",
+        "python": "Run Python Script",
+        "read_file": "Read File",
+        "read_files": "Read Files",
+        "read_fragment": "Read File Fragment",
+        "request_images": "Request Images",
+        "request_sensitive_information": "Request Sensitive Information",
+        "set_chat_workspace": "Set Chat Workspace",
+        "unzip_file": "Unzip File"
+      }
+    },
+    "artifacts": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/artifacts",
+        "artifacts-server"
+      ],
+      "tool_rename_mapping": {
+        "close_artifact": "Close Artifact",
+        "create_artifact": "Create Artifact",
+        "create_artifact_version": "Create Artifact Version",
+        "delete_artifact": "Delete Artifact",
+        "download_artifact": "Download Artifact",
+        "get_artifact_running_versions": "Get Artifact Running Versions",
+        "get_artifact_status": "Get Artifact Status",
+        "list_artifacts": "List Artifacts",
+        "open_artifact": "Open Artifact",
+        "restore_artifact_version": "Restore Artifact Version",
+        "switch_artifact_version": "Switch Artifact Version"
+      }
+    },
+    "mcp-assistant": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/mcp-assistant",
+        "mcp-assistant-server"
+      ],
+      "tool_rename_mapping": {
+        "activate_integration": "Activate Integration",
+        "authorize_integration": "Authorize Integration",
+        "configure_host_mcp_bridge_clients": "Configure Host MCP Bridge Clients",
+        "create_user_mcp_server": "Create User MCP Server",
+        "delete_user_mcp_server": "Delete User MCP Server",
+        "get_chat_tools": "Get Chat Tools",
+        "get_host_mcp_bridge_status": "Get Host MCP Bridge Status",
+        "get_mcp_server_logs": "Get MCP Server Logs",
+        "get_system_mcp_config": "Get System MCP Config",
+        "list_mcp_servers": "List MCP Servers",
+        "read_user_mcp_server": "Read User MCP Server",
+        "restart_mcp_infrastructure": "Restart MCP Infrastructure",
+        "restart_mcp_server": "Restart MCP Server",
+        "toggle_integration": "Toggle Integration",
+        "trigger_guided_setup": "Trigger Guided Setup",
+        "update_user_mcp_server": "Update User MCP Server",
+        "validate_mcp_fragment": "Validate MCP Fragment"
+      }
+    },
+    "scheduling": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/scheduling",
+        "scheduling-server"
+      ],
+      "tool_rename_mapping": {
+        "cancel_run": "Cancel Run",
+        "create_task": "Create Task",
+        "delete_task": "Delete Task",
+        "finalize_run": "Finalize Run",
+        "get_task": "Get Task",
+        "list_tasks": "List Tasks",
+        "run_task_now": "Run Task Now",
+        "update_task": "Update Task"
+      }
+    },
+    "skills": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/skills",
+        "skills-server"
+      ],
+      "tool_call_timeout": 3600,
+      "tool_rename_mapping": {
+        "activate_skill": "Activate Skill",
+        "add_marketplace": "Add Marketplace",
+        "apply_marketplace_sync_removals": "Apply Sync Removals",
+        "ask_user_question": "Ask User Question",
+        "check_marketplace_skill_updates": "Check Skill Updates",
+        "copy_skill": "Copy Skill",
+        "create_skill": "Create Skill",
+        "create_skill_reference": "Create Skill Reference",
+        "create_skill_script": "Create Skill Script",
+        "deactivate_skill": "Deactivate Skill",
+        "delete_skill": "Delete Skill",
+        "delete_skill_reference": "Delete Skill Reference",
+        "delete_skill_script": "Delete Skill Script",
+        "detach_marketplace_skill_to_user_skill": "Detach Marketplace Skill",
+        "export_skill_bundle": "Export Skill Bundle",
+        "get_activated_skills": "Get Activated Skills",
+        "get_marketplace_bundle": "Get Marketplace Bundle",
+        "get_marketplace_skills": "Get Marketplace Skills",
+        "get_marketplace_solution": "Get Marketplace Solution",
+        "get_skill_assets": "Get Skill Assets",
+        "get_skill_reference": "Get Skill Reference",
+        "install_marketplace_skill": "Install Marketplace Skill",
+        "install_marketplace_solution": "Install Marketplace Solution",
+        "list_marketplaces": "List Marketplaces",
+        "list_published_skills": "List Published Skills",
+        "list_skills": "List Skills",
+        "publish_skill": "Publish Skill",
+        "read_skill": "Read Skill",
+        "reclaim_skill": "Reclaim Skill",
+        "remove_marketplace": "Remove Marketplace",
+        "rename_skill": "Rename Skill",
+        "replace_user_skill_with_marketplace_install": "Replace with Marketplace Install",
+        "search_marketplace_solutions": "Search Marketplace Solutions",
+        "sync_all_marketplaces": "Sync All Marketplaces",
+        "sync_marketplace": "Sync Marketplace",
+        "uninstall_marketplace_skill": "Uninstall Marketplace Skill",
+        "unpublish_skill": "Unpublish Skill",
+        "update_marketplace_skill": "Update Marketplace Skill",
+        "update_skill": "Update Skill",
+        "update_skill_reference": "Update Skill Reference",
+        "update_skill_script": "Update Skill Script",
+        "wait": "Wait"
+      }
+    },
+    "subagents": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/subagents",
+        "subagents-server"
+      ],
+      "tool_rename_mapping": {
+        "configure_lm_studio": "Configure LM Studio",
+        "copy_agent": "Copy Agent",
+        "create_agent": "Create Agent",
+        "delete_agent": "Delete Agent",
+        "get_agent": "Get Agent",
+        "get_agent_system_prompt": "Get Agent System Prompt",
+        "get_chat_status": "Get Chat Status",
+        "get_lm_studio_status": "Get LM Studio Status",
+        "get_marketplace_agent": "Get Marketplace Agent",
+        "get_system_information": "Get System Information",
+        "install_agent": "Install Agent",
+        "list_agents": "List Agents",
+        "list_available_tools": "List Available Tools",
+        "list_chats": "List Chats",
+        "list_published_agents": "List Published Agents",
+        "publish_agent": "Publish Agent",
+        "reclaim_agent": "Reclaim Agent",
+        "reconcile_agent_attribution": "Reconcile Agent Attribution",
+        "run_subagent": "Run Subagent",
+        "search_marketplace_agents": "Search Marketplace Agents",
+        "send_message_to_chat": "Send Message to Chat",
+        "start_chat": "Start Chat",
+        "unpublish_agent": "Unpublish Agent",
+        "update_agent": "Update Agent"
+      }
+    },
+    "web-tools": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/app/internal-mcp/web-tools",
+        "web-tools-server"
+      ],
+      "tool_rename_mapping": {
+        "web_search": "Web Search"
+      }
+    }
+  }
+}

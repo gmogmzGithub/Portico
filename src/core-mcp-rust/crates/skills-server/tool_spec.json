@@ -1,0 +1,1249 @@
+[
+  {
+    "name": "create_skill",
+    "title": null,
+    "description": "Create a new agent skill in skills-user/. The app records creator attribution from the authenticated session.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name for the new skill (kebab-case)"
+        },
+        "skill_content": {
+          "type": "string",
+          "description": "Full SKILL.md content including YAML frontmatter"
+        }
+      },
+      "required": [
+        "skill_name",
+        "skill_content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "copy_skill",
+    "title": "Copy Agent Skill",
+    "description": "Create a new editable current-user skill by copying the complete bundle of an existing local system, user, or installed Marketplace skill. The source is unchanged. The copy preserves SKILL.md content, references, scripts, assets, and other regular files while resetting creator and Marketplace provenance: source=user, marketplace_relationship=null, marketplace_solution_id=null, and is_read_only=false. For an installed copy of a listing the current viewer authored, prefer reclaim_skill: it converts the copy in place instead of forking a duplicate.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_skill_id": {
+          "type": "string",
+          "description": "Exact local skill id returned by list_skills, including the marketplace prefix for installed skills (for example, ai-marketplace/example-skill)."
+        },
+        "new_skill_name": {
+          "type": "string",
+          "description": "Unique name for the new editable user skill."
+        }
+      },
+      "required": [
+        "source_skill_id",
+        "new_skill_name"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "rename_skill",
+    "title": "Rename Agent Skill",
+    "description": "Rename an editable, UNPUBLISHED current-user skill in place: the skills-user directory moves to the new name and the SKILL.md frontmatter name is rewritten. Published skills cannot be renamed (published_skill_rename_blocked) \u2014 a listing's name is its marketplace identity, so unpublish_skill first, then rename, then publish_skill under the new name (a fresh listing). System skills and installed Marketplace copies cannot be renamed either (their names are owned by the app / the install record) \u2014 copy_skill them instead. Also fails closed when the new name collides with ANY local skill (including plugin-grouped marketplace installs) or when a local agent has the skill attached (skill_in_use_by_agents; detach it from the agent first).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Current name of the editable user skill to rename (bare name from list_skills, source=user)."
+        },
+        "new_skill_name": {
+          "type": "string",
+          "description": "New unique skill name (ASCII kebab-case, like every skill id)."
+        }
+      },
+      "required": [
+        "skill_name",
+        "new_skill_name"
+      ]
+    }
+  },
+  {
+    "name": "read_skill",
+    "title": null,
+    "description": "Read skill metadata, content, and authoritative provenance fields: source, created_by_email, marketplace_relationship, marketplace_solution_id, and is_read_only. Show users display_name, not the kebab-case name.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to read"
+        }
+      },
+      "required": [
+        "skill_name"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "export_skill_bundle",
+    "title": null,
+    "description": "Export a complete skill bundle, including SKILL.md, references, scripts, all bundled files, and authoritative source/creator/Marketplace/read-only provenance.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to export"
+        }
+      },
+      "required": [
+        "skill_name"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "update_skill",
+    "title": null,
+    "description": "Update an editable user skill's SKILL.md content. Installed Marketplace skills and system skills are read only; convert a self-authored installed copy in place with reclaim_skill, or create a user copy with copy_skill otherwise, before customizing them. Existing creator attribution is preserved by the app.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to update"
+        },
+        "skill_content": {
+          "type": "string",
+          "description": "New SKILL.md content. Must include YAML frontmatter with nonblank string name and description fields; incomplete updates are rejected rather than backfilled from the previous revision."
+        }
+      },
+      "required": [
+        "skill_name",
+        "skill_content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "delete_skill",
+    "title": null,
+    "description": "Delete a local user skill or installed Marketplace skill (requires confirm=true). Installed deletion removes only the local copy and native/git Marketplace bookkeeping; it never deletes or unpublishes the remote solution. System skills are rejected.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to delete"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Set to true to confirm deletion"
+        }
+      },
+      "required": [
+        "skill_name",
+        "confirm"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "create_skill_reference",
+    "title": null,
+    "description": "Add a reference file to an editable user skill's references/ directory. Installed Marketplace and system skills are read only; use copy_skill first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "reference_path": {
+          "type": "string",
+          "description": "Path for reference (e.g., 'workflow.md')"
+        },
+        "content": {
+          "type": "string",
+          "description": "Reference file content"
+        }
+      },
+      "required": [
+        "skill_name",
+        "reference_path",
+        "content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "update_skill_reference",
+    "title": null,
+    "description": "Update an existing reference file in an editable user skill. Installed Marketplace and system skills are rejected before mutation; use copy_skill first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "reference_path": {
+          "type": "string",
+          "description": "Path to reference file"
+        },
+        "content": {
+          "type": "string",
+          "description": "New content"
+        }
+      },
+      "required": [
+        "skill_name",
+        "reference_path",
+        "content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "delete_skill_reference",
+    "title": null,
+    "description": "Delete a reference file from an editable user skill. Installed Marketplace and system skills are rejected before mutation; use copy_skill first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "reference_path": {
+          "type": "string",
+          "description": "Path to reference file"
+        }
+      },
+      "required": [
+        "skill_name",
+        "reference_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "create_skill_script",
+    "title": null,
+    "description": "Add a Python script to an editable user skill's scripts/ directory. Installed Marketplace and system skills are read only; use copy_skill first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "script_path": {
+          "type": "string",
+          "description": "Path for script (e.g., 'process.py')"
+        },
+        "content": {
+          "type": "string",
+          "description": "Python script content"
+        }
+      },
+      "required": [
+        "skill_name",
+        "script_path",
+        "content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "update_skill_script",
+    "title": null,
+    "description": "Update an existing Python script in an editable user skill. Installed Marketplace and system skills are rejected before mutation; use copy_skill first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "script_path": {
+          "type": "string",
+          "description": "Path to script file"
+        },
+        "content": {
+          "type": "string",
+          "description": "New content"
+        }
+      },
+      "required": [
+        "skill_name",
+        "script_path",
+        "content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "delete_skill_script",
+    "title": null,
+    "description": "Delete a Python script from an editable user skill. Installed Marketplace and system skills are rejected before mutation; use copy_skill first.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "script_path": {
+          "type": "string",
+          "description": "Path to script file"
+        }
+      },
+      "required": [
+        "skill_name",
+        "script_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "activate_skill",
+    "title": null,
+    "description": "Activate an agent skill for a chat session. Auto-enables required MCP servers only after they are ready. If a required MCP server is disabled, this tool fails immediately and tells the caller to use mcp_assistant_toggle_integration first. If a required MCP server is not installed in this app, this tool fails immediately with readiness_phase=service_not_found and does not wait. If a required MCP server is visible and in starting/checking_tokens, this tool waits up to 30 seconds before failing closed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to activate"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Chat session ID"
+        }
+      },
+      "required": [
+        "skill_name",
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "deactivate_skill",
+    "title": null,
+    "description": "Deactivate a skill from a chat session",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill to deactivate"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Chat session ID"
+        }
+      },
+      "required": [
+        "skill_name",
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "list_skills",
+    "title": null,
+    "description": "List agent skills with authoritative source, created_by_email, marketplace_relationship, marketplace_solution_id, and is_read_only provenance. Published user skills also carry has_unpublished_changes; installed marketplace skills carry has_update and installed_version (as of the last freshness sweep \u2014 run check_marketplace_skill_updates for a live scan). Every skill carries display_name; show users display_name, not the kebab-case name. source=user is editable; source=marketplace is an installed read-only local copy. Solution-link presence is never remote ownership authority.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "include_content": {
+          "type": "boolean",
+          "description": "Include full skill content",
+          "default": false
+        },
+        "filter_source": {
+          "type": "string",
+          "enum": [
+            "all",
+            "system",
+            "user",
+            "marketplace"
+          ],
+          "default": "all"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_skill_reference",
+    "title": null,
+    "description": "Load a UTF-8 text file from an activated skill. reference_path is a safe skill-relative path and can point to files linked from SKILL.md, such as editing.md, pptxgenjs.md, or references/workflow.md.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the skill"
+        },
+        "reference_path": {
+          "type": "string",
+          "description": "Safe skill-relative path to a UTF-8 text file (e.g., 'pptxgenjs.md', 'editing.md', or 'references/workflow.md')"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Chat session ID (for caching)"
+        }
+      },
+      "required": [
+        "skill_name",
+        "reference_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_skill_assets",
+    "title": null,
+    "description": "Load one or more image assets from an activated skill's assets/ directory, copy them to the chat workspace, and return URL-based markdown for display. Rejects traversal paths and non-image assets.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Name of the activated skill"
+        },
+        "asset_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "One or more paths under the skill assets/ directory, e.g. ['assets/terminal-open.png'] or ['terminal-open.png', 'confirm.png']"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Chat session ID used to verify the skill is activated"
+        }
+      },
+      "required": [
+        "skill_name",
+        "asset_paths",
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_activated_skills",
+    "title": null,
+    "description": "Get list of activated skills for a chat session",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Chat session ID"
+        }
+      },
+      "required": [
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "list_marketplaces",
+    "title": null,
+    "description": "Git skill catalogs ONLY \u2014 this is NOT the native AI Marketplace (a.k.a. the solutions marketplace; use search_marketplace_solutions / list_published_skills for that). Lists each configured git catalog (id, skill_count) plus installed-skill records with hasUpdate/isDirty/hasConflict lifecycle states.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "add_marketplace",
+    "title": null,
+    "description": "Add a skill marketplace using the same source formats supported by the Control Plane GUI",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_input": {
+          "type": "string",
+          "description": "GitHub repo shorthand, supported GitLab repo URL, or direct marketplace.json URL"
+        }
+      },
+      "required": [
+        "source_input"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "remove_marketplace",
+    "title": null,
+    "description": "Remove a configured marketplace and optionally remove its installed skills",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "remove_installed_skills": {
+          "type": "boolean",
+          "description": "Also remove installed skills from this marketplace",
+          "default": false
+        }
+      },
+      "required": [
+        "marketplace_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "sync_marketplace",
+    "title": null,
+    "description": "Git catalogs only: refresh ONE configured git marketplace from its remote (catalog manifest plus installed skills; dirty installs become conflicts instead of being overwritten). The native AI/solutions Marketplace is always live and never needs syncing. DESTRUCTIVE for skills whose source no longer exists upstream: unused ones are removed to mirror the remote; ones still used by agents come back in pendingRemovals \u2014 show that list to the user (entries with seeded:true are bundled with the app: approving unlinks their agents but keeps the skill installed until an app update resolves it) and, only after they explicitly approve, call apply_marketplace_sync_removals with confirm=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        }
+      },
+      "required": [
+        "marketplace_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "sync_all_marketplaces",
+    "title": null,
+    "description": "Git catalogs only: refresh EVERY configured git marketplace from its remote source. The native AI/solutions Marketplace is always live and never needs syncing. DESTRUCTIVE for skills whose source no longer exists upstream: unused ones are removed to mirror the remote; ones still used by agents come back in pendingRemovals \u2014 show that list to the user (entries with seeded:true are bundled with the app: approving unlinks their agents but keeps the skill installed until an app update resolves it) and, only after they explicitly approve, call apply_marketplace_sync_removals with confirm=true.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "apply_marketplace_sync_removals",
+    "title": null,
+    "description": "Second phase of a destructive marketplace sync: apply the pendingRemovals a sync_marketplace/sync_all_marketplaces response reported. Unlinks the skills from EDITABLE agents, flags read-only installed agents (their owner must republish), then removes the skills from this computer \u2014 except entries the sync marked seeded:true (bundled with the app): those are unlink-only and stay installed (reported via keptSeeded) until an app update resolves them. Requires confirm=true, passed ONLY after the user explicitly approved the exact pending list.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "removals": {
+          "type": "array",
+          "description": "The pendingRemovals entries to apply: [{skillId, pluginName}]",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skillId": {
+                "type": "string"
+              },
+              "pluginName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "skillId"
+            ]
+          }
+        },
+        "confirm": {
+          "type": "boolean",
+          "default": false,
+          "description": "Must be true; pass only after the user explicitly confirmed removing these skills and detaching them from their agents."
+        }
+      },
+      "required": [
+        "marketplace_id",
+        "removals",
+        "confirm"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_marketplace_skills",
+    "title": null,
+    "description": "Git catalogs only: list skills in ONE configured git marketplace (marketplace_id from list_marketplaces), with install/update state; install one with install_marketplace_skill. Prefer plugin_name/search/limit filters over dumping a whole catalog; never fan out across all marketplaces for a browse question. For the native AI/solutions Marketplace use search_marketplace_solutions.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Only skills belonging to this plugin group"
+        },
+        "search": {
+          "type": "string",
+          "description": "Case-insensitive substring filter on id, display name, and description"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Return at most this many skills (total_matching reports the full count)"
+        }
+      },
+      "required": [
+        "marketplace_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "install_marketplace_skill",
+    "title": null,
+    "description": "Git catalogs only: install a skill from a configured git marketplace (ids from get_marketplace_skills). For a native AI/solutions Marketplace listing use install_marketplace_solution instead. Success includes registered:true once the install is recorded in the local registry.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "skill_id": {
+          "type": "string",
+          "description": "Skill identifier"
+        },
+        "skill_path": {
+          "type": "string",
+          "description": "Marketplace manifest skill path"
+        },
+        "skill_source": {
+          "type": "object",
+          "description": "Optional explicit remote source override for the skill"
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Optional plugin the skill belongs to (plugin-layout marketplaces); omit for flat installs"
+        }
+      },
+      "required": [
+        "marketplace_id",
+        "skill_id",
+        "skill_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "replace_user_skill_with_marketplace_install",
+    "title": null,
+    "description": "Install a marketplace skill and archive the active user-skill copy so the marketplace install becomes the only active version",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "Existing user skill name to replace"
+        },
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "skill_id": {
+          "type": "string",
+          "description": "Marketplace skill identifier"
+        },
+        "skill_path": {
+          "type": "string",
+          "description": "Marketplace manifest skill path"
+        },
+        "skill_source": {
+          "type": "object",
+          "description": "Optional explicit remote source override for the skill"
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Optional plugin the skill belongs to (plugin-layout marketplaces); omit for flat installs"
+        }
+      },
+      "required": [
+        "skill_name",
+        "marketplace_id",
+        "skill_id",
+        "skill_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "uninstall_marketplace_skill",
+    "title": null,
+    "description": "Uninstall a previously installed marketplace skill",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "skill_id": {
+          "type": "string",
+          "description": "Skill identifier"
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Optional plugin the skill belongs to (plugin-layout marketplaces); omit for flat installs"
+        }
+      },
+      "required": [
+        "marketplace_id",
+        "skill_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "detach_marketplace_skill_to_user_skill",
+    "title": null,
+    "description": "Detach an installed git-marketplace skill into skills-user and remove the marketplace install. For a native AI Marketplace install of a listing the viewer authored, use reclaim_skill instead \u2014 it verifies listing ownership and preserves the Published link.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "skill_id": {
+          "type": "string",
+          "description": "Skill identifier"
+        },
+        "target_skill_name": {
+          "type": "string",
+          "description": "Optional user-skill directory name for the detached copy"
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Optional plugin the skill belongs to (plugin-layout marketplaces); omit for flat installs"
+        }
+      },
+      "required": [
+        "marketplace_id",
+        "skill_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "check_marketplace_skill_updates",
+    "title": null,
+    "description": "Read-only freshness scan across ALL installed marketplace skills (git catalogs and native AI/solutions Marketplace installs) AND installed marketplace agents: flags hasUpdate / agent has_update without changing files (agent verdicts appear in agent_updates and on list_agents/get_agent). Follow up with update_marketplace_skill per skill, or sync_marketplace to refresh a whole git catalog.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "update_marketplace_skill",
+    "title": null,
+    "description": "Update an installed marketplace skill to the latest remote version. Works for git marketplaces AND Solutions Marketplace installs: pass marketplace_id \"ai-marketplace\" with the skill's leaf id to refresh an installed solution in place (no delete/reinstall needed).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "marketplace_id": {
+          "type": "string",
+          "description": "Marketplace identifier"
+        },
+        "skill_id": {
+          "type": "string",
+          "description": "Skill identifier"
+        },
+        "force_discard_local_changes": {
+          "type": "boolean",
+          "description": "Set true to discard local edits before syncing the marketplace copy",
+          "default": false
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Optional plugin the skill belongs to (plugin-layout marketplaces); omit for flat installs"
+        }
+      },
+      "required": [
+        "marketplace_id",
+        "skill_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "ask_user_question",
+    "title": null,
+    "description": "Present one or more single-choice questions in a native modal, wait for the user to answer, and return the selected options plus any optional freeform notes. Use this whenever you have a question for the user, including clarifications, confirmations, choices, missing information, preferences, permission checks, and other question bundles. Caller-supplied options must be concrete and distinct; use freeform notes for extra context or open-ended details. Extract chat_id from the system prompt 'Chat ID: {id}' so the modal can show which model or agent is asking. The modal automatically appends a final generic 'Something else' choice with reserved id 'none_of_the_above', so callers must not provide fallback options such as 'Something else', 'Other', or 'None of the above', or options whose only purpose is for the user to describe, specify, or customize the answer in notes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Chat ID (extract from system prompt: 'Chat ID: {id}')"
+        },
+        "questions": {
+          "type": "array",
+          "description": "Questions to present in one modal flow",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Stable question identifier"
+              },
+              "header": {
+                "type": "string",
+                "description": "Short label shown in the question switcher"
+              },
+              "question": {
+                "type": "string",
+                "description": "Full question prompt shown to the user"
+              },
+              "freeform_placeholder": {
+                "type": "string",
+                "description": "Optional placeholder text for the freeform notes box"
+              },
+              "options": {
+                "type": "array",
+                "description": "Concrete, distinct, mutually-exclusive caller-supplied choices for this question. OPTIONAL when `components` is provided. The modal auto-appends a final generic 'Something else' choice (reserved id 'none_of_the_above') whenever options are present; do not add your own fallback/'Other' option. Provide either options (2-5) or components (or both).",
+                "minItems": 2,
+                "maxItems": 5,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Stable option identifier"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Short user-facing choice label"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Optional one-sentence explanation for this choice"
+                    },
+                    "component_defaults": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 20
+                      },
+                      "description": "Optional map of component id -> ids to preselect when the user chooses THIS option. Selecting an option that carries component_defaults reveals the question's components seeded with these values; the user can add/remove before submitting, and the answer's component_selections returns the FINAL edited set (treat it as authoritative). An empty list reveals that picker empty. Use the SAME id formats the pickers return (see each component's default_selected description); unknown ids are silently ignored, so copy ids from catalogs/list tools - never invent them. RECOMMENDED PATTERN for capability questions: a 'Start from the recommended set (adjust below)' option carrying component_defaults, plus a 'Start from scratch' option named in components_gated_by_option_id (reveals the pickers empty)."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ]
+                }
+              },
+              "components": {
+                "type": "array",
+                "description": "OPTIONAL curated in-chat UI for this question, INSTEAD OF plain options. The app renders its REAL capability controls (the same ones in the Agents editor) inside the modal and returns the user's selection in the answer's component_selections. Use this to build clean in-chat wizards (e.g. 'What capabilities should your agent have?') without sending the user to the control plane. Supported types: 'skill_picker' (choose agent skills), 'mcp_server_picker' (choose MCP tool servers), 'model_picker' (choose a base model), 'reasoning_effort_picker' (choose reasoning effort \u2014 pair with a model_picker in the same question so its stops match the model). Pickers can be pre-seeded via each component's default_selected or per-option component_defaults. See the guided-flows skill for the exact output contract. May be gated behind one of the question's options via components_gated_by_option_id.",
+                "maxItems": 4,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "skill_picker",
+                        "mcp_server_picker",
+                        "model_picker",
+                        "reasoning_effort_picker"
+                      ],
+                      "description": "Which real control to render."
+                    },
+                    "id": {
+                      "type": "string",
+                      "description": "Stable id; the user's selection is returned under this key in component_selections."
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Optional heading shown above the picker."
+                    },
+                    "multiple": {
+                      "type": "boolean",
+                      "description": "Allow selecting multiple items (default true). Set false for a single choice like model_picker.",
+                      "default": true
+                    },
+                    "default_selected": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 20,
+                      "description": "Optional ids to preselect when this picker appears ungated (or when the revealing option has no component_defaults entry for it). Use the SAME formats the picker returns: skill_picker = skill ids exactly as catalogs/list tools report them (e.g. 'company-knowledge' or 'marketplace/plugin/skill'); mcp_server_picker = 'server:{id}' (e.g. 'server:glean'); model_picker = the model name as listed; reasoning_effort_picker = an effort string supported by that model. Unknown ids are silently ignored - never invent ids. multiple:false components use only the first entry. The user can change the selection before submitting; read the answer's component_selections as the final truth."
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ]
+                }
+              },
+              "components_gated_by_option_id": {
+                "type": "string",
+                "description": "OPTIONAL. Only valid when this question has BOTH options and components. Names the option id that reveals the components: the pickers stay hidden until the user selects that option, and answers for any other option carry no component_selections. Options carrying component_defaults ALSO reveal the components (seeded with their defaults); when a gate or any component_defaults is present, every other option keeps the pickers hidden. Use for two-path questions like 'Start from the recommended set (adjust below)' (option with component_defaults) vs 'Start from scratch' (gate on that option's id, pickers revealed empty)."
+              }
+            },
+            "required": [
+              "id",
+              "header",
+              "question"
+            ]
+          }
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "Optional timeout for the whole modal flow",
+          "minimum": 30,
+          "maximum": 3600
+        }
+      },
+      "required": [
+        "chat_id",
+        "questions"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "wait",
+    "title": null,
+    "description": "Pause execution for a specified number of seconds. Use between polling cycles when waiting for an async operation (e.g., a Trino query submitted with maxWait=0) to avoid tight polling loops. Max 300 seconds per call. NEVER use this to wait for another chat (a reviewer, peer, or started chat) to respond \u2014 cross-chat replies arrive automatically as new prompts in your chat; end your turn instead (see the workflows skill).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Number of seconds to wait (1-300)."
+        }
+      },
+      "required": [
+        "seconds"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "publish_skill",
+    "title": null,
+    "description": "Publish an existing editable current-user skill to the AI Marketplace. Installed Marketplace skills are read-only payloads; convert a self-authored installed copy in place with reclaim_skill (then republish), or use copy_skill for third-party skills. A fresh publish whose normalized name already exists for a skill solution returns solution_name_conflict before confirmation or mutation. Republish is the only collision exception and requires the already-linked correct-type solution returned by list_published_skills. Search/get results and solution-link presence never prove ownership. Foreign targets return not_owner and are never silently forked. Invalid provenance, ownership, or type fails before confirmation. Concurrent confirmation-gated marketplace writes aggregate into a single in-app approval dialog listing every pending request, so parallel calls are fine - do not serialize on the confirmation; each call returns its own outcome. The success result carries the flat solution_id, skill_id, and action (created|updated); copy the id exactly for follow-up calls instead of re-deriving it from listings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_id": {
+          "type": "string",
+          "description": "The editable user skill id to publish (source=user from list_skills). Marketplace-prefixed installed skill ids are rejected."
+        },
+        "existing_solution_id": {
+          "type": "string",
+          "description": "Optional. A viewer-owned skill solution id from list_published_skills. It must match any existing local published link."
+        }
+      },
+      "required": [
+        "skill_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "unpublish_skill",
+    "title": null,
+    "description": "Unpublish a viewer-owned skill solution from the AI Marketplace. list_published_skills is the sole ownership authority; search/get are discovery-only. Foreign or wrong-type ids fail before confirmation. Installed local copies are unaffected. A skill referenced by ANY published agent listing is blocked with skill_dependency_of_published_agents (the blocking agents are named); those agents must be unpublished first. The dependency check runs before the confirmation modal and again at execution, and fails closed (published_agent_check_unavailable) when it cannot complete. Concurrent confirmation-gated marketplace writes aggregate into a single in-app approval dialog listing every pending request, so parallel calls are fine - do not serialize on the confirmation; each call returns its own outcome. Solution ids carried in a fresh publish_skill result or a publish_agent skills array are valid targets - copy ids exactly, never retype them from memory. The success result lists skill_links_cleared.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The viewer-owned marketplace solution id to unpublish, from list_published_skills."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "reclaim_skill",
+    "title": "Convert Installed Skill To Editable Copy",
+    "description": "Convert a self-authored installed Marketplace skill copy into the editable user skill behind its listing, in place \u2014 use this instead of copy_skill whenever the current viewer owns the listing (it appears in list_published_skills) and wants the installed copy editable. No duplicate is created: the copy moves into user skills with the viewer as creator, stays linked to the same solution so its Published state survives, the Installed badge is removed, and Edit + Republish then update the existing listing. The returned local_skill_id is authoritative \u2014 the directory name may be suffixed on collision; use it for all later calls. Use copy_skill only for third-party listings or an explicitly requested fork. Local-only and non-destructive; no confirmation dialog. Fails closed: marketplace_relationship_mismatch (not a Solutions Marketplace install, or already converted), not_owner (foreign listing \u2014 use copy_skill), solution_not_found, solution_type_mismatch.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_id": {
+          "type": "string",
+          "description": "The installed skill id from list_skills, e.g. ai-marketplace/example-skill (the bare directory name is also accepted)."
+        }
+      },
+      "required": [
+        "skill_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "install_marketplace_solution",
+    "title": null,
+    "description": "Native AI/solutions Marketplace: install a skill solution by id (from search_marketplace_solutions). For git-catalog skills use install_marketplace_skill instead. Rejects wrong-type solutions and any solution that already has an extant local published or installed representation. Repeated installs never create duplicates.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The AI Marketplace solution id to install (from search_marketplace_solutions)."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "search_marketplace_solutions",
+    "title": null,
+    "description": "Search the native AI Marketplace (a.k.a. THE solutions marketplace \u2014 the canonical default catalog; always live, never needs syncing). Discovery-only: results do not prove ownership. Use list_published_skills, never search/get, before ownership-sensitive republish or unpublish actions. Show users display_name, not raw names.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Optional free-text search query. Omit to browse all available skills.",
+          "default": ""
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_marketplace_solution",
+    "title": null,
+    "description": "Read one native AI/solutions Marketplace skill listing (SKILL.md body and semantic blobs omitted \u2014 use get_marketplace_bundle for full content). Discovery-only: does not prove current-viewer ownership; use list_published_skills for ownership-sensitive actions. Show users display_name.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The AI Marketplace solution id."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_marketplace_bundle",
+    "title": null,
+    "description": "Discovery-only read of an installable native AI/solutions Marketplace skill bundle: the full SKILL.md, references, and scripts. Validates skill type but does not prove ownership.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "solution_id": {
+          "type": "string",
+          "description": "The AI Marketplace solution id."
+        }
+      },
+      "required": [
+        "solution_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "list_published_skills",
+    "title": null,
+    "description": "Authoritative list of the current viewer's own skill solutions on the native AI/solutions Marketplace. Each solution includes display_name; show users display_name, not the kebab-case name. Use this result\u2014not local links, search, or get\u2014to choose republish and unpublish targets. Each skill carries used_by_published_agents: the published agent listings (any author) that reference it. A non-empty list means unpublish is blocked until those agents are unpublished. If agent_dependency_check_unavailable is true the dependency state is unknown and unpublish will fail closed; never tell the user a skill is safely unpublishable from stale or unavailable dependency data.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  }
+]

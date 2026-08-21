@@ -1,0 +1,459 @@
+[
+  {
+    "name": "list_mcp_servers",
+    "title": null,
+    "description": "List all available MCP servers (system-delivered and user-installed)",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "string",
+          "enum": [
+            "all",
+            "system",
+            "user"
+          ],
+          "description": "Filter servers by type",
+          "default": "all"
+        },
+        "include_disabled": {
+          "type": "boolean",
+          "description": "Include disabled servers",
+          "default": true
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_system_mcp_config",
+    "title": null,
+    "description": "Read system-delivered server configuration (read-only, for debugging)",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "The ID of the system server to read"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "create_user_mcp_server",
+    "title": null,
+    "description": "Create a new user-installed MCP server.\n\nThis tool writes the server files, auto-enables the server through the normal MCP toggle lifecycle, and returns `enabled`, `auto_enabled`, `healthy`, and `readiness_phase` so you can decide the next step.\n\nIf startup fails after creation, the server files are kept and the response explains that auto-enable failed. In that case, inspect `get_mcp_server_logs` instead of calling a redundant infrastructure restart.\n\n**IMPORTANT: MCP SERVER CONFIGURATION GUIDE**\n\n## 1. Server Type Detection\n\n**When user provides MCP server information, identify the server type:**\n\n### Server Type Mapping (Vendor → MCPO Format):\n- **\"http\"** or **\"HTTP\"** → Use `streamable-http` type\n- **\"server-sent events\"** or **\"SSE\"** → Use `sse` type\n- **\"stdio\"** or shows `command`/`npx`/`uvx` → Use stdio pattern (command + args)\n- **OAuth required** → Add `oauth` configuration block\n\n## 2. Fragment Patterns by Server Type\n\n### Pattern 1: Streamable HTTP (Basic)\n**When to use**: Server URL provided, no OAuth, HTTP-based protocol\n```json\n{\n  \"type\": \"streamable-http\",\n  \"url\": \"http://api.example.com/mcp/default\"\n}\n```\n\n### Pattern 2: Streamable HTTP with OAuth\n**When to use**: HTTP server requiring OAuth 2.1 authentication\n```json\n{\n  \"type\": \"streamable-http\",\n  \"url\": \"http://api.example.com/mcp\",\n  \"oauth\": {\n    \"server_url\": \"http://api.example.com\"\n  }\n}\n```\n\nIf the vendor provides a pre-registered public `client_id` (and optional `client_secret`), include it directly inside `oauth`; the runtime treats direct OAuth credentials as non-DCR inline credentials and will not attempt dynamic registration. Use DCR only when the authorization server advertises registration.\n```json\n{\n  \"type\": \"streamable-http\",\n  \"url\": \"http://api.example.com/mcp\",\n  \"oauth\": {\n    \"server_url\": \"http://api.example.com\",\n    \"client_id\": \"PUBLIC_CLIENT_ID\"\n  }\n}\n```\n\n### Pattern 3: SSE (Server-Sent Events) with Headers\n```json\n{\n  \"type\": \"sse\",\n  \"url\": \"http://127.0.0.1:8001/sse\",\n  \"headers\": {\n    \"Authorization\": \"Bearer ${MY_API_TOKEN}\",\n    \"X-Custom-Header\": \"value\"\n  }\n}\n```\n(Declare `MY_API_TOKEN` in `required_env_vars` with `sensitive: true` — see section 4.)\n\n### Pattern 4: stdio with npx (npm package)\n```json\n{\n  \"command\": \"npx\",\n  \"args\": [\"-y\", \"@gleanwork/mcp-server@latest\"]\n}\n```\n\n### Pattern 5: stdio with uvx (Python package)\n```json\n{\n  \"command\": \"uvx\",\n  \"args\": [\"mcp-server-time\", \"--local-timezone=America/New_York\"],\n  \"env\": {\n    \"TIMEZONE\": \"America/New_York\"\n  }\n}\n```\n\n### Pattern 6: stdio with Binary\n```json\n{\n  \"command\": \"/app/mcp-servers/binary-name\",\n  \"args\": [\"--transport\", \"stdio\"]\n}\n```\n\n## 3. Deployment Type Selection\n- Use `docker` unless the server clearly needs host filesystem, browser automation, local CLI tools, or other host-only access.\n- Use `host` only when those host-level capabilities are required.\n\n## 4. Environment Variables\nNon-secret values may be set directly in the fragment (`env` object, headers, args).\nSECRETS (API keys, tokens, passwords) must NEVER be written into the fragment. Instead:\n1. Declare each secret in `yaml_config.required_env_vars`, e.g. `[{\"name\": \"MY_API_TOKEN\", \"placeholder\": \"Paste your API token\", \"description\": \"API token\", \"sensitive\": true}]`.\n2. Reference it in the fragment as `${MY_API_TOKEN}`.\n3. If creation reports `NOT_CONFIGURED`, immediately call `trigger_guided_setup`; the user enters the value once in that Control Plane Configure flow (masked input, stored outside the fragment, expanded at server start).\nNever call `agent_vm_request_sensitive_information` or any generic sensitive-input tool for a credential declared in this custom server's `required_env_vars`. Its temporary workspace file cannot configure the server and would create a redundant credential prompt. The guided setup Configure flow is the only collection path for those variables. An integration-specific workflow may still use the Agent VM tool when it explicitly consumes the temporary file through code execution.\nEvery `${VAR}` placeholder used in the fragment must be declared in `required_env_vars`. Do not tell the user to edit `.env`.\n\n## 5. YAML Configuration Rules\nThe `yaml_config` object must include: `name`, `id`, `display_name`, `deployment_type`, `description`, `user_installed`, `is_core`, and `required_env_vars`.\n\n**required_env_vars rules**: a list (max 32) of objects `{name, placeholder?, description?, sensitive?}`. `name` must match `[A-Za-z_][A-Za-z0-9_]*`. Use `sensitive: true` for secrets. Use `[]` when the server needs no user-supplied values.\n\n**display_name rules**:\n- No emojis\n- No parentheses\n- No special symbols beyond spaces and hyphens\n\nMissing required fields will fail validation.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id",
+        "yaml_config",
+        "fragment"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "Unique identifier (validates against system servers)",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "yaml_config": {
+          "type": "object",
+          "description": "YAML configuration - MUST include: name, id, display_name, deployment_type, description, user_installed (true), is_core (false), required_env_vars. required_env_vars declares values the user must supply via the Control Plane Configure flow: a list of objects {name, placeholder?, description?, sensitive?} (name matches [A-Za-z_][A-Za-z0-9_]*; sensitive: true for secrets; [] when none). Reference each declared var in the fragment as ${NAME}; never inline secret values.",
+          "required": [
+            "name",
+            "id",
+            "display_name",
+            "deployment_type",
+            "description"
+          ]
+        },
+        "fragment": {
+          "type": "object",
+          "description": "MCP fragment. Non-secret env vars may be embedded directly; secrets must be referenced as ${NAME} placeholders declared in yaml_config.required_env_vars, never inlined."
+        },
+        "icon_base64": {
+          "type": "string",
+          "description": "Optional base64-encoded PNG icon"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "read_user_mcp_server",
+    "title": null,
+    "description": "Read user-installed server configuration",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "The ID of the user-installed server"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "update_user_mcp_server",
+    "title": null,
+    "description": "Update user-installed server configuration.\n\nSupported scope: user-installed servers only. You can update YAML, fragment, and icon. This tool already applies the required targeted restart behavior; inspect the returned `healthy` and `readiness_phase` fields instead of calling a redundant infrastructure restart.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "The ID of the server to update"
+        },
+        "yaml_config": {
+          "type": "object",
+          "description": "Updated YAML configuration (optional). REPLACES the whole YAML file: always resend the complete config including the full required_env_vars list — omitting required_env_vars clears any declared vars."
+        },
+        "fragment": {
+          "type": "object",
+          "description": "Updated fragment (optional)"
+        },
+        "icon_base64": {
+          "type": "string",
+          "description": "Updated icon (optional)"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "delete_user_mcp_server",
+    "title": null,
+    "description": "Delete a user-installed server. This tool already reloads MCP infrastructure after deletion; do not immediately chain a redundant infrastructure restart.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id",
+        "confirm"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "The ID of the server to delete"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Confirmation flag (must be true)"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "validate_mcp_fragment",
+    "title": null,
+    "description": "Validate fragment JSON before creation/update",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "fragment"
+      ],
+      "properties": {
+        "fragment": {
+          "type": "object",
+          "description": "Fragment to validate"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "restart_mcp_infrastructure",
+    "title": null,
+    "description": "Restart MCP infrastructure for targeted recovery or broad reloads.\n\n**Two modes of operation:**\n\n1. **Full restart** (default, no server_id): Regenerates configs and restarts all services\n   - Takes 2-3 minutes\n   - Use after creating multiple servers at once or for broad recovery\n\n2. **Single server restart** (with server_id): Restarts only one server container\n   - Regenerates configs first\n   - Takes ~15-30 seconds\n   - Use when one specific integration needs recovery\n\nThis will:\n1. Regenerate MCP configuration files (always)\n2. Stop/restart the target server container (or all services for full restart)\n3. Run health checks\n\nAll logs will be returned to you.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "Optional: Specific server ID to restart. If omitted, restarts all services (full restart)."
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "restart_mcp_server",
+    "title": null,
+    "description": "Restart a single MCP server by ID.\n\nUse this for targeted recovery when a specific MCP server becomes unhealthy.\nThis does NOT restart all MCP infrastructure.\n\nIMPORTANT: A successful restart does not always mean the server is immediately ready.\nCheck the returned `healthy` and `readiness_phase` fields before claiming the integration's tools are available.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "Specific server ID to restart"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "activate_integration",
+    "title": null,
+    "description": "Attach enabled tool servers to the current chat. Waits up to 30s if a server is still starting. See integrations_status for when to use. Extract chat_id from system prompt 'Chat ID: {id}'.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "chat_id",
+        "tool_server_ids"
+      ],
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Chat ID (extract from system prompt: 'Chat ID: {id}')"
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of stable tool server IDs to enable (e.g., ['server:glean', 'server:slack'])"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_chat_tools",
+    "title": null,
+    "description": "Get the list of currently enabled tool servers for a chat.\n\nReturns both core tools (always enabled) and chat-specific tools.\n\nIMPORTANT: Extract chat_id from the system prompt where it appears as \"Chat ID: {id}\".",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "chat_id"
+      ],
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Chat ID (extract from system prompt: 'Chat ID: {id}')"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_host_mcp_bridge_status",
+    "title": null,
+    "description": "Check the Portico Host MCP Bridge health and supported external MCP client configuration state. Use this when the user asks whether the bridge is healthy, which clients are configured, or whether setup-community/run-mcp-servers should enable the PORTICO bridge or fall back to ToolHive.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "timeout_ms": {
+          "type": "integer",
+          "description": "Optional request timeout in milliseconds. Defaults to 10000 and is clamped between 1000 and 120000."
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "configure_host_mcp_bridge_clients",
+    "title": null,
+    "description": "Configure supported external MCP clients to use the Portico Host MCP Bridge. This mutates the selected client config files through the app-owned bridge API and returns redacted result details. Call get_host_mcp_bridge_status first, ask the user to confirm the exact clients, then pass confirm=true and explicit client_ids. If the user asks for all detected clients, pass the exact detected supported client ids returned by status. Supported client_ids: atlas-code, atlas-desktop, workbench, cursor, amp. Do not output manual bridge URLs, tokens, or client config snippets.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "confirm",
+        "client_ids"
+      ],
+      "properties": {
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be true after the user confirms the client config modification."
+        },
+        "client_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "atlas-code",
+              "atlas-desktop",
+              "workbench",
+              "cursor",
+              "amp"
+            ]
+          },
+          "description": "Required list of external clients to configure. Call status first and pass the exact confirmed supported client ids, including when the user asked for all detected clients."
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "description": "Optional bridge readiness/configuration timeout in milliseconds. Defaults to 30000 and is clamped between 1000 and 120000."
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "toggle_integration",
+    "title": null,
+    "description": "Enable or disable an MCP server. Handles container lifecycle, config, and nginx internally. Returns readiness_phase indicating next step. Transport errors (disconnected/5xx) after toggle mean it succeeded — proceed to next step. NOT_CONFIGURED means call trigger_guided_setup unless the active integration-specific setup skill says otherwise. SAVED_SECRET_UNAVAILABLE means do not retry or open generic guided setup; continue the integration-specific secure credential replacement flow. See integrations_status for the full flow. Pass chat_id so the progress modal is attributed to the correct chat tab.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id",
+        "enabled"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "MCP server ID to toggle (e.g., 'google_workspace', 'gitlab-mcp')"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "True to enable, False to disable"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Optional chat ID (from system prompt 'Chat ID: {id}'). When provided, the operation progress modal is attributed to that chat's tab: it opens immediately if the user is on that tab, otherwise the tab flashes for attention and the modal opens when the user returns to it."
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "authorize_integration",
+    "title": null,
+    "description": "Check/trigger OAuth for an ENABLED OAuth-based server. PREREQUISITE: server must be enabled (toggled on) — call toggle_integration first if disabled. NEVER for token-based servers. Returns instantly if tokens exist unless force_auth=true. Pass chat_id so the modal opens in the correct chat window and for auto-activation on success. Follow the <action_plan> in integrations_status.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "MCP server ID requiring OAuth authorization"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Optional chat ID (from system prompt 'Chat ID: {id}'). When provided, the OAuth modal opens in that chat's window when it is open; otherwise it falls back to the main chat window. When OAuth succeeds with tool_ready, the integration is automatically activated for this chat — no separate mcp_assistant_activate_integration call needed."
+        },
+        "force_auth": {
+          "type": "boolean",
+          "description": "Optional. Set true after an auth-like tool failure (401, invalid token, expired token, re-authenticate) to force a fresh OAuth flow instead of reusing cached readiness/tokens."
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_mcp_server_logs",
+    "title": null,
+    "description": "Fetch recent logs for a specific MCP server. Use this when creation, toggle, startup, or OAuth recovery fails and you need server-specific diagnostics.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "MCP server ID to inspect"
+        },
+        "lines": {
+          "type": "integer",
+          "description": "Optional number of trailing log lines to return. Defaults to 200 and is clamped to a safe maximum."
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "trigger_guided_setup",
+    "title": null,
+    "description": "Open config form for initial setup or reconfiguration. PREREQUISITE: server must be enabled (toggled on) — call toggle_integration first if disabled. Pass chat_id so the modal opens in the correct chat window. Blocks until user completes (up to 5min). Use when toggle returns NOT_CONFIGURED. Follow the <action_plan> in integrations_status.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "server_id"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "description": "MCP server ID to configure (e.g., 'gitlab-mcp', 'slack')"
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Optional chat ID (from system prompt 'Chat ID: {id}'). When provided, the configuration modal opens in that chat's window when it is open; otherwise it falls back to the main chat window."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why setup is being triggered. Use 'credentials_invalid' when reconfiguring due to 401/auth errors (clears old token from form). Omit for initial setup.",
+          "enum": [
+            "credentials_invalid"
+          ]
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  }
+]
