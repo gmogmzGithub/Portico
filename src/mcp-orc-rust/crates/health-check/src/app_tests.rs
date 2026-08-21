@@ -1805,7 +1805,7 @@ fn base_model_payload_uses_provider_specific_icons() {
                 disabled: false,
                 disabled_reason: None,
             },
-            "data:image/png;base64,Y2xhdWRl",
+            "data:image/png;base64,YXRsYXM=",
         ),
         (
             ConfiguredBaseModel {
