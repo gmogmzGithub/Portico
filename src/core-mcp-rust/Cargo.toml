@@ -18,7 +18,7 @@ edition = "2021"
 [workspace.dependencies]
 anyhow = "1.0"
 async-trait = "0.1"
-base64 = "0.22"
+base64 = "0.23"
 bollard = "0.20.1"
 chrono = "0.4"
 chrono-tz = "0.10"
