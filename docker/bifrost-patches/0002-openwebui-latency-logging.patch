@@ -1,0 +1,263 @@
+--- a/core/bifrost.go
++++ b/core/bifrost.go
+@@ -7,6 +7,7 @@
+ 	"context"
+ 	"fmt"
+ 	"math/rand"
++	"strconv"
+ 	"slices"
+ 	"sort"
+ 	"strings"
+@@ -4689,6 +4690,74 @@
+ 	}
+ }
+ 
++const owuiBifrostReceivedAtKey schemas.BifrostContextKey = "openwebui-bifrost-received-at-ms"
++
++func owuiRequestHeaders(ctx *schemas.BifrostContext) map[string]string {
++	headers, _ := ctx.Value(schemas.BifrostContextKeyRequestHeaders).(map[string]string)
++	return headers
++}
++
++func owuiHeaderString(headers map[string]string, name string) string {
++	if headers == nil {
++		return "-"
++	}
++	value := strings.TrimSpace(headers[strings.ToLower(name)])
++	if value == "" {
++		return "-"
++	}
++	return value
++}
++
++func owuiHeaderInt64(headers map[string]string, name string) (int64, bool) {
++	if headers == nil {
++		return 0, false
++	}
++	rawValue := strings.TrimSpace(headers[strings.ToLower(name)])
++	if rawValue == "" {
++		return 0, false
++	}
++	value, err := strconv.ParseInt(rawValue, 10, 64)
++	if err != nil || value < 0 {
++		return 0, false
++	}
++	return value, true
++}
++
++func appendOWUIBifrostLogFields(builder schemas.LogEventBuilder, ctx *schemas.BifrostContext) schemas.LogEventBuilder {
++	headers := owuiRequestHeaders(ctx)
++	builder = builder.
++		Str("chat_id", owuiHeaderString(headers, "x-openwebui-chat-id")).
++		Str("session_id", owuiHeaderString(headers, "x-openwebui-session-id")).
++		Str("message_id", owuiHeaderString(headers, "x-openwebui-message-id")).
++		Str("debug_request_id", owuiHeaderString(headers, "x-openwebui-debug-request-id")).
++		Str("upstream_request_id", owuiHeaderString(headers, "x-openwebui-upstream-request-id")).
++		Str("request_phase", owuiHeaderString(headers, "x-openwebui-request-phase")).
++		Str("followup_index", owuiHeaderString(headers, "x-openwebui-followup-index")).
++		Str("outer_message_id", owuiHeaderString(headers, "x-openwebui-outer-message-id")).
++		Str("trigger_message_id", owuiHeaderString(headers, "x-openwebui-trigger-message-id")).
++		Str("transcript_anchor_kind", owuiHeaderString(headers, "x-openwebui-transcript-anchor-kind")).
++		Str("transcript_anchor_message_id", owuiHeaderString(headers, "x-openwebui-transcript-anchor-message-id")).
++		Str("transcript_anchor_tool_block_index", owuiHeaderString(headers, "x-openwebui-transcript-anchor-tool-block-index")).
++		Str("traceparent", owuiHeaderString(headers, "traceparent")).
++		Str("tracestate_present", strconv.FormatBool(owuiHeaderString(headers, "tracestate") != "-")).
++		Str("baggage_present", strconv.FormatBool(owuiHeaderString(headers, "baggage") != "-"))
++	if traceID, ok := ctx.Value(schemas.BifrostContextKeyTraceID).(string); ok && traceID != "" {
++		builder = builder.Str("trace_id", traceID)
++	}
++	if parentSpanID, ok := ctx.Value(schemas.BifrostContextKeyParentSpanID).(string); ok && parentSpanID != "" {
++		builder = builder.Str("parent_span_id", parentSpanID)
++	}
++	if bifrostReceivedAtMs, ok := ctx.Value(owuiBifrostReceivedAtKey).(int64); ok && bifrostReceivedAtMs > 0 {
++		builder = builder.Int64("bifrost_received_at_ms", bifrostReceivedAtMs)
++		if promptSubmittedAtMs, ok := owuiHeaderInt64(headers, "x-openwebui-prompt-submitted-at-ms"); ok {
++			builder = builder.
++				Int64("prompt_submitted_at_ms", promptSubmittedAtMs).
++				Int64("submit_to_bifrost_receive_ms", max(bifrostReceivedAtMs-promptSubmittedAtMs, int64(0)))
++		}
++	}
++	return builder
++}
++
+ // executeRequestWithRetries is a generic function that handles common request processing logic
+ // It consolidates retry logic, backoff calculation, and error handling
+ // It is not a bifrost method because interface methods in go cannot be generic
+@@ -4797,6 +4866,23 @@
+ 			streamStartTime := time.Now()
+ 			ctx.SetValue(schemas.BifrostContextKeyStreamStartTime, streamStartTime)
+ 		}
++		providerDispatchStartedAtMs := time.Now().UnixMilli()
++		dispatchLog := logger.LogHTTPRequest(schemas.LogLevelInfo, "provider dispatch start").
++			Str("event", "bifrost_provider_dispatch_start").
++			Str("provider", string(providerKey)).
++			Str("model", model).
++			Str("request_type", string(requestType)).
++			Str("stream", strconv.FormatBool(IsStreamRequestType(requestType))).
++			Int("attempt", attempts+1).
++			Int("max_attempts", config.NetworkConfig.MaxRetries+1)
++		dispatchLog = appendOWUIBifrostLogFields(dispatchLog, ctx)
++		if bifrostReceivedAtMs, ok := ctx.Value(owuiBifrostReceivedAtKey).(int64); ok && bifrostReceivedAtMs > 0 {
++			dispatchLog = dispatchLog.Int64("bifrost_receive_to_provider_dispatch_ms", max(providerDispatchStartedAtMs-bifrostReceivedAtMs, int64(0)))
++		}
++		if promptSubmittedAtMs, ok := owuiHeaderInt64(owuiRequestHeaders(ctx), "x-openwebui-prompt-submitted-at-ms"); ok {
++			dispatchLog = dispatchLog.Int64("submit_to_provider_dispatch_ms", max(providerDispatchStartedAtMs-promptSubmittedAtMs, int64(0)))
++		}
++		dispatchLog.Send()
+ 
+ 		// Attempt the request
+ 		result, bifrostError = requestHandler()
+@@ -4812,6 +4898,17 @@
+ 					<-drainDone
+ 					bifrostError = firstChunkErr
+ 				} else {
++					firstChunkLog := logger.LogHTTPRequest(schemas.LogLevelInfo, "provider first stream chunk").
++						Str("event", "bifrost_provider_first_stream_chunk").
++						Str("provider", string(providerKey)).
++						Str("model", model).
++						Str("request_type", string(requestType)).
++						Str("stream", "true").
++						Int("attempt", attempts+1).
++						Int("max_attempts", config.NetworkConfig.MaxRetries+1)
++					firstChunkLog = appendOWUIBifrostLogFields(firstChunkLog, ctx)
++					firstChunkLog = firstChunkLog.Int64("provider_dispatch_to_first_stream_chunk_ms", max(time.Now().UnixMilli()-providerDispatchStartedAtMs, int64(0)))
++					firstChunkLog.Send()
+ 					result = any(checkedStream).(T)
+ 				}
+ 			}
+
+--- a/transports/bifrost-http/handlers/middlewares.go
++++ b/transports/bifrost-http/handlers/middlewares.go
+@@ -7,6 +7,7 @@
+ 	"errors"
+ 	"fmt"
+ 	"io"
++	"strconv"
+ 	"slices"
+ 	"strings"
+ 	"sync/atomic"
+@@ -23,6 +24,60 @@
+ 
+ var loggingSkipPaths = []string{"/health", "/_next", "/api/dev"}
+ 
++func requestHeaderString(ctx *fasthttp.RequestCtx, name string) string {
++	return strings.TrimSpace(string(ctx.Request.Header.Peek(name)))
++}
++
++func requestHeaderValue(ctx *fasthttp.RequestCtx, name string) string {
++	value := requestHeaderString(ctx, name)
++	if value == "" {
++		return "-"
++	}
++	return value
++}
++
++func requestHeaderPresent(ctx *fasthttp.RequestCtx, name string) bool {
++	return requestHeaderString(ctx, name) != ""
++}
++
++func requestHeaderInt64(ctx *fasthttp.RequestCtx, name string) (int64, bool) {
++	value := requestHeaderString(ctx, name)
++	if value == "" {
++		return 0, false
++	}
++	parsed, err := strconv.ParseInt(value, 10, 64)
++	if err != nil || parsed < 0 {
++		return 0, false
++	}
++	return parsed, true
++}
++
++func appendOWUIAccessLogFields(builder schemas.LogEventBuilder, ctx *fasthttp.RequestCtx, bifrostReceivedAtMs int64) schemas.LogEventBuilder {
++	builder = builder.
++		Str("chat_id", requestHeaderValue(ctx, "x-openwebui-chat-id")).
++		Str("session_id", requestHeaderValue(ctx, "x-openwebui-session-id")).
++		Str("message_id", requestHeaderValue(ctx, "x-openwebui-message-id")).
++		Str("debug_request_id", requestHeaderValue(ctx, "x-openwebui-debug-request-id")).
++		Str("upstream_request_id", requestHeaderValue(ctx, "x-openwebui-upstream-request-id")).
++		Str("request_phase", requestHeaderValue(ctx, "x-openwebui-request-phase")).
++		Str("followup_index", requestHeaderValue(ctx, "x-openwebui-followup-index")).
++		Str("outer_message_id", requestHeaderValue(ctx, "x-openwebui-outer-message-id")).
++		Str("trigger_message_id", requestHeaderValue(ctx, "x-openwebui-trigger-message-id")).
++		Str("transcript_anchor_kind", requestHeaderValue(ctx, "x-openwebui-transcript-anchor-kind")).
++		Str("transcript_anchor_message_id", requestHeaderValue(ctx, "x-openwebui-transcript-anchor-message-id")).
++		Str("transcript_anchor_tool_block_index", requestHeaderValue(ctx, "x-openwebui-transcript-anchor-tool-block-index")).
++		Str("traceparent", requestHeaderValue(ctx, "traceparent")).
++		Str("tracestate_present", strconv.FormatBool(requestHeaderPresent(ctx, "tracestate"))).
++		Str("baggage_present", strconv.FormatBool(requestHeaderPresent(ctx, "baggage"))).
++		Int64("bifrost_received_at_ms", bifrostReceivedAtMs)
++	if promptSubmittedAtMs, ok := requestHeaderInt64(ctx, "x-openwebui-prompt-submitted-at-ms"); ok {
++		builder = builder.
++			Int64("prompt_submitted_at_ms", promptSubmittedAtMs).
++			Int64("submit_to_bifrost_receive_ms", max(bifrostReceivedAtMs-promptSubmittedAtMs, int64(0)))
++	}
++	return builder
++}
++
+ // SecurityHeadersMiddleware sets security-related HTTP headers on every response.
+ // This should wrap the outermost handler so all responses (API, UI, errors) include these headers.
+ func SecurityHeadersMiddleware() schemas.BifrostHTTPMiddleware {
+@@ -47,6 +102,7 @@
+ 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+ 		return func(ctx *fasthttp.RequestCtx) {
+ 			startTime := time.Now()
++			requestReceivedAtMs := startTime.UnixMilli()
+ 			// skip logging if it's a /health check request
+ 			if slices.IndexFunc(loggingSkipPaths, func(path string) bool {
+ 				return strings.HasPrefix(string(ctx.RequestURI()), path)
+@@ -62,15 +118,20 @@
+ 					level = schemas.LogLevelWarn
+ 				}
+ 				logBuilder := logger.LogHTTPRequest(level, "request completed").
++					Str("event", "bifrost_request_complete").
+ 					Str("http.method", string(ctx.Method())).
+ 					Str("http.target", string(ctx.RequestURI())).
+ 					Int("http.status_code", statusCode).
+ 					Int64("http.request_duration_ms", time.Since(startTime).Milliseconds()).
+ 					Str("http.remote_addr", ctx.RemoteAddr().String()).
+ 					Str("http.user_agent", string(ctx.Request.Header.UserAgent()))
++				logBuilder = appendOWUIAccessLogFields(logBuilder, ctx, requestReceivedAtMs)
+ 				if traceID, ok := ctx.UserValue(schemas.BifrostContextKeyTraceID).(string); ok && traceID != "" {
+ 					logBuilder = logBuilder.Str("trace_id", traceID)
+ 				}
++				if parentSpanID, ok := ctx.UserValue(schemas.BifrostContextKeyParentSpanID).(string); ok && parentSpanID != "" {
++					logBuilder = logBuilder.Str("parent_span_id", parentSpanID)
++				}
+ 				logBuilder.Send()
+ 			}()
+ 		corsFlow:
+@@ -794,6 +855,23 @@
+ 			if parentSpanID != "" {
+ 				ctx.SetUserValue(schemas.BifrostContextKeyParentSpanID, parentSpanID)
+ 			}
++			if slices.IndexFunc(loggingSkipPaths, func(path string) bool {
++				return strings.HasPrefix(string(ctx.RequestURI()), path)
++			}) == -1 {
++				requestReceivedAtMs := time.Now().UnixMilli()
++				logBuilder := logger.LogHTTPRequest(schemas.LogLevelInfo, "request received").
++					Str("event", "bifrost_request_received").
++					Str("http.method", string(ctx.Method())).
++					Str("http.target", string(ctx.RequestURI()))
++				logBuilder = appendOWUIAccessLogFields(logBuilder, ctx, requestReceivedAtMs)
++				if traceID != "" {
++					logBuilder = logBuilder.Str("trace_id", traceID)
++				}
++				if parentSpanID != "" {
++					logBuilder = logBuilder.Str("parent_span_id", parentSpanID)
++				}
++				logBuilder.Send()
++			}
+ 
+ 			// Store a trace completion callback for streaming handlers to use
+ 			ctx.SetUserValue(schemas.BifrostContextKeyTraceCompleter, func() {
+
+--- a/transports/bifrost-http/lib/ctx.go
++++ b/transports/bifrost-http/lib/ctx.go
+@@ -419,6 +419,7 @@
+ 		return true
+ 	})
+ 	bifrostCtx.SetValue(schemas.BifrostContextKeyRequestHeaders, allHeaders)
++	bifrostCtx.SetValue(schemas.BifrostContextKey("openwebui-bifrost-received-at-ms"), time.Now().UnixMilli())
+ 
+ 	if allowDirectKeys {
+ 		// Extract API key from Authorization header (Bearer format), x-api-key, or x-goog-api-key header

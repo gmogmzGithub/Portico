@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-21T00:00:00.000Z",
+  "tokens": [
+    {
+      "clientId": "fixture-unscoped",
+      "displayName": "Fixture Unscoped",
+      "tokenHash": "sha256:0123456789abcdef0123456789abcdef:7bcbf2016fa61599746a2fca6f001c313070d18f74b6e827cf31e16d2a386ab1",
+      "tokenFile": "tokens/fixture-unscoped.token",
+      "createdAt": "2026-07-21T00:00:00.000Z",
+      "updatedAt": "2026-07-21T00:00:00.000Z",
+      "revoked": false
+    }
+  ]
+}

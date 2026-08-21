@@ -1,0 +1,118 @@
+# syntax=docker/dockerfile:1.7
+
+ARG RUST_VERSION=1.86.0
+FROM rust:${RUST_VERSION}-alpine AS builder
+
+ARG RUST_VERSION
+ARG TARGETARCH
+
+ENV CARGO_NET_RETRY=5 \
+    CARGO_HTTP_MULTIPLEXING=false \
+    CARGO_HTTP_TIMEOUT=120 \
+    CARGO_HTTP_LOW_SPEED_LIMIT=1
+
+RUN apk add --no-cache build-base musl-dev linux-headers
+
+WORKDIR /build
+
+COPY src/bifrost-bridge-rust/Cargo.toml /build/Cargo.toml
+COPY src/bifrost-bridge-rust/Cargo.lock /build/Cargo.lock
+COPY src/bifrost-bridge-rust/src /build/src
+
+# The target-dir cache persists across branches/clones while cargo trusts
+# mtimes for freshness, so it can silently reuse stale workspace artifacts
+# built from different sources (E0050-style trait/impl mismatches). Touch all
+# sources so workspace crates always rebuild; registry dep caches stay warm.
+RUN --mount=type=cache,id=portico-cargo-registry-rust-${RUST_VERSION}-musl-${TARGETARCH},target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=portico-cargo-git-rust-${RUST_VERSION}-musl-${TARGETARCH},target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=portico-bifrost-target-rust-${RUST_VERSION}-musl-${TARGETARCH},target=/build/target,sharing=locked \
+    find /build/src /build/Cargo.toml /build/Cargo.lock -type f -exec touch {} + && \
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')" && \
+    cargo build --release --locked --offline && \
+    mkdir -p /out && \
+    cp target/release/bifrost-bridge /out/bifrost-bridge
+
+FROM alpine:3.23 AS bifrost-source
+
+ARG BIFROST_SOURCE_REF=be3edf3d766cdb2a03ace2eb6d11c7c45a9330f1
+
+RUN apk add --no-cache curl patch tar
+
+WORKDIR /src
+
+RUN set -eux; \
+    archive_url="https://codeload.github.com/maximhq/bifrost/tar.gz/${BIFROST_SOURCE_REF}"; \
+    for attempt in 1 2 3 4 5; do \
+        if curl --fail --location --retry 5 --retry-all-errors --connect-timeout 20 --max-time 300 "$archive_url" \
+            | tar -xz --strip-components=1; then \
+            break; \
+        fi; \
+        if [ "$attempt" -eq 5 ]; then \
+            echo "Failed to download Bifrost source archive from $archive_url" >&2; \
+            exit 1; \
+        fi; \
+        rm -rf /src/* /src/.[!.]* /src/..?* 2>/dev/null || true; \
+        sleep $((attempt * 3)); \
+    done
+
+COPY docker/bifrost-patches/0001-anthropic-preserve-multiple-system-messages.patch /tmp/bifrost-anthropic-system.patch
+COPY docker/bifrost-patches/0002-openwebui-latency-logging.patch /tmp/bifrost-openwebui-latency-logging.patch
+
+RUN patch -p1 < /tmp/bifrost-anthropic-system.patch
+RUN patch -p1 < /tmp/bifrost-openwebui-latency-logging.patch
+
+FROM node:25-alpine3.23 AS bifrost-ui-builder
+
+WORKDIR /src/ui
+
+COPY --from=bifrost-source /src/ui/package*.json ./
+
+RUN npm ci
+
+COPY --from=bifrost-source /src/ui/ ./
+
+RUN npx next build --no-lint && node scripts/fix-paths.js
+
+FROM golang:1.26.1-alpine3.23 AS bifrost-builder
+
+RUN apk add --no-cache gcc musl-dev sqlite-dev binutils binutils-gold
+
+ENV CGO_ENABLED=1 GOOS=linux GOWORK=off
+
+WORKDIR /src
+
+COPY --from=bifrost-source /src/ /src/
+COPY --from=bifrost-ui-builder /src/ui/out /src/transports/bifrost-http/ui
+
+RUN cd transports && go mod download
+
+ARG BIFROST_VERSION=v1.4.23-owui
+
+RUN cd transports && go build \
+  -ldflags="-w -s -X main.Version=${BIFROST_VERSION} -extldflags '-static'" \
+  -a -trimpath \
+  -tags "sqlite_static" \
+  -o /app/main \
+  ./bifrost-http
+
+FROM maximhq/bifrost:v1.4.23
+
+USER root
+
+RUN apk add --no-cache supervisor
+
+WORKDIR /app
+
+ENV BIFROST_BASE_URL=http://127.0.0.1:8080
+
+COPY --from=bifrost-builder /app/main /app/main
+COPY --from=builder /out/bifrost-bridge /usr/local/bin/bifrost-bridge
+COPY docker/llm-gateway.supervisord.conf /etc/supervisord.conf
+
+EXPOSE 4000
+
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf", "-n"]
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true" \
+      com.portico.ai-chat.image-role="bifrost-bridge"

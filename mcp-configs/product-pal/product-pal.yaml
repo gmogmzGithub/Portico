@@ -1,0 +1,25 @@
+name: "Product Pal MCP Server"
+id: "product-pal"
+display_name: "Product Pal"
+deployment_type: "docker"
+experimental: false
+user_installed: false
+description: "Query product feedback (Gong calls, NPS, CSAT, Salesforce cases, surveys), Snowflake metrics, and agent-powered insights from Portico's Product Intelligence platform"
+guided_setup_description: "Query Portico customer interactions (Gong, NPS, CSAT, etc.)"
+oauth:
+  type: "dcr"
+  provider: "product-pal"
+  requires_user_authorization: true
+use_cases:
+  - "Analyzing customer sentiment and feedback"
+  - "Searching product feedback and support cases"
+  - "Pulling Product Intelligence metrics by company or advertiser"
+tool_rename_mapping:
+  describe_table: "Describe Table"
+  get_feedback: "Get Feedback"
+  keyword_search_feedback: "Keyword Search Feedback"
+  list_productpal_skills: "List ProductPal Skills"
+  load_productpal_skill: "Load ProductPal Skill"
+  run_concept_sql: "Run Concept SQL"
+  search_companies: "Search Companies"
+  semantic_search_feedback: "Semantic Search Feedback"

@@ -1,0 +1,36 @@
+# LLM Debug Monitor — included for any local (non-packaged) dev build
+# This file is separate from docker-compose.dev.yml so the debug monitor
+# can run without enabling the full HMR open-webui override.
+#
+# Usage: docker compose -f docker-compose.yml -f dev/docker-compose.debug-monitor.yml up -d
+
+name: portico
+
+services:
+  llm-debug-monitor:
+    build:
+      context: ./llm-debug-monitor
+      dockerfile: Dockerfile
+    container_name: llm-debug-monitor
+    ports:
+      - "127.0.0.1:8879:8879"
+    environment:
+      - TZ=${TZ:-UTC}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEBUG=false
+      - DEBUG_MONITOR_ALLOWED_ORIGINS=http://localhost:8879,http://127.0.0.1:8879,http://localhost:3789,http://127.0.0.1:3789
+      - DEBUG_MONITOR_TOKEN_FILE=/run/secrets/bifrost_bridge_local_api_key
+    secrets:
+      - bifrost_bridge_local_api_key
+    depends_on:
+      - redis
+    networks:
+      - default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8879/api/health', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3

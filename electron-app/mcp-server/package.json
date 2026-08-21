@@ -1,0 +1,14 @@
+{
+  "name": "portico-electron-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Portico Electron app automation",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "playwright": "^1.40.0"
+  }
+}

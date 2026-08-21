@@ -1,0 +1,57 @@
+# syntax=docker/dockerfile:1.7
+
+ARG RUST_VERSION=1.96.0
+FROM rust:${RUST_VERSION}-slim-trixie AS mcp-workspace-builder
+
+ARG RUST_VERSION
+ARG TARGETARCH
+
+ENV PATH=/usr/local/cargo/bin:$PATH \
+    CARGO_NET_RETRY=5 \
+    CARGO_HTTP_MULTIPLEXING=false \
+    CARGO_HTTP_TIMEOUT=120 \
+    CARGO_HTTP_LOW_SPEED_LIMIT=1
+
+WORKDIR /build
+COPY src/mcp-orc-rust /build/src/mcp-orc-rust
+COPY src/core-mcp-rust /build/src/core-mcp-rust
+WORKDIR /build/src/mcp-orc-rust
+# The target-dir cache persists across branches/clones while cargo trusts
+# mtimes for freshness, so it can silently reuse stale workspace artifacts
+# built from different sources (E0050-style trait/impl mismatches). Touch all
+# sources so workspace crates always rebuild; registry dep caches stay warm.
+RUN --mount=type=cache,id=portico-cargo-registry-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=portico-cargo-git-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,id=portico-rust-target-rust-${RUST_VERSION}-glibc-${TARGETARCH},target=/build/src/mcp-orc-rust/target,sharing=locked \
+    find /build/src -type f -not -path '*/target/*' -exec touch {} + && \
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')" && \
+    cargo build --release --locked --offline --workspace && \
+    for binary in mcp-orc openapi-aggregator health-check; do \
+      install -Dm755 "target/release/${binary}" "/out/${binary}"; \
+    done
+
+FROM debian:trixie-slim
+
+ENV MCPO_REGULAR_AGGREGATOR_PORT=8080 \
+    MCPO_CORE_AGGREGATOR_PORT=8082 \
+    MCPO_NGINX_CONF=/etc/nginx/nginx.conf
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates nginx supervisor openssl && \
+    rm -rf /var/lib/apt/lists/* /etc/nginx/sites-enabled/default
+
+WORKDIR /app
+
+COPY --from=mcp-workspace-builder /out/openapi-aggregator /usr/local/bin/openapi-aggregator
+COPY docker/mcpo-control-plane-entrypoint.sh /app/mcpo-control-plane-entrypoint.sh
+COPY docker/mcpo-control-plane-rust.supervisord.conf /etc/supervisor/conf.d/mcpo-control-plane.conf
+
+RUN chmod +x /app/mcpo-control-plane-entrypoint.sh
+
+EXPOSE 80 8081 3834 3838
+
+ENTRYPOINT ["/app/mcpo-control-plane-entrypoint.sh"]
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true" \
+      com.portico.ai-chat.image-role="mcpo-control-plane-rust"

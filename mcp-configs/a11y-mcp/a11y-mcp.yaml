@@ -1,0 +1,11 @@
+deployment_type: docker
+description: Portico UX Accessibility MCP - WCAG guidance and HTML accessibility validation
+display_name: A11y MCP
+id: a11y-mcp
+is_core: false
+name: A11y MCP
+required_env_vars: []
+user_installed: false
+tool_rename_mapping:
+  getA11yDocumentation: "Get Accessibility Documentation"
+  validateWithA11yHighlander: "Validate with A11y Highlander"

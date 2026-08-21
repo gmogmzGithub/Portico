@@ -1,0 +1,66 @@
+# Keep Docker build contexts small and explicit.
+*
+
+# Open WebUI patches and service build inputs.
+!src/patches/
+!src/patches/**
+!Dockerfile*
+!docker-compose.yml
+!docker/
+!docker/**
+!.env
+!.npmrc
+!requirements-open-webui-slim.txt
+
+# Shared model and UI assets used by service builds.
+!model_catalog.yaml
+!src/__init__.py
+!src/migrate_tool_server_ids.py
+!src/managers/
+!src/managers/**
+!src/filters/
+!src/filters/**
+!agents/
+!electron-app/assets/claude.png
+!electron-app/assets/gpt.png
+!electron-app/assets/gemini.png
+!electron-app/assets/sol.png
+!electron-app/assets/terra.png
+!electron-app/assets/luna.png
+
+# Rust MCP services and their configuration inputs.
+!src/core-mcp-rust/
+!src/core-mcp-rust/**
+!src/mcp-orc-rust/
+!src/mcp-orc-rust/**
+!src/bifrost-bridge-rust/
+!src/bifrost-bridge-rust/**
+!mcp_config*.json
+!mcp-configs/
+!electron-app/assets/icon_raw.png
+
+# Chat state API and shared tooling scripts.
+!src/chat-state-api/
+!src/chat-state-api/**
+!src/scripts/
+!src/scripts/**
+
+# Keep dependencies and generated outputs out of build contexts.
+src/patches/**/node_modules/
+src/patches/**/build/
+src/patches/**/dist/
+src/core-mcp-rust/target/
+src/core-mcp-rust/target-ci/
+src/core-mcp-rust/.cargo-home/
+src/core-mcp-rust/*.lcov
+src/core-mcp-rust/coverage.json
+src/core-mcp-rust/coverage.txt
+src/mcp-orc-rust/target/
+src/mcp-orc-rust/target-ci/
+src/mcp-orc-rust/.cargo-home/
+src/mcp-orc-rust/*.lcov
+src/mcp-orc-rust/coverage.json
+src/mcp-orc-rust/coverage.txt
+.tmp-*.lcov
+.tmp-*-cov*.json
+.tmp-*-current.txt

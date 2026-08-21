@@ -1,0 +1,38 @@
+name: "Slack MCP Server"
+id: "slack"
+display_name: "Slack"
+deployment_type: "docker"
+experimental: false
+user_installed: false
+description: "Enables reading and sending messages in Slack"
+guided_setup_description: "Read channels and send Slack messages"
+use_cases:
+  - "Posting updates"
+  - "Reading channel history"
+  - "Sending notifications"
+tool_rename_mapping:
+  channels_list: "List Channels"
+  channels_me: "List My Channels"
+  conversations_add_message: "Add Message"
+  conversations_history: "Get Conversation History"
+  conversations_join: "Join Channel"
+  conversations_leave: "Leave Channel"
+  conversations_mark: "Mark as Read"
+  conversations_replies: "Get Thread Replies"
+  conversations_search_messages: "Search Messages"
+  conversations_unreads: "Get Unread Messages"
+  usergroups_create: "Create User Group"
+  usergroups_list: "List User Groups"
+  usergroups_me: "Manage My User Groups"
+  usergroups_update: "Update User Group"
+  usergroups_users_update: "Replace User Group Members"
+  users_search: "Search Users"
+
+oauth:
+  type: "non-dcr"
+  provider: "slack"
+  requires_user_authorization: true
+
+preset_env_vars:
+  - name: SLACK_MCP_ADD_MESSAGE_TOOL
+    value: "true"

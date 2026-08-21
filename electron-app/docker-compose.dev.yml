@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  electron-builder:
+    image: electronuserland/builder:wine
+    volumes:
+      - .:/project
+      - /project/node_modules
+      - ~/.cache/electron:/root/.cache/electron
+      - ~/.cache/electron-builder:/root/.cache/electron-builder
+    working_dir: /project
+    command: >
+      sh -c "
+        npm install &&
+        npm run build:mac
+      "
+    environment:
+      - ELECTRON_CACHE=/root/.cache/electron
+      - ELECTRON_BUILDER_CACHE=/root/.cache/electron-builder
+      - NPM_CONFIG_GLOBALCONFIG=/project/.npmrc
+      - NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+
+  electron-dev:
+    image: node:18
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    working_dir: /app
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ELECTRON_DISABLE_SANDBOX=true
+      - NPM_CONFIG_GLOBALCONFIG=/app/.npmrc
+      - NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+    network_mode: host
+    command: >
+      sh -c "
+        npm install &&
+        npm start
+      "
+    stdin_open: true
+    tty: true

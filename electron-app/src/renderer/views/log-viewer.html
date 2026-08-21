@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Viewer</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    /* Dark Liquid Glass Theme for Log Viewer */
+    :root {
+      --bg-primary: #000000;
+      --bg-surface: #0d0d0d;
+      --bg-glass: rgba(20, 20, 20, 0.25);
+      --bg-glass-solid: rgba(15, 15, 15, 0.75);
+      --text-primary: #e5e5e5;
+      --text-secondary: #a3a3a3;
+      --accent-primary: #60a5fa;
+      --border-glass: rgba(255, 255, 255, 0.12);
+      --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      --status-success: #4ade80;
+      --status-error: #f87171;
+      --status-warning: #fbbf24;
+      --status-info: #38bdf8;
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f5f5f5;
+      --bg-surface: #fafafa;
+      --bg-glass: rgba(255, 255, 255, 0.25);
+      --bg-glass-solid: rgba(255, 255, 255, 0.75);
+      --text-primary: #171717;
+      --text-secondary: #525252;
+      --accent-primary: #3b82f6;
+      --border-glass: rgba(0, 0, 0, 0.08);
+      --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .log-header {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-glass);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-inner);
+    }
+
+    .log-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-primary);
+    }
+
+    .log-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .log-btn {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .log-btn:hover {
+      background: var(--bg-glass-solid);
+      color: var(--text-primary);
+    }
+
+    .log-btn.active {
+      background: var(--accent-primary);
+      color: var(--bg-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .log-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      background: transparent;
+      user-select: text;
+      -webkit-user-select: text;
+      cursor: text;
+    }
+
+    .log-entry {
+      margin-bottom: 2px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: inherit;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .log-entry.error {
+      color: var(--status-error);
+    }
+
+    .log-entry.success {
+      color: var(--status-success);
+    }
+
+    .log-entry.info {
+      color: var(--status-info);
+    }
+
+    .log-entry.warning {
+      color: var(--status-warning);
+    }
+
+    /* ANSI color codes support */
+    .ansi-black { color: #525252; }
+    .ansi-red { color: #f87171; }
+    .ansi-green { color: #4ade80; }
+    .ansi-yellow { color: #fbbf24; }
+    .ansi-blue { color: #60a5fa; }
+    .ansi-magenta { color: #a78bfa; }
+    .ansi-cyan { color: #38bdf8; }
+    .ansi-white { color: #e5e5e5; }
+
+    .ansi-bright-black { color: #737373; }
+    .ansi-bright-red { color: #f87171; }
+    .ansi-bright-green { color: #4ade80; }
+    .ansi-bright-yellow { color: #fb923c; }
+    .ansi-bright-blue { color: #60a5fa; }
+    .ansi-bright-magenta { color: #a78bfa; }
+    .ansi-bright-cyan { color: #38bdf8; }
+    .ansi-bright-white { color: #ffffff; }
+
+    .ansi-bold { font-weight: bold; }
+    .ansi-dim { opacity: 0.7; }
+    .ansi-italic { font-style: italic; }
+    .ansi-underline { text-decoration: underline; }
+
+    .status-bar {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      padding: 8px 20px;
+      border-top: 1px solid var(--border-glass);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-inner);
+      color: var(--text-secondary);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+    }
+
+    .status-dot.running {
+      background: var(--status-success);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.error {
+      background: var(--status-error);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="log-header">
+    <div class="log-title">Service Logs</div>
+    <div class="log-controls">
+      <button class="log-btn" id="copy-btn" title="Copy logs to clipboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Copy
+      </button>
+      <button class="log-btn" id="clear-btn">Clear</button>
+      <button class="log-btn" id="autoscroll-btn" class="active">Auto-scroll</button>
+      <button class="log-btn" id="close-btn">Close</button>
+    </div>
+  </div>
+
+  <div class="log-container" id="log-container"></div>
+
+  <div class="status-bar">
+    <div class="status-indicator">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Ready</span>
+    </div>
+    <div id="line-count">0 lines</div>
+  </div>
+
+  <!-- Theme initialization -->
+  <script src="../theme.js"></script>
+
+  <script type="module" src="./log-viewer.js"></script>
+</body>
+</html>

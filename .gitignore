@@ -1,0 +1,70 @@
+# Local credentials and operator configuration
+.env
+.env.*
+!.env.example
+cloudsmith.env
+docker-compose.override.yml
+docker-compose.harbor.yml
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies and build outputs
+node_modules/
+**/node_modules/
+target/
+**/target/
+dist/
+**/dist/
+build/
+**/build/
+.cache/
+**/.cache/
+
+# Local application state and generated runtime configuration
+open-webui-data/
+health-status/
+# Model system-prompt dumps written by local runs.
+backup/
+mcpo-configs-generated/
+mcp-configs/slack/users_seed_v1.json.gz
+mcp-configs/slack/channels_seed_v1.json.gz
+artifact-snapshots/
+workspaces/
+mcp-configs-user/
+skills-user/*
+!skills-user/README.md
+!skills-user/.gitkeep
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# Test, coverage, and diagnostics output
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+test-results/
+playwright-report/
+tests/repro-artifacts/
+docs/testing/runs/
+
+# OS and editor files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local release metadata
+UPDATE_CHANNEL
+*.app.zip
+*.dmg
+*.AppImage

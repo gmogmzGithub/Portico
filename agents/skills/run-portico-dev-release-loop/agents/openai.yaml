@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run PORTICO Dev Release Loop"
+  short_description: "Build, publish, install, and verify PORTICO dev"
+  default_prompt: "Use $run-portico-dev-release-loop to build, publish, install, launch, and fully validate the latest Portico dev release."

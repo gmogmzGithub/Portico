@@ -1,0 +1,35 @@
+name: "MCP Assistant"
+id: "mcp-assistant"
+display_name: "MCP Assistant"
+deployment_type: "docker"
+experimental: false
+is_core: true
+always_enabled: true
+user_installed: false
+description: "Conversational installation and management of User-Installed MCP servers with full CRUD capabilities"
+use_cases:
+  - "Install custom MCP servers through conversation"
+  - "Debug system-delivered server configurations"
+  - "Update user-installed server settings"
+  - "Manage MCP server lifecycle (create, read, update, delete)"
+  - "Validate MCP fragments before deployment"
+
+required_env_vars: []
+tool_rename_mapping:
+  activate_integration: "Activate Integration"
+  authorize_integration: "Authorize Integration"
+  configure_host_mcp_bridge_clients: "Configure Host MCP Bridge Clients"
+  create_user_mcp_server: "Create User MCP Server"
+  delete_user_mcp_server: "Delete User MCP Server"
+  get_chat_tools: "Get Chat Tools"
+  get_host_mcp_bridge_status: "Get Host MCP Bridge Status"
+  get_mcp_server_logs: "Get MCP Server Logs"
+  get_system_mcp_config: "Get System MCP Config"
+  list_mcp_servers: "List MCP Servers"
+  read_user_mcp_server: "Read User MCP Server"
+  restart_mcp_infrastructure: "Restart MCP Infrastructure"
+  restart_mcp_server: "Restart MCP Server"
+  toggle_integration: "Toggle Integration"
+  trigger_guided_setup: "Trigger Guided Setup"
+  update_user_mcp_server: "Update User MCP Server"
+  validate_mcp_fragment: "Validate MCP Fragment"

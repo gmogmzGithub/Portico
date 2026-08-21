@@ -1,0 +1,545 @@
+<style>
+  .chat-workspace-consent-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 35, 36, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .chat-workspace-consent-modal.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  .platform-darwin .chat-workspace-consent-modal.visible {
+    -webkit-app-region: drag;
+  }
+
+  .chat-workspace-consent-content {
+    background: var(--bg-secondary, #2d3233);
+    border-radius: 16px;
+    padding: 22px;
+    width: min(720px, 94vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    animation: chatWorkspaceConsentSlideIn 0.3s ease-out;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
+  }
+
+  .platform-darwin .chat-workspace-consent-content,
+  .platform-darwin .chat-workspace-consent-content * {
+    -webkit-app-region: no-drag;
+  }
+
+  @keyframes chatWorkspaceConsentSlideIn {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .chat-workspace-consent-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary, #737373);
+    transition: all 0.2s ease;
+  }
+
+  .chat-workspace-consent-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #f3f4f6);
+  }
+
+  .chat-workspace-consent-hide-btn {
+    position: absolute;
+    top: 14px;
+    right: 50px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary, #737373);
+    transition: all 0.2s ease;
+  }
+
+  .chat-workspace-consent-hide-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #f3f4f6);
+  }
+
+  .chat-workspace-consent-header {
+    margin-bottom: 14px;
+    padding-right: 34px;
+  }
+
+  .chat-workspace-consent-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .chat-workspace-consent-title-logo-badge {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 999px;
+    /* The shared model-logo badge is transparent everywhere else in the app —
+       no tinted disc behind the logo. */
+    background: transparent;
+    color: var(--accent-primary-light, #d3e3ff);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .chat-workspace-consent-title-logo-badge.has-logo-image {
+    padding: 6px;
+    box-sizing: border-box;
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.18);
+  }
+
+  .chat-workspace-consent-title-logo-badge.dark-badge-light-mode {
+    background: #000000;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+
+  .chat-workspace-consent-title-logo-badge.has-logo-image.celestial-logo {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .chat-workspace-consent-title-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .chat-workspace-consent-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #f3f4f6);
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .chat-workspace-consent-panel {
+    background: var(--bg-surface, #323738);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .chat-workspace-consent-preamble {
+    margin: 0 0 14px;
+    padding: 16px 18px;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.18);
+    color: var(--text-secondary, #d1d5db);
+    font-size: 14px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+
+  .chat-workspace-consent-preamble[hidden] { display: none; }
+  .chat-workspace-consent-preamble > :first-child { margin-top: 0; }
+  .chat-workspace-consent-preamble > :last-child { margin-bottom: 0; }
+  .chat-workspace-consent-preamble p { margin: 0 0 10px; }
+  .chat-workspace-consent-preamble ol,
+  .chat-workspace-consent-preamble ul { margin: 8px 0 10px; padding-left: 24px; }
+  .chat-workspace-consent-preamble li + li { margin-top: 5px; }
+  .chat-workspace-consent-preamble li > p { margin: 0; }
+  .chat-workspace-consent-preamble code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: rgba(15, 23, 42, 0.34);
+    color: var(--text-primary, #f3f4f6);
+    font-size: 0.92em;
+  }
+  .chat-workspace-consent-preamble a {
+    color: var(--accent-primary-light, #d3e3ff);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .chat-workspace-consent-panel-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+
+  .chat-workspace-consent-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(var(--accent-primary-rgb, 79, 148, 255), 0.14);
+    color: var(--accent-primary-light, #d3e3ff);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .chat-workspace-consent-prompt {
+    font-size: 17px;
+    line-height: 1.35;
+    color: var(--text-primary, #f3f4f6);
+    margin: 0 0 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .chat-workspace-consent-path-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .chat-workspace-consent-path {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-primary, #f3f4f6);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .chat-workspace-consent-error {
+    display: none;
+    margin: 12px 0 0;
+    color: #fca5a5;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .chat-workspace-consent-error.visible {
+    display: block;
+  }
+
+  .chat-workspace-consent-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .chat-workspace-consent-actions-left,
+  .chat-workspace-consent-actions-right {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .chat-workspace-consent-actions-right {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+
+  .chat-workspace-consent-btn {
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .chat-workspace-consent-btn-primary {
+    background: var(--accent-primary, #4f94ff);
+    color: #ffffff;
+  }
+
+  .chat-workspace-consent-btn-primary:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #6aa6ff);
+  }
+
+  .chat-workspace-consent-btn-secondary {
+    background: var(--btn-secondary-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--btn-secondary-border, rgba(255, 255, 255, 0.1));
+    color: var(--text-primary, #f3f4f6);
+  }
+
+  .chat-workspace-consent-btn-secondary:hover:not(:disabled) {
+    background: var(--btn-secondary-hover, rgba(255, 255, 255, 0.1));
+  }
+
+  .chat-workspace-consent-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-modal {
+    background: rgba(245, 245, 245, 0.95);
+  }
+
+  [data-theme="light"] .chat-workspace-consent-content {
+    background: #ffffff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  [data-theme="light"] .chat-workspace-consent-title-logo-badge {
+    background: transparent;
+    color: #003a9b;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-title-logo-badge.has-logo-image {
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+
+  [data-theme="light"] .chat-workspace-consent-title-logo-badge.dark-badge-light-mode {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-title-logo-badge.has-logo-image.celestial-logo {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-title,
+  [data-theme="light"] .chat-workspace-consent-prompt,
+  [data-theme="light"] .chat-workspace-consent-path {
+    color: #0f172a;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-panel {
+    background: #f8fafc;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-preamble {
+    border-color: rgba(15, 23, 42, 0.1);
+    background: rgba(248, 250, 252, 0.92);
+    color: #475569;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-preamble code {
+    background: rgba(15, 23, 42, 0.07);
+    color: #0f172a;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-preamble a { color: #1d4ed8; }
+
+  [data-theme="light"] .chat-workspace-consent-tag {
+    background: rgba(0, 58, 155, 0.12);
+    color: #003a9b;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-path-row {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.1);
+  }
+
+  [data-theme="light"] .chat-workspace-consent-btn-primary {
+    background: var(--accent-primary, #003a9b);
+    color: #ffffff;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-btn-primary:hover:not(:disabled) {
+    background: var(--accent-primary-hover, #002c75);
+  }
+
+  [data-theme="light"] .chat-workspace-consent-btn-secondary {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #525252;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-btn-secondary:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .chat-workspace-consent-close-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #737373;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-close-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #111827;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-hide-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #737373;
+  }
+
+  [data-theme="light"] .chat-workspace-consent-hide-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #111827;
+  }
+
+  @media (max-width: 720px) {
+    .chat-workspace-consent-content {
+      padding: 18px;
+      width: min(100vw - 24px, 100%);
+    }
+
+    .chat-workspace-consent-title-row,
+    .chat-workspace-consent-panel-top,
+    .chat-workspace-consent-footer,
+    .chat-workspace-consent-path-row {
+      grid-template-columns: 1fr;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .chat-workspace-consent-actions-left,
+    .chat-workspace-consent-actions-right {
+      width: 100%;
+    }
+
+    .chat-workspace-consent-actions-right {
+      margin-left: 0;
+      justify-content: stretch;
+    }
+
+    .chat-workspace-consent-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<div
+  class="chat-workspace-consent-modal"
+  id="chat-workspace-consent-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
+  aria-labelledby="chat-workspace-consent-title"
+  aria-describedby="chat-workspace-consent-preamble chat-workspace-consent-prompt"
+>
+  <div class="chat-workspace-consent-content">
+    <button
+      class="chat-workspace-consent-hide-btn"
+      id="chat-workspace-consent-hide-btn"
+      type="button"
+      title="Hide workspace permission and return to chat"
+      aria-label="Hide workspace permission and return to chat"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
+    <button
+      class="chat-workspace-consent-close-btn"
+      id="chat-workspace-consent-close-btn"
+      type="button"
+      aria-label="Close"
+      title="Close"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="chat-workspace-consent-header">
+      <div class="chat-workspace-consent-title-row">
+        <span class="chat-workspace-consent-title-logo-badge" id="chat-workspace-consent-title-logo-badge" aria-hidden="true">
+          <img class="chat-workspace-consent-title-logo" id="chat-workspace-consent-title-logo" alt="" hidden>
+          <span id="chat-workspace-consent-title-logo-fallback">AI</span>
+        </span>
+        <h2 class="chat-workspace-consent-title" id="chat-workspace-consent-title">
+          Set Chat Workspace
+        </h2>
+      </div>
+    </div>
+
+    <div id="chat-workspace-consent-preamble" class="chat-workspace-consent-preamble" hidden></div>
+
+    <div class="chat-workspace-consent-panel">
+      <div class="chat-workspace-consent-panel-top">
+        <span class="chat-workspace-consent-tag">Workspace</span>
+      </div>
+      <h3 class="chat-workspace-consent-prompt" id="chat-workspace-consent-prompt">
+        Allow the agent to work inside of this folder?
+      </h3>
+      <div class="chat-workspace-consent-path-row">
+        <div class="chat-workspace-consent-path" id="chat-workspace-consent-path"></div>
+        <button
+          class="chat-workspace-consent-btn chat-workspace-consent-btn-secondary"
+          id="chat-workspace-consent-open-btn"
+          type="button"
+        >
+          Open
+        </button>
+      </div>
+      <p class="chat-workspace-consent-error" id="chat-workspace-consent-error"></p>
+    </div>
+
+    <div class="chat-workspace-consent-footer">
+      <div class="chat-workspace-consent-actions-left">
+        <button
+          class="chat-workspace-consent-btn chat-workspace-consent-btn-secondary"
+          id="chat-workspace-consent-cancel-btn"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+      <div class="chat-workspace-consent-actions-right">
+        <button
+          class="chat-workspace-consent-btn chat-workspace-consent-btn-primary"
+          id="chat-workspace-consent-approve-btn"
+          type="button"
+        >
+          Allow
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,4 @@
+{
+  "type": "streamable-http",
+  "url": "https://teamworks-mcp.sandbox.example.invalid/mcp"
+}

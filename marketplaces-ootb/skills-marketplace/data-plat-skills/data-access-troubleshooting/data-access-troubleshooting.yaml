@@ -1,0 +1,6 @@
+skill_name: data-access-troubleshooting
+domain: data-platform
+topic: data-access
+description: Diagnoses data access issues by checking principal tags and guiding users through the access request process for DataLake, Logrepo, and Cortex agents
+owner: data-platform
+is_public: true

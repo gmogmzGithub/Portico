@@ -1,0 +1,21 @@
+name: Teamworks MCP Server
+id: teamworks-mcp
+display_name: Teamworks
+deployment_type: docker
+description:
+  Access team and employee data from the Teamworks Service - look up teams
+  by ID, employees by LDAP, team membership, and reporting relationships.
+guided_setup_description: Look up teams, employees, and reporting lines
+user_installed: false
+is_core: false
+required_env_vars: []
+use_cases:
+  - Look up team information by team ID
+  - Find employees by LDAP ID
+  - Get all members of a team
+  - Find direct reports for a manager
+tool_rename_mapping:
+  Getemployeesbymanagerid: "Get Employees by Manager ID"
+  Getteamsbyid: "Get Teams by ID"
+  Getemployeesbyldap: "Get Employees by LDAP"
+  Getemployeesbyteamid: "Get Employees by Team ID"

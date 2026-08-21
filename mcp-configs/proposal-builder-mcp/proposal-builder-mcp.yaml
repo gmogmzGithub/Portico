@@ -1,0 +1,14 @@
+deployment_type: docker
+description: Portico Community Proposal Builder MCP server with OAuth authentication
+display_name: Proposal Builder
+id: proposal-builder-mcp
+is_core: false
+name: Proposal Builder MCP
+required_env_vars: []
+user_installed: false
+always_enabled: false
+
+oauth:
+  type: dcr
+  provider: proposal-builder-mcp
+  requires_user_authorization: true

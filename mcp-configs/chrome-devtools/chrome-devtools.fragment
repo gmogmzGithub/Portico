@@ -1,0 +1,24 @@
+{
+  "command": "__portico_managed_node_package__",
+  "args": [],
+  "managed_node_package": {
+    "schema_version": 1,
+    "server_id": "chrome-devtools",
+    "package_manager": "npm",
+    "requested_spec": "chrome-devtools-mcp@0.26.0",
+    "package_name": "chrome-devtools-mcp",
+    "requested_range": "0.26.0",
+    "runtime_args": [
+      "--autoConnect"
+    ],
+    "bin": "chrome-devtools-mcp",
+    "source": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@0.26.0",
+        "--autoConnect"
+      ]
+    }
+  }
+}

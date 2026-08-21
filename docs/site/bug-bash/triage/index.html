@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jupiter Bug-Bash Triage — 39 PORTICO Tickets, Delivery Status Refreshed</title>
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --good-text: #006300;
+    --link: #1c5cab;
+    --rec-fixnow: #2a78d6;   /* slot 1 blue */
+    --rec-coord:  #1baf7a;   /* slot 2 aqua */
+    --rec-later:  #eda100;   /* slot 3 yellow */
+    --rec-close:  #008300;   /* slot 4 green */
+    --ink-on-fixnow: #ffffff;
+    --ink-on-coord:  #0b0b0b;
+    --ink-on-later:  #0b0b0b;
+    --ink-on-close:  #ffffff;
+    --track: #ecebe6;
+    --warn-chip: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-3: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --good-text: #0ca30c;
+      --link: #6da7ec;
+      --rec-fixnow: #3987e5;
+      --rec-coord:  #199e70;
+      --rec-later:  #c98500;
+      --rec-close:  #008300;
+      --ink-on-fixnow: #ffffff;
+      --ink-on-coord:  #0b0b0b;
+      --ink-on-later:  #0b0b0b;
+      --ink-on-close:  #ffffff;
+      --track: #262624;
+      --warn-chip: #e5b566;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink-1);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 24px 64px; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 24px; margin-bottom: 20px;
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 0 0 2px; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 0; }
+  .subtle { color: var(--ink-3); font-size: 12px; }
+  .sectionlabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 10px; font-weight: 600; }
+  a.ext { color: var(--link); text-decoration: none; }
+  a.ext:hover { text-decoration: underline; }
+
+  /* Banner */
+  .banner { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+  .hero { font-size: 56px; font-weight: 650; line-height: 1; }
+  .hero small { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; }
+  .banner .answer { flex: 1; min-width: 320px; }
+  .answer p { margin: 6px 0 0; color: var(--ink-2); }
+  .answer .verdict-line { font-size: 17px; font-weight: 650; color: var(--ink-1); margin: 0; }
+
+  /* KPI row */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .label { font-size: 12px; color: var(--ink-2); }
+  .tile .value { font-size: 30px; font-weight: 650; margin-top: 2px; }
+  .tile .hint { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+
+  /* Verdict strip */
+  .vstrip { display: flex; flex-wrap: wrap; gap: 10px 28px; }
+  .vitem { display: flex; align-items: baseline; gap: 8px; }
+  .vitem .n { font-size: 26px; font-weight: 650; }
+  .vitem .vn { font-size: 13px; color: var(--ink-2); }
+  .vicon { font-weight: 700; }
+
+  /* Filter bar */
+  .filterbar { position: sticky; top: 0; z-index: 5; box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+  .frow { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+  .frow + .frow { margin-top: 10px; }
+  .fcontrol { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .fgrouplabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 600; margin-right: 2px; }
+  button.ftog {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-2);
+    background: transparent; border: 1px solid var(--baseline); border-radius: 999px;
+    padding: 3px 11px; cursor: pointer;
+  }
+  button.ftog[aria-pressed="true"] { color: var(--ink-1); border-color: var(--ink-1); background: color-mix(in srgb, var(--ink-1) 6%, transparent); }
+  button.ftog .swatch { width: 9px; height: 9px; }
+  button.ftog:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 1px; }
+  select, input[type="search"] {
+    font: inherit; font-size: 12.5px; color: var(--ink-1);
+    background: var(--surface-1); border: 1px solid var(--baseline); border-radius: 6px;
+    padding: 4px 8px;
+  }
+  input[type="search"] { width: 240px; }
+  .fcount { margin-left: auto; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .fcount strong { color: var(--ink-1); }
+  button.freset {
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-2);
+    background: transparent; border: none; cursor: pointer; text-decoration: underline; padding: 2px 4px;
+  }
+  .progress-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .progress-summary .fgrouplabel { margin: 0; }
+  .progress-track { flex: 1; min-width: 120px; height: 7px; overflow: hidden; border-radius: 999px; background: var(--track); }
+  .progress-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--rec-close); transition: width 160ms ease; }
+  .progress-text { color: var(--ink-2); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .progress-text strong { color: var(--ink-1); }
+  .progress-note { color: var(--ink-3); font-size: 11.5px; white-space: nowrap; }
+
+  /* Rec bars */
+  .recrow { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+  .recname { display: flex; align-items: center; gap: 8px; font-size: 13px; justify-content: flex-end; text-align: right; color: var(--ink-1); font-weight: 600; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .recbarzone { position: relative; height: 22px; }
+  .recbar { position: absolute; top: 0; left: 0; height: 22px; border-radius: 0 4px 4px 0; }
+  .recbar-label { position: absolute; top: 0; height: 22px; display: flex; align-items: center; font-size: 12.5px; font-weight: 650; color: var(--ink-1); font-variant-numeric: tabular-nums; }
+  .recdesc { grid-column: 2; font-size: 11.5px; color: var(--ink-3); margin-top: -6px; }
+
+  /* Fleet callout */
+  .fleet { border-left: 4px solid var(--rec-coord); }
+  .fleet p { margin: 6px 0; color: var(--ink-2); }
+  .fleet strong { color: var(--ink-1); }
+  .fleet ul { margin: 8px 0 0 18px; padding: 0; color: var(--ink-2); font-size: 13px; }
+  .fleet li { margin: 3px 0; }
+
+  /* Clusters */
+  .clusterrow { display: grid; grid-template-columns: 230px 40px 1fr; gap: 12px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--grid); }
+  .clusterrow:last-child { border-bottom: none; }
+  .cname { font-size: 13px; font-weight: 600; }
+  .ccount { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 2px; }
+  a.chip {
+    display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px;
+    font-size: 11.5px; font-weight: 650; text-decoration: none; cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  a.chip:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 1px; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--grid); }
+  .legend .li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+
+  /* Table */
+  .tickets-card {
+    width: min(96vw, 1760px);
+    position: relative; left: 50%; transform: translateX(-50%);
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #ttable { table-layout: fixed; min-width: 1450px; }
+  #ttable td { overflow-wrap: break-word; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 600; padding: 0; border-bottom: 1px solid var(--baseline); }
+  th.plain { padding: 8px 10px; }
+  th button.sortbtn {
+    all: unset; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+    font: inherit; color: inherit; padding: 8px 10px; width: 100%;
+  }
+  th button.sortbtn:hover { color: var(--ink-1); }
+  th button.sortbtn:focus-visible { outline: 2px solid var(--ink-1); outline-offset: -2px; }
+  th .arrow { font-size: 10px; }
+  th[aria-sort] button.sortbtn { color: var(--ink-1); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  tr.trow:hover td { background: color-mix(in srgb, var(--ink-1) 3%, transparent); }
+  tr.trow.is-done td { background: color-mix(in srgb, var(--rec-close) 7%, var(--surface-1)); }
+  tr.trow.is-done:hover td { background: color-mix(in srgb, var(--rec-close) 11%, var(--surface-1)); }
+  tr.trow.is-done .ttitle { text-decoration: line-through; text-decoration-thickness: 1px; color: var(--ink-2); }
+  td.done-cell { text-align: center; }
+  .done-check { width: 17px; height: 17px; margin: 1px 0 0; cursor: pointer; accent-color: var(--rec-close); }
+  td.key { font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.key a { color: var(--link); text-decoration: none; }
+  td.key a:hover { text-decoration: underline; }
+  .rep { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); margin-top: 2px; }
+  td.vcell { white-space: nowrap; }
+  .badge {
+    display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 650; white-space: nowrap;
+  }
+  .mrcell { font-variant-numeric: tabular-nums; }
+  .mrcell a { color: var(--link); text-decoration: none; }
+  .mrcell a:hover { text-decoration: underline; }
+  .mrwarn { color: var(--warn-chip); font-weight: 700; cursor: help; }
+  td.impact { color: var(--ink-1); }
+  details.evd { margin-top: 6px; }
+  details.evd summary { cursor: pointer; font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  details.evd ul { margin: 6px 0 2px 16px; padding: 0; }
+  details.evd li { margin: 3px 0; font-size: 12px; color: var(--ink-2); }
+  details.evd code, .why code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; background: color-mix(in srgb, var(--ink-1) 6%, transparent); padding: 0 4px; border-radius: 3px; }
+  details.repro { margin-top: 7px; border: 1px solid var(--grid); border-radius: 6px; background: color-mix(in srgb, var(--surface-1) 78%, transparent); }
+  details.repro summary { cursor: pointer; list-style: none; padding: 6px 8px; font-size: 12px; font-weight: 650; color: var(--ink-2); }
+  details.repro summary::-webkit-details-marker { display: none; }
+  details.repro summary::after { content: "▸"; float: right; color: var(--ink-3); }
+  details.repro[open] summary::after { content: "▾"; }
+  details.repro .repro-body { border-top: 1px solid var(--grid); padding: 7px 9px 8px; }
+  details.repro ol { margin: 5px 0 7px 18px; padding: 0; }
+  details.repro li, details.repro p { margin: 3px 0; font-size: 12px; color: var(--ink-2); }
+  .repro-status { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 999px; font-size: 10.5px; letter-spacing: .02em; }
+  .repro-status.reproduced { background: rgba(190, 48, 48, .16); color: var(--ink-1); }
+  .repro-status.not-reproduced { background: rgba(0, 131, 0, .13); color: var(--good-text); }
+  .repro-status.inconclusive { background: rgba(237, 161, 0, .16); color: var(--warn-chip); }
+  .repro-env { color: var(--ink-3); font-size: 11.5px; }
+  .checknote { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .why { color: var(--ink-2); font-size: 12.5px; }
+  .ttitle { font-weight: 600; margin-bottom: 2px; }
+  tr.hl td { background: color-mix(in srgb, var(--rec-fixnow) 10%, transparent) !important; }
+  tr.emptyrow td { text-align: center; color: var(--ink-3); padding: 24px 10px; }
+
+  /* Tooltip */
+  #tip {
+    position: fixed; z-index: 10; pointer-events: none; display: none;
+    background: var(--ink-1); color: var(--surface-1);
+    padding: 7px 10px; border-radius: 6px; font-size: 12px; max-width: 340px; line-height: 1.4;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  #tip .t-key { font-weight: 700; }
+  #tip .t-meta { opacity: 0.75; }
+
+  .foot { color: var(--ink-3); font-size: 12px; }
+  .foot code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+  .status-refresh { border-left: 4px solid var(--rec-fixnow); }
+  .status-refresh ul { margin: 9px 0 0 18px; padding: 0; color: var(--ink-2); }
+  .status-refresh li { margin: 5px 0; }
+  .delivery-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+  .delivery-badge.closed { color: var(--ink-1); background: rgba(137,135,129,.18); }
+  .delivery-badge.active { color: var(--ink-1); background: rgba(27,175,122,.18); }
+  .delivery-badge.pending { color: var(--warn-chip); background: rgba(237,161,0,.16); }
+  .delivery-badge.open { color: var(--link); background: color-mix(in srgb, var(--link) 13%, transparent); }
+  .delivery-badge.descoped { color: var(--warn-chip); background: rgba(237,161,0,.16); }
+  .delivery-scope { display: block; margin-top: 3px; color: var(--ink-3); font-size: 10.5px; }
+  .delivery-note { margin-top: 5px; color: var(--ink-2); font-size: 11.5px; line-height: 1.4; }
+  .delivery-note a { color: var(--link); text-decoration: none; }
+  .delivery-note a:hover { text-decoration: underline; }
+  @media print { .card { break-inside: avoid; } .filterbar { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header style="margin-bottom:20px;">
+    <h1>Jupiter Bug-Bash Triage</h1>
+    <p class="sub">Code-verified triage and user-perspective reproduction pass for the original 39 <strong>jupiter</strong>-labeled PORTICO bug tickets (clean target <code style="font-family:ui-monospace,monospace;">pre-beta-tmp</code> @ df343515 plus the foreground source app) &nbsp;·&nbsp; audit 2026-07-12 &nbsp;·&nbsp; Jira/GitLab/Slack delivery status refreshed 2026-07-15 against <code style="font-family:ui-monospace,monospace;">origin/pre-beta-tmp</code> @ 380d85ca</p>
+    <p class="subtle">Method: the original one-ticket-per-investigator code audit and adversarial citation check, followed by a priority-ordered reproduction pass. The refresh read all 39 current Jira records and transition histories, the linked GitLab MRs, remote target history, and the July 12–15 bug-bash Slack channel via PORTICO's read-only Slack MCP bridge. Tracker disposition is shown separately from the technical verdict.</p>
+  </header>
+
+  <section class="card banner">
+    <div class="hero">35<span style="color:var(--ink-3);">/39</span><small>tickets confirmed in code</small></div>
+    <div class="answer">
+      <p class="verdict-line">Code-verified triage of the original 39-ticket Jupiter bug-bash cohort.</p>
+      <p><strong>35 remain confirmed defects</strong> with exact <code style="font-family:ui-monospace,monospace;">file:line</code> evidence or runnable repros. Two are now recognized as already fixed or superseded (PORTICO-197 and PORTICO-153), one describes a capability that was never shipped (PORTICO-184), and one is an accurate report owned by an upstream service (PORTICO-156). Delivery moved while the technical findings largely did not: <strong>11 tickets are now closed in Jira, three were removed from Jupiter, and two PORTICO-205 MRs landed.</strong></p>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="tile"><div class="label">Original cohort</div><div class="value">39</div><div class="hint">the July 9 snapshot retained below</div></div>
+    <div class="tile"><div class="label">Confirmed real</div><div class="value">35</div><div class="hint">technical verdict after refresh</div></div>
+    <div class="tile"><div class="label">Cohort still open in Jupiter</div><div class="value">25</div><div class="hint">11 closed + 3 de-scoped</div></div>
+    <div class="tile"><div class="label">Closed in Jira</div><div class="value">11</div><div class="hint">only one newly closed item is code-fixed</div></div>
+    <div class="tile"><div class="label">PORTICO-205 MRs landed</div><div class="value">2</div><div class="hint">!147 and !160; !164 remains open</div></div>
+    <div class="tile"><div class="label">Live open Jupiter queue</div><div class="value">29</div><div class="hint">25 cohort + 4 newer tickets</div></div>
+  </section>
+
+  <section class="card">
+    <p class="sectionlabel">Verdicts</p>
+    <div class="vstrip">
+      <div class="vitem"><span class="vicon" style="color:var(--good-text);">✓</span><span class="n">35</span><span class="vn">CONFIRMED — defect verified in code or by repro</span></div>
+      <div class="vitem"><span class="vicon">✗</span><span class="n">1</span><span class="vn">NOT-A-BUG (PORTICO-184)</span></div>
+      <div class="vitem"><span class="vicon">⟳</span><span class="n">2</span><span class="vn">ALREADY-FIXED / SUPERSEDED (PORTICO-153, PORTICO-197)</span></div>
+      <div class="vitem"><span class="vicon">⤴</span><span class="n">1</span><span class="vn">OUT-OF-SCOPE (PORTICO-156)</span></div>
+    </div>
+    <p class="subtle" style="margin-top:10px;">These are technical verdicts, not Jira resolutions. Jira now labels PORTICO-177 a duplicate of PORTICO-175 and PORTICO-166 “Cannot reproduce”; the code/reproduction audit still found distinct PORTICO-175/PORTICO-177 root causes and reproduced PORTICO-166. The disagreement is retained rather than silently rewriting the evidence.</p>
+  </section>
+
+  <section class="card status-refresh">
+    <h2>What changed while the report was idle</h2>
+    <ul>
+      <li><strong>Actually shipped:</strong> PORTICO-205 Phase 1 (<a class="ext" data-mr="147">!147</a>) merged July 13 and Phase 2 (<a class="ext" data-mr="160">!160</a>) merged July 14. Phase 3 (<a class="ext" data-mr="164">!164</a>) is open, green, and mergeable.</li>
+      <li><strong>Closed without landing their proposed fixes:</strong> Won't Do — PORTICO-155, PORTICO-156, PORTICO-163, PORTICO-174, PORTICO-178, PORTICO-179, PORTICO-184, PORTICO-188; Duplicate — PORTICO-177; Cannot reproduce — PORTICO-166. PORTICO-153 is the exception: it closed Fixed because GPT-4.1 was superseded by GPT-5.6 in <a class="ext" href="https://example.invalid/portico/portico/-/commit/8d329c5aba945d2dd43fe8b2e18a1047c3bea603" target="_blank" rel="noopener">8d329c5a</a>.</li>
+      <li><strong>Removed from the Jupiter release but left open:</strong> PORTICO-150, PORTICO-173, and PORTICO-189 lost both the Jupiter label and PORTICO-108 parent on July 13.</li>
+      <li><strong>Stronger and ready for a decision:</strong> Andrii Riazanov independently reproduced PORTICO-169 in the bug-bash Slack thread, posted before/after validation, and approved <a class="ext" data-mr="92">!92</a>; the MR is green and mergeable.</li>
+      <li><strong>New work outside this 39-ticket cohort:</strong> <a class="ext" href="https://portico.atlassian.net/browse/PORTICO-227" target="_blank" rel="noopener">PORTICO-227</a>, <a class="ext" href="https://portico.atlassian.net/browse/PORTICO-233" target="_blank" rel="noopener">PORTICO-233</a>, <a class="ext" href="https://portico.atlassian.net/browse/PORTICO-238" target="_blank" rel="noopener">PORTICO-238</a>, and <a class="ext" href="https://portico.atlassian.net/browse/PORTICO-241" target="_blank" rel="noopener">PORTICO-241</a> bring the live open-Jupiter queue to 29. PORTICO-238's <a class="ext" data-mr="162">!162</a> is green but conflict-blocked; PORTICO-241's <a class="ext" data-mr="165">!165</a> is green and mergeable; PORTICO-227/PORTICO-233 remain Pending Triage.</li>
+    </ul>
+    <p class="subtle" style="margin-top:9px;">“Closed” here is a tracker disposition, not a synonym for code-fixed. Verdict and Rec preserve the audit's technical judgment; neither overrides the current Jira decision. The ticket table keeps both dimensions visible and marks every changed row.</p>
+  </section>
+
+  <section class="card fleet">
+    <h2>The delivery queue moved: two MRs landed; 33 counted fix proposals remain open</h2>
+    <p>The original report counted 34 proposed fix MRs and called all of them unmerged. That is now stale in two directions: <strong>32 of those original MRs remain open</strong>, while PORTICO-156’s <a class="ext" data-mr="76">!76</a> and PORTICO-153’s <a class="ext" data-mr="90">!90</a> closed without merge. PORTICO-205 then added two merged MRs (<a class="ext" data-mr="147">!147</a>, <a class="ext" data-mr="160">!160</a>) and one open final phase (<a class="ext" data-mr="164">!164</a>). That leaves <strong>33 open fix proposals tied to this cohort</strong>, many attached to Jira tickets that product has already closed or that should not land. PORTICO-164's additionally open <a class="ext" data-mr="87">!87</a> is excluded from that count because it edits a dead path and was never a valid fleet proposal.</p>
+    <p>The queue is still primarily a review/decision problem, but the current blockers are broader than the July 12 callout:</p>
+    <ul id="fleetlist">
+      <li><strong>PORTICO-164 (<a class="ext" data-mr="87">!87</a>)</strong> — do not land: the MR changes a dead Python path. The live failure is in the Rust artifact manager (prefix collision, transient Docker-inspect race, and UI status gating); no valid replacement MR exists yet.</li>
+      <li><strong>PORTICO-184 (<a class="ext" data-mr="107">!107</a>)</strong> — do not land: Jira is Won't Do and the audit found no shipped Slack canvas capability to repair; this guard MR is unnecessary.</li>
+      <li><strong>PORTICO-175 (<a class="ext" data-mr="98">!98</a>)</strong> — the Rust half self-defeats: <code>user_server_path</code> bails on exactly the legacy-collision case the fix tries to detect. Needs rework, not just merge.</li>
+      <li><strong>PORTICO-176 (<a class="ext" data-mr="101">!101</a>)</strong> — misses the reported repro path: the busy error is thrown at lease acquisition, before the MR’s retry handling can run.</li>
+      <li><strong>PORTICO-178 (<a class="ext" data-mr="102">!102</a>)</strong> — does not cover the ticket’s addendum (stale agent-vm ID after VM recovery); split that to its own ticket before closing on merge.</li>
+      <li><strong>PORTICO-192 (<a class="ext" data-mr="114">!114</a>) / PORTICO-165 (<a class="ext" data-mr="89">!89</a>)</strong> — branch bases predate the PORTICO-161 error-sanitization rewrite; regression tests assert raw error text the sanitizer now rewrites. Rebase first.</li>
+      <li><strong>PORTICO-166 (<a class="ext" data-mr="88">!88</a>)</strong> — covers only part of the reproduced auth-state problem; Jira nevertheless closed the broad ticket Cannot reproduce after related PORTICO-244 work landed.</li>
+      <li><strong>PORTICO-173 (<a class="ext" data-mr="97">!97</a>) / PORTICO-172 (<a class="ext" data-mr="99">!99</a>)</strong> — both are now conflict-blocked against the target. PORTICO-173 was also removed from Jupiter.</li>
+    </ul>
+    <p class="subtle" style="margin-top:8px;"><strong>Ready signal:</strong> PORTICO-169’s <a class="ext" data-mr="92">!92</a> is independently reproduced, approved, green, and mergeable. <strong>Previously updated during the reproduction pass:</strong> <a class="ext" data-mr="80">!80</a> and <a class="ext" data-mr="103">!103</a> were rebased onto the then-current target after their real callback/tier repros.</p>
+    <p class="subtle" style="margin-top:8px;">Merge-order dependencies flagged by ticket comments and verified: <a class="ext" data-mr="108">!108</a>↔<a class="ext" data-mr="109">!109</a> (agent-vm), <a class="ext" data-mr="84">!84</a>↔<a class="ext" data-mr="86">!86</a> (skills-server), <a class="ext" data-mr="82">!82</a>↔<a class="ext" data-mr="85">!85</a> (activate_integration), <a class="ext" data-mr="103">!103</a>→PORTICO-181 zip rebuild.</p>
+  </section>
+
+  <section class="card filterbar" aria-label="Filters — scope the recommendation bars, cluster map, and table below">
+    <div class="progress-summary" aria-live="polite">
+      <span class="fgrouplabel">Progress</span>
+      <div class="progress-track" id="progress-track" role="progressbar" aria-label="Tickets completed" aria-valuemin="0" aria-valuemax="39" aria-valuenow="0">
+        <span class="progress-fill" id="progress-fill"></span>
+      </div>
+      <span class="progress-text" id="progress-text"></span>
+      <span class="progress-note" id="progress-note">Saved in this browser</span>
+    </div>
+    <div class="frow">
+      <span class="fgrouplabel">Recommendation</span>
+      <span id="frecs"></span>
+      <span class="fgrouplabel" style="margin-left:12px;">Verdict</span>
+      <span id="fverdicts"></span>
+      <span class="fgrouplabel" style="margin-left:12px;">Severity</span>
+      <span id="fsevs"></span>
+    </div>
+    <div class="frow">
+      <span class="fcontrol">
+        <span class="fgrouplabel">Completion</span>
+        <select id="fprogress" aria-label="Filter by completion status">
+          <option value="all">All tickets</option>
+          <option value="remaining">Remaining</option>
+          <option value="done">Done</option>
+        </select>
+      </span>
+      <span class="fcontrol">
+        <span class="fgrouplabel">Cluster</span>
+        <select id="fcluster" aria-label="Filter by cluster"></select>
+      </span>
+      <span class="fcontrol">
+        <span class="fgrouplabel">Reporter</span>
+        <select id="frep" aria-label="Filter by reporter"></select>
+      </span>
+      <span class="fcontrol">
+        <span class="fgrouplabel">Fix MR</span>
+        <select id="fmr" aria-label="Filter by fix MR status">
+          <option value="all">All</option>
+          <option value="has">Has MR / landed commit</option>
+          <option value="warn">MR needs action ⚠</option>
+          <option value="none">No MR</option>
+        </select>
+      </span>
+      <span class="fcontrol">
+        <span class="fgrouplabel">Delivery</span>
+        <select id="fdelivery" aria-label="Filter by current Jira and delivery status">
+          <option value="all">All</option>
+          <option value="changed">Changed / corrected in refresh</option>
+          <option value="closed">Closed in Jira</option>
+          <option value="descoped">Removed from Jupiter</option>
+          <option value="active">In Progress</option>
+          <option value="open">Open / Pending</option>
+        </select>
+      </span>
+      <button class="ftog" id="fqw" aria-pressed="false" title="Confirmed + small fix"><span style="color:var(--good-text);">●</span> Quick wins only</button>
+      <button class="ftog" id="fmulti" aria-pressed="false" title="Defects with more than one independent report">Reported 2+ times</button>
+      <input type="search" id="fq" placeholder="Search title, impact, evidence…" aria-label="Search tickets">
+      <span class="fcount" id="fcount"></span>
+      <button class="freset" id="freset">Reset</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <p class="sectionlabel">Recommendations — preserved technical action, not current Jira state <span id="recscope" style="text-transform:none; letter-spacing:0;"></span></p>
+    <div id="recbars"></div>
+    <div class="legend" id="reclegend"></div>
+  </section>
+
+  <section class="card">
+    <p class="sectionlabel">Clusters — every ticket, colored by recommendation</p>
+    <div id="clusters"></div>
+    <div class="legend" id="clusterlegend"></div>
+  </section>
+
+  <section class="card tickets-card">
+    <p class="sectionlabel">Tickets — technical verdict and current delivery status</p>
+    <p class="subtle" style="margin:0 0 10px;"><strong>Check Done as you work; progress is saved locally in this browser and survives reloads.</strong> Ticket keys link to Jira; MR numbers link to GitLab. <strong>Delivery</strong> is the live Jira/GitLab refresh; <strong>Verdict</strong> remains the independent code/reproduction finding, so a Closed / Won't Do or Cannot reproduce badge can intentionally sit beside CONFIRMED. <strong>Rec</strong> is likewise the preserved technical recommendation and does not instruct the team to reopen or merge a Jira-closed item. Click a column header to sort; expand <strong>reproduction</strong> for the 2026-07-12 attempt and “evidence” for file:line citations. After reconciling PORTICO-153's absent picker entry with its landed replacement, the pass stands at <strong>32 reproduced, 3 not reproduced, and 4 inconclusive</strong>. ⚠ = referenced MR needs rework, rebase, conflict resolution, or should not land. ● = quick win. Severity is this triage's user-impact judgment, not Jira priority. <strong>Reports</strong> counts independent report events; hover the count for reporters.</p>
+    <table id="ttable">
+      <colgroup>
+        <col style="width:66px"><col style="width:112px"><col style="width:128px"><col style="width:112px"><col style="width:88px"><col style="width:76px"><col style="width:52px"><col style="width:116px"><col style="width:205px"><col><col>
+      </colgroup>
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <footer class="foot card" style="margin-bottom:0;">
+    <p style="margin:0 0 6px;"><strong>Original audit method.</strong> The 39-ticket cohort came from the 2026-07-09 JQL snapshot. Each ticket's description/comments and implicated code path were read end-to-end, challenged by a second adversarial pass, screened for duplicates, and checked against target history. A user-perspective reproduction pass followed on 2026-07-12. The expandable evidence and reproduction sections preserve that audit rather than treating later tracker closure as technical refutation.</p>
+    <p style="margin:0 0 6px;"><strong>2026-07-15 status refresh.</strong> An authenticated read-only Jira list using the explicit 39 keys returned 39/39 current records; the same list plus <code>labels in (jupiter, Jupiter)</code> returned 36/36, isolating PORTICO-150, PORTICO-173, and PORTICO-189 as de-scoped. Status totals are 11 Closed, 4 In Progress, 23 To Do, and 1 Pending Triage. GitLab's API and fetched <code>origin/pre-beta-tmp</code> established MR/commit state. PORTICO's Slack MCP bridge searched the July 12–15 bug-bash channel read-only; PORTICO-169 was the only cohort ticket with a substantive status thread in that window.</p>
+    <p style="margin:0;">Constraints: the reproduction pass's unsafe, destructive, unavailable-service, and long-duration cases remain marked inconclusive. The current live open-Jupiter query has 29 tickets: 25 still-open members of this cohort plus PORTICO-227, PORTICO-233, PORTICO-238, and PORTICO-241, which were created after the original snapshot and are listed here only as scope drift.</p>
+  </footer>
+
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const GITLAB = "https://example.invalid/portico/portico";
+const JIRA = "https://portico.atlassian.net/browse/";
+const REC = {
+  "FIX-NOW":    { color: "var(--rec-fixnow)", ink: "var(--ink-on-fixnow)", desc: "real, meaningful user impact, reasonable cost" },
+  "COORDINATE": { color: "var(--rec-coord)",  ink: "var(--ink-on-coord)",  desc: "real; coordinate with the current owner / MR, subject to the live tracker decision" },
+  "FIX-LATER":  { color: "var(--rec-later)",  ink: "var(--ink-on-later)",  desc: "real but low impact; backlog" },
+  "CLOSE":      { color: "var(--rec-close)",  ink: "var(--ink-on-close)",  desc: "refuted or already fixed; not worth tracking" },
+};
+const VICON = { "CONFIRMED": "✓", "NOT-A-BUG": "✗", "ALREADY-FIXED": "⟳", "OUT-OF-SCOPE": "⤴" };
+const recOrder = ["FIX-NOW","COORDINATE","FIX-LATER","CLOSE"];
+const verdictOrder = ["CONFIRMED","NOT-A-BUG","ALREADY-FIXED","OUT-OF-SCOPE"];
+
+// mr: display string | mrn: GitLab MR number | mrc: commit hash | mrb: branch (for link building)
+// rep: JIRA reporter · impact: what a user actually experiences (plain language)
+const DATA = [
+{k:"PORTICO-206", t:"Spurious “System note: no verified MCP tool call was recorded” appended to correct responses", c:"Tool-call validation", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!131", mrn:131, warn:false, qw:true, rep:"Tommy Omen",
+ impact:"After a perfectly good answer, the assistant sometimes tacks on a note implying it lied about running a tool — casting doubt on correct answers. The note is saved into the chat for good.",
+ why:"Client-side guard in Chat.svelte injects the note into persisted message content; its regexes false-positive on instructional text, code-fenced example JSON, even “and/or” (reproduced by running the actual regexes in node). Fix !131 unmerged (land branch tip aae4ffae).",
+ ev:["Chat.svelte:2851 — guard appends the note into persisted user-visible content; zero logging in the guard (matches empty debug-bundle logs)","Chat.svelte:2817–2821 — reconciliation ignores message.tool_calls from interim stream events → legit tool runs look unrecorded","Chat.svelte:1818–1827 — node repro: “run the command `ls -la`” ⇒ match; fenced example tool JSON ⇒ match; plain answer ⇒ no match","fix 0a98fa04 on origin/indie/fix-portico206-231; merge-base confirms NOT in pre-beta-tmp"],
+ note:"Checker: ticket blamed backend middleware.py — symptom real, component wrong (it’s the Chat UI layer). Not a duplicate of PORTICO-191 (separate backend guard)."},
+{k:"PORTICO-205", t:"OrbStack Docker storage grows 100GB/month after repeated PORTICO builds/runs", c:"Agent VM & Docker", v:"CONFIRMED", r:"COORDINATE", s:"M", mr:"!164 (+ !147/!160 merged)", mrn:164, warn:false, qw:false, rep:"Oleksandr Dubovenko",
+ impact:"The app quietly eats ~100GB of disk per month on the user’s Mac. Eventually the machine runs out of space and everything slows or fails, until someone manually cleans up Docker.",
+ why:"The root cause was confirmed and is being fixed in phases. !147 landed safe cleanup plus a one-time BuildKit GC migration; !160 landed cache-regeneration reduction, diagnostics, and OCI ownership labels; !164 is open, green, and mergeable for lifecycle automation and Control Plane diagnostics.",
+ ev:["f6217705 / !147 — merged 2026-07-13: portico-docker-cleanup + one-time BuildKit GC policy migration","7ba41472 / !160 — merged 2026-07-14: isolate volatile npm layers, add layer-reuse diagnostics and ownership labels","!160 reports approximately 92% lower incremental build-cycle storage growth in its measured fixture","!164 (e782a162) — open, pipeline green, mergeable: automated cleanup/GC hooks and footprint diagnostics"],
+ note:"Materially mitigated, not fully closed: Phase 3 automation remains open. Duplicate Phase 2 MR !163 closed unmerged after !160 covered the work."},
+{k:"PORTICO-197", t:"Follow-up questions in scheduled task output chats do not work", c:"Scheduling", v:"ALREADY-FIXED", r:"CLOSE", s:"—", mr:"fixed: c3b79f19", mrc:"c3b79f19", warn:false, qw:false, rep:"Oleksandr Dubovenko",
+ impact:"You couldn’t reply to a scheduled task’s result chat to ask a follow-up — the conversation was dead. On current builds this already works; the fix shipped before the ticket was filed.",
+ why:"The exact requested behavior (scheduled output chats owned by the human user, trusted metadata preserved across saves) merged to pre-beta-tmp on 2026-06-25 — 11 days before filing. The reporter authored that fix commit himself; the July 3 bug-bash build already contained it.",
+ ev:["c3b79f19 (merged 2026-06-25) — ancestor of HEAD, verified with git merge-base","chats.py:980–997,1448–1453 — service-created scheduled chats remapped to the primary human user","chats.py:1017–1035,1871 — trusted scheduled metadata preserved across human saves","subagents.rs:3508–3517 — daemon stamps run_origin=scheduled meta so the remap always triggers"],
+ note:"Close with “reopen if reproducible on a build ≥ 2026-06-25”. If it does reproduce there, it is a different defect than described."},
+{k:"PORTICO-192", t:"Artifacts: create_artifact_version silently truncates over-length version_note", c:"Artifacts", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!114", mrn:114, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"When saving a new version of an artifact with a descriptive note, anything past ~50 characters is silently thrown away — the rest of your note is just gone, with no warning.",
+ why:"version_note is silently cut to 47 chars + “...” with no error, while the tool spec declares maxLength 50 and nothing enforces it. Fix !114 written but based before the PORTICO-161 sanitization rewrite — rebase before merge.",
+ ev:["artifacts.rs:9 — MAX_VERSION_NOTE_LEN = 50","artifacts.rs:537–545,1350–1355 — truncate_version_note() keeps 47+“...”, returns no error","tool_spec.json declares maxLength:50; no schema enforcement found in core-mcp-shared or mcp-orc"],
+ note:"Checker: PORTICO-161 (1c993e98) rewrote the artifacts error dispatcher after the fix branch’s base — the MR’s bail message won’t survive sanitization as written."},
+{k:"PORTICO-191", t:"Tool-call validation misreports empty required strings as truncated calls", c:"Tool-call validation", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!113", mrn:113, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"When the assistant leaves a required field blank, the error message blames “a truncated response” — so the assistant (and the user) chase the wrong problem instead of simply filling in the missing field.",
+ why:"An empty required string lands in both the provided and missing argument lists, and “may have been truncated” is appended whenever completion_tokens is set — regardless of cause. Reproduced on pre-beta-tmp; fix !113 unmerged.",
+ ev:["tool_call_streaming.py:202–203 — empty/whitespace values appended to missing-required","middleware.py:5715–5717,5738–5739 — provided_arguments = all parsed keys → blank field in BOTH lists","middleware.py:5728–5732 — truncation wording added whenever completion_tokens is set"],
+ note:"Distinct from PORTICO-206 (that’s the frontend post-response guard; this is the backend pre-execution validator)."},
+{k:"PORTICO-190", t:"Web Search: reject mutually exclusive allowed_domains and blocked_domains", c:"Web tools", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!112", mrn:112, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"If a search is told both “only use these sites” and “avoid those sites”, the avoid-list is silently ignored — results can include sites the user explicitly asked to block.",
+ why:"When both lists are passed, an if/else-if silently drops blocked_domains — the tool spec explicitly says they “Cannot be used with” each other, but nothing enforces it anywhere in the stack. A documented safety filter is silently discarded.",
+ ev:["web_tools.rs:131–155 — else-if applies allowed_domains and ignores blocked_domains (independently re-verified by hand)","web_tools.rs:264–273 — handler validates only query presence","tool_spec.json:21,28 — mutual-exclusion documented but not enforced; no upstream validation layer found"],
+ note:""},
+{k:"PORTICO-189", t:"Question modal: notes field overwrites selected option with “Something else”", c:"Chat UI", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!111", mrn:111, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"When the assistant asks you to pick an option and you add a clarifying note, your actual choice is thrown away — the assistant is told you picked “Something else” and proceeds on the wrong answer at exactly the moments it stopped to ask.",
+ why:"Any keystroke in the notes field overwrites the user’s selected option with none_of_the_above on every input event — the modal then submits the wrong answer at decision gates. Three independent bug-bash reports; one-guard fix already in review.",
+ ev:["user-question-modal.js:181–192 — any non-empty text ⇒ {selectedOptionId:\"none_of_the_above\"}, no check for an existing selection","user-question-modal.js:413–420 — notes oninput spreads that into the answer on every keystroke","user-question-flows.js:167–171 — “Something else” auto-appended to every question, so the path is always armed"],
+ note:""},
+{k:"PORTICO-188", t:"Reject reserved ask_user_question option labels", c:"Chat UI", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!110", mrn:110, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"The assistant can show you a question where two choices read exactly the same (“Something else” twice) — whichever you pick, it’s ambiguous what you answered.",
+ why:"Validation rejects only the reserved option id, not the label — a caller option labeled “Something else” yields two identically-labeled options (reproduced via node script against normalizeUserQuestionRequest). Fix !110 rebased and passing; just needs merge.",
+ ev:["user-question-flows.js:68–74,144–147 — only reserved id checked; labels only trimmed/length-checked","user-question-flows.js:167–171 — fallback {none_of_the_above, “Something else”} unconditionally appended","questions.rs:186–201 — Rust skills-server has the same id-only validation","node repro: 2 options labeled “Something else” in one question"],
+ note:""},
+{k:"PORTICO-186", t:"Agent VM file/image batches drop valid files when one path is invalid", c:"Agent VM & Docker", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!109", mrn:109, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Asking to view or share several files fails entirely if just one filename is off — instead of showing the good files and flagging the bad one, you get nothing and have to retry.",
+ why:"display_files/request_images abort the entire batch on the first bad path (`?` inside the loop) and return only the error — no partial results, and no documented all-or-nothing contract. Fix !109 ready; must sequence with !108.",
+ ev:["agent_vm_workspace.rs:919–921 — first error aborts whole batch","agent_vm_workspace.rs:925–939,942–956 — error path returns failure only, no partial files array","agent_vm_workspace.rs:853–857,873–880 — per-path bail points (missing, directory, non-image, oversized) each kill the batch"],
+ note:"Landing-order dependency with PORTICO-185/!108: whichever lands second must rebase so invalid-image errors flow through failed_files."},
+{k:"PORTICO-185", t:"Agent VM request_images accepts invalid image bytes by extension only", c:"Agent VM & Docker", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!108", mrn:108, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"A corrupted or empty image file with the right file extension is accepted without complaint (and shows up broken later), while a perfectly good image missing its extension is rejected. Confusing both ways.",
+ why:"Image classification is extension-only (MimeGuess): a zero-byte .png passes, valid PNG bytes without an extension are rejected. Fix !108 written. One ticket claim corrected: middleware does magic-byte sniff before model dispatch, so corrupt bytes don’t reach the model — the UX defect stands.",
+ ev:["agent_vm_workspace.rs:866–870 — MimeGuess::from_path decides is_image; bytes never read","agent_vm_workspace.rs:871–881 — zero-byte .png passes size check (0 ≤ 5MB)","agent_vm_workspace.rs:873 — inverse: extensionless valid PNG ⇒ octet-stream ⇒ rejected","agent_vm_fs.rs:1032–1037,1111 — same extension-only logic in file-link path"],
+ note:"Checker refuted the “corrupt payload reaches the model” sub-claim (middleware convert_url_images_to_base64 sniffs magic bytes) — verdict unchanged, scope corrected."},
+{k:"PORTICO-184", t:"Slack MCP: slack_read_canvas is not exposed for safe canvas edits", c:"Tool-hint & config drift", v:"NOT-A-BUG", r:"CLOSE", s:"—", mr:"!107 unneeded — do not land", mrn:107, warn:true, qw:false, rep:"David Appelbaum",
+ impact:"No user impact — the canvas-reading ability the reporter expected was never part of this app’s Slack integration in the first place. Nothing broke; it’s a request for a new capability.",
+ why:"The bundled slack-mcp-server binary has never exposed ANY canvas tool — strings-grep of the vendored binary finds 0 canvas tools among its 18; the canvas tools the reporter used came from a server outside this repo. Nothing is filtered or misregistered: it’s a feature request.",
+ ev:["strings slack-mcp-server-linux-arm64 | grep canvas ⇒ 0 hits; 18 tools, none canvas","slack.yaml:19–21 / slack.fragment:10 — no canvas flag or allowlist exists to “un-hide” anything","git ls-tree 799db2c7 — the reporter’s exact build shipped this same canvas-less binary"],
+ note:"Close as not-a-bug; optionally re-file as a feature request against the bundled Slack server choice."},
+{k:"PORTICO-183", t:"Agent VM: create spawns extra containers instead of reusing canonical VM", c:"Agent VM & Docker", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!106", mrn:106, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Every “set up a workspace” request quietly spins up another background environment instead of reusing the existing one — the machine gets slower as they pile up, and your files can end up scattered across environments.",
+ why:"handle_create unconditionally mints a new UUID and container and overwrites the chat’s default-VM mapping — reuse machinery exists (load_usable_default_vm_for_chat + lock guard) but create bypasses it. Complete fix !106 already prepared; hand over and merge.",
+ ev:["agent_vm.rs:72–94 — create never checks for an existing VM; overwrites default mapping","agent_vm_core.rs:246–253,292,313–325 — always new UUID + new container","agent_vm_core.rs:858–886 — existing reuse machinery that create bypasses"],
+ note:"Checker: the reporter’s third container came from the auto-recovery path — consistent with, not contrary to, the diagnosis."},
+{k:"PORTICO-182", t:"restart_mcp_infrastructure says healthy when health_check_passed is false", c:"MCP orchestration", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!105", mrn:105, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"After restarting the integrations system, the assistant announces “everything restarted and healthy” even when the health check failed — you only discover things are still broken when your next action errors out.",
+ why:"The summary fallback prints “All services have been restarted and are healthy” whenever success:true — never consulting healthCheckPassed, which defaults to false in the same payload (verified by hand). The coordinator returns success while the operation is still running, so the contradiction is the normal path.",
+ ev:["mcp_assistant.rs:1576–1585 — summary keyed on success only; health_check_passed defaults false in same JSON (re-verified by hand)","api.js:3014–3018 — /api/restart-mcp returns just-started op with hardcoded healthCheckPassed:false","mcp-operation-service.js:176–179 — success:true while queued/running"],
+ note:""},
+{k:"PORTICO-181", t:"Google Workspace get_tool_hints references missing or misnamed tools across categories", c:"Tool-hint & config drift", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"after !103", mrn:103, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"The assistant is coached with Google Workspace abilities that don’t exist (wrong tool names, a fake “attach a file to Gmail” ability) — so it confidently tries things that fail, wasting your time with confusing errors.",
+ why:"The vendored bundle’s hardcoded Sheets hints reference missing names such as read_sheet_range and update_sheet_range, and Gmail hints promise attachment parameters that send_gmail_message does not accept. The live reproduction narrowed the original filing: create_sheet, delete_sheet, and get_doc_content are real tools and must not be counted as phantom names. Fix remains a text correction + zip rebuild, sequenced after PORTICO-179’s !103.",
+ ev:["zip core/server.py:631–648 — Sheets hints repeatedly direct callers to read_sheet_range/update_sheet_range","actual exposed APIs use the sheet-values tool family; neither hinted range name has an implementation or tier entry","core/server.py Gmail hints promise file_id/attachment_path arrays; send_gmail_message has no matching attachment parameters"],
+ note:"Reproduction correction: the defect is confirmed, but the original “11 names exist nowhere” count was too broad because several named tools are implemented."},
+{k:"PORTICO-180", t:"MCP overflow files use inconsistent result/response envelopes causing silent jq nulls", c:"MCP orchestration", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!104", mrn:104, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"When a big tool result gets saved to a file for the assistant to read back, different tools save it in different shapes — the assistant’s standard way of reading it comes back empty, so it may tell you “no results” when there were plenty.",
+ why:"The overflow writer spills each tool’s raw payload verbatim — web_search nests under “response”, google-workspace under “result” — while SKILL.md documents jq '.result' as THE extraction pattern, so agents get silent nulls on some tools. Fix !104 unmerged.",
+ ev:["overflow.rs:83–84 — raw result written verbatim, no normalized envelope","web_tools.rs:254–261 — payload under “response”; response.rs:198–206 — google-workspace wraps under “result”","skills/google-workspace/SKILL.md:369,374–389,703–711 — teaches jq '.result' incl. in troubleshooting"],
+ note:""},
+{k:"PORTICO-179", t:"Google Workspace Docs: native markdown import tool hinted but not exposed", c:"Tool-hint & config drift", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!103", mrn:103, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"The assistant believes it can import formatted text into Google Docs natively — but the ability isn’t actually switched on, so document creation fails or falls back to ugly, broken formatting.",
+ why:"get_tool_hints advertises insert_markdown; the tool is implemented in the bundle but omitted from every tool tier, so it is never exposed. The reproduction pass rebased !103 onto the restored bundle, preserved the OAuth header fix, and made its archive-root regression tolerant of the current bundle layout.",
+ ev:["zip core/server.py:597 — hints advertise “Markdown Import (insert_markdown)”","zip gdocs/docs_tools.py:7816 — insert_markdown implemented","zip core/tool_tiers.yaml — docs tiers omit insert_markdown; fragment launches --tool-tier complete"],
+ note:"Related to PORTICO-181 (same drift family) but distinct: hint-without-tool vs. wrong-tool-names. Not duplicates."},
+{k:"PORTICO-178", t:"Injected model context omits live GPT-5 family", c:"Model catalog & routing", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!102", mrn:102, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"Ask the assistant “which models can I use?” and it answers from an outdated list — missing the live GPT-5 family and unaware that a disabled model is disabled (or why). Users pick models that error, or miss ones they could use.",
+ why:"The injected model list is alphabetically sorted then hard-truncated at 60 entries, silently drops inactive models, and carries no disabled attribute — so live GPT-5.5/5.4 fall out while the catalog marks GPT-5.4-pro disabled with a reason nothing surfaces. Fix !102 unmerged.",
+ ev:["unified_context.py:1692–1702 — alphabetical sort + hard cap at max_models_in_context (60)","unified_context.py:1673,1726–1745 — is_active=False dropped silently; no disabled attribute emitted","model_catalog.yaml:142–180 — GPT-5.5/5.4 live; GPT-5.4-pro disabled:True with reason","health-check app.rs:7313–7320 — writes meta.disabled that unified_context ignores"],
+ note:"⚠ Ticket addendum (stale agent_vm ID after VM recovery) is NOT covered by !102 — split to a new ticket before closing."},
+{k:"PORTICO-177", t:"MCP inventory double-counts ID collisions and misses duplicate Lucid installs", c:"MCP orchestration", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!100", mrn:100, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"The integrations list can show wrong counts and the same integration twice, and lets you accidentally install a duplicate under a second name with no warning — managing your integrations becomes confusing.",
+ why:"The “all” filter concatenates system + user catalogs so a colliding ID appears twice and inflates totals, and create_user_mcp_server never compares metadata, so lucid vs lucid-mcp duplicates install silently. Fix !100 merges conflict-free (test-merged during audit) and reproduces both reporter scenarios in its tests.",
+ ev:["mcp_assistant.rs:58–63,75–80 — concatenation + raw len() total; no unique-ID dedup or collision flag","mcp_assistant.rs:590–648 — create does no duplicate-metadata comparison","integration.rs:340–392 — user YAML validation has no cross-server duplicate check"],
+ note:""},
+{k:"PORTICO-176", t:"delete_user_mcp_server blocked by stale create mutation lock", c:"MCP orchestration", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!101", mrn:101, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"Right after adding a custom integration, trying to remove it fails with “another operation is in progress” for up to two minutes — it feels stuck, and retrying keeps failing until the invisible timer runs out.",
+ why:"create returns success at 30s while the enable lifecycle keeps holding the operation lock (deferRelease) for up to ~120s — delete during that window hits the busy error the reporter saw. ⚠ !101’s retry handling never runs for this repro (busy is thrown at lease acquisition) — relay to the MR author.",
+ ev:["mcp_assistant.rs:661–668,716–724 — create waits 30s, returns success while enable continues","mcp-operation-coordinator.js:193–253 — deferRelease:true, lifecycle continues after snapshot returns","mcp-readiness-scheduler.js:1 — DEFAULT_READINESS_TIMEOUT_MS=120000 → lock persists ~2min (matches ~90s report)"],
+ note:"Checker found the MR gap; the defect itself is fully verified."},
+{k:"PORTICO-175", t:"Orphaned user MCP server with system-colliding ID cannot be managed", c:"MCP orchestration", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!98", mrn:98, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"A leftover custom integration whose name matches a built-in one becomes a zombie: it shows in your list, but every attempt to open or remove it errors out. It’s stuck there permanently.",
+ why:"Delete bails on any ID matching a system server path while list blindly shows the legacy user dir — the orphan is visible but unmanageable. ⚠ !98’s Rust half self-defeats (user_server_path bails on exactly the case the helper detects) — needs rework before it can close the ticket.",
+ ev:["mcp_assistant.rs:895–897,147–157 — delete bails by ID alone; only system path existence checked","integration.rs:94–110 — user_server_path always runs the collision check → read fails too","mcp_assistant.rs:61–62,132–141 — list shows mcp-configs-user subdirs regardless"],
+ note:"Adjacent to PORTICO-176/177 (same subsystem) but distinct root causes — confirmed not duplicates."},
+{k:"PORTICO-174", t:"Scheduling accepts past one-off run_at and under-documents disabled run-now behavior", c:"Scheduling", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!96", mrn:96, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"You can schedule a one-time task for a time that already passed — it’s accepted without complaint and then never runs, leaving you waiting for results that aren’t coming.",
+ why:"No past-timestamp check exists anywhere (an existing unit test even asserts past run_at is accepted), and run_task_now ignores task.enabled. !96 implements exactly the requested validation + docs; review and land it.",
+ ev:["schedule.rs:284–310,323 — no past check; initial_next_run_at returns run_at unconditionally (test at 507–512 asserts past accepted)","scheduling.rs:20,49–51,106–112 — past timestamp stored as next_run_at when enabled","scheduling.rs:136–248 — handle_run_task_now never checks task.enabled"],
+ note:"Checker independently confirmed no upstream guard (backend router is a pass-through; frontend has no date check)."},
+{k:"PORTICO-173", t:"Scheduled model-resolution failures are non-actionable and do not set needs_attention", c:"Scheduling", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!97", mrn:97, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"When a scheduled task breaks because its model is unavailable, there’s no alert and the error is a cryptic “failed GET” — your automated tasks silently stop producing results until you happen to notice.",
+ why:"Model-resolution failures surface as a bare “failed GET /api/models?” with no model context, and sweep-time start_run failures are only logged — no needs_attention, no history row, silent retry every poll. Fix !97 active; it does not cover the sweep-time silent-drop path — relay that gap.",
+ ev:["shared.rs:1125 — anyhow context produces the exact bare error from the ticket","subagents.rs:2862,1092–1094 — no model context added on HEAD","executor.rs:204–210 — sweep-time start_run failure only logged; no attention flag, no history, next_run_at unchanged"],
+ note:"Terminal Failed runs DO set needs_attention (storage.rs:216–223) — the gap is specifically the sweep-time path."},
+{k:"PORTICO-172", t:"Scheduled runs fail at hard 1500s timeout without progress context", c:"Scheduling", v:"CONFIRMED", r:"COORDINATE", s:"M", mr:"!99", mrn:99, warn:true, qw:false, rep:"David Appelbaum",
+ impact:"Any scheduled task that needs more than 25 minutes is killed with a bare timeout error — no partial results, no sense of how far it got, no way to give it more time.",
+ why:"POLL_INTERVAL_SECONDS=5 × MAX_POLL_ATTEMPTS=300 hardcodes 1500s with no per-caller override; the scheduling daemon inherits the interactive cap and the bail message carries no progress context. Fix !99 awaits a manual rebase by its author.",
+ ev:["subagents.rs:5–6 — 5s × 300 = 1500s, hardcoded","subagents.rs:3554–3560,3685 — no per-caller override; bail renders exactly “Chat did not complete within 1500s”","scheduling runtime.rs:402 — daemon await passes no timeout, inheriting the interactive cap"],
+ note:""},
+{k:"PORTICO-170", t:"Agent VM lacks disk quota and PID cap", c:"Agent VM & Docker", v:"CONFIRMED", r:"COORDINATE", s:"M", mr:"!94", mrn:94, warn:false, qw:false, rep:"David Appelbaum",
+ impact:"A runaway (or malicious) code-execution session can fill the entire disk or spawn unlimited processes — nothing caps it — potentially grinding the user’s whole machine to a halt. Security-relevant.",
+ why:"HostConfig sets only memory/CPU — pids_limit, storage_opt and ulimits are left at Docker defaults, and /work is an uncapped rw bind of host disk. In progress with assignee Andrii Riazanov (comprehensive fix !94 in flight) — coordinate, don’t close.",
+ ev:["agent_vm_core.rs:303–311 — HostConfig sets binds/network/memory/cpu only; ..Default::default() leaves pids_limit, storage_opt, ulimits unset","agent_vm_manager.py:692–711 — python path likewise; /work is rw host bind (uncapped)","Dockerfile.agent-vm — no image-level limits; checker hunted for enforcement elsewhere and found none"],
+ note:"Security-labeled; in-progress. Findings handed to assignee."},
+{k:"PORTICO-169", t:"Reasoning-tag parser hides visible answer body", c:"Tool-call validation", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!92", mrn:92, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Sometimes the assistant’s reply simply doesn’t appear — the whole answer gets swallowed into the collapsed “thinking” section, and the chat looks like the assistant said nothing at all.",
+ why:"Any literal reasoning start-tag in streamed content opens a reasoning section with no matched-close requirement — all remaining text is silently swallowed as “reasoning” and the visible answer disappears. Andrii Riazanov reproduced the bug from a real Slack report, posted before/after validation, and approved !92; it is open, green, and mergeable.",
+ ev:["middleware.py:11200,11215 — tag detection on by default","middleware.py:12615–12634 — every streamed delta routed through split_inline_reasoning_sections","middleware.py:1130–1134,1099–1102 — unmatched start tag ⇒ remaining text appended to reasoning across deltas"],
+ note:"Merge note: the fix changes default behavior for models that legitimately emit <think> tags — acknowledge the trade-off when landing."},
+{k:"PORTICO-166", t:"authorize_integration auth-state reporting and forced re-auth recovery unreliable across OAuth integrations", c:"Auth / OAuth", v:"CONFIRMED", r:"COORDINATE", s:"M", mr:"!88 (partial)", mrn:88, warn:true, qw:false, rep:"David Appelbaum",
+ impact:"Re-connecting an account after sign-in breaks is unreliable: the app insists you’re “already connected” when you’re not, or forces a full re-login when it shouldn’t — users get stuck in loops trying to repair a broken connection.",
+ why:"All three sub-defects verified: force_auth defaults true (contradicting its own tool spec), completed flows hardcode already_authorized:false, and the wizard short-circuits to “Already authorized” from cached state. Partial fix !88 exists — coordinate scope before merge.",
+ ev:["mcp_assistant.rs:1849–1852 — force_auth defaults TRUE vs spec “unless force_auth=true”","api.js:881 — completed-flow response hardcodes already_authorized:false (matches 3/3 observations)","oauth-wizard-modal.js:1778–1786 — cached completed state short-circuits regardless of forceAuth"],
+ note:"Checker narrowed defect 2: the short-circuit fires only when the single-start path reuses cached state — narrower than the ticket claims, still real."},
+{k:"PORTICO-165", t:"Artifacts: failed-start status inconsistent; bad-workdir errors not persisted", c:"Artifacts", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!89", mrn:89, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"When a mini-app fails to start because of a bad folder setting, its status just says “stopped” with no error message anywhere — nothing tells you it failed, let alone why.",
+ why:"A bad-workdir exec failure propagates without persisting status or error_message while the probe-failure path does persist — so identical user mistakes produce inconsistent records (status “stopped”, error null). Fix !89 written but must rebase over the PORTICO-161 sanitization rewrite.",
+ ev:["artifacts.rs:891 — exec failure propagates, nothing persisted","artifacts.rs:905–915 — probe path sets STATUS_ERROR + message (the inconsistency)","artifacts.rs:1144,1474 — status/list read the persisted record, so users see stopped/null"],
+ note:"Checker: !89’s regression test asserts raw error text that PORTICO-161’s sanitizer now rewrites — test will fail post-rebase as written."},
+{k:"PORTICO-164", t:"Opening one artifact preview can stop another running artifact server", c:"Artifacts", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!87 stale — do not land", mrn:87, warn:true, qw:true, rep:"David Appelbaum",
+ impact:"Opening a preview of one mini-app can silently kill another one you had running — within about a minute your other preview just dies, with no explanation.",
+ why:"The initial prefix-collision diagnosis still holds, and the assignee expanded it with a transient Docker-inspect status race plus a UI status gate. Jira is now In Progress. Existing !87 changes a dead Python path and must not land; the correct fix belongs in the live Rust path, with no valid replacement MR yet.",
+ ev:["artifacts.rs:14,554–556 — containers named agent-vm-artifact-<id>; never registered in agent_vm_info","core-mcp-shared lib.rs:56 — sweep prefix “agent-vm-” matches artifact containers","agent_vm_core.rs:445,465,550–565 — sweep force-removes any agent-vm-* container without Redis metadata","2026-07-15 Jira refresh — assignee identifies prefix collision + transient inspect race + UI status gate; rejects !87's dead Python path"],
+ note:"In Progress, but still a genuine fleet gap: !87 is not an applicable fix and there is no valid replacement MR."},
+{k:"PORTICO-163", t:"Concurrent skill activation responses can include another call’s state snapshot", c:"Skills", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!84", mrn:84, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"When two skills switch on at nearly the same time, the confirmation message can look like it includes the other one’s changes — it reads as if wires got crossed. (Your data is actually fine; the message is what misleads.)",
+ why:"The race framing is refuted — activation is fully serialized under a per-chat Redis lock — but the residual defect is real: response fields mix global chat state with per-call deltas, undocumented, so concurrent callers misread it as cross-talk. Doc/contract fix !84 rebased and waiting; coordinate merge order with !86.",
+ ev:["skills.rs:516–640 — read, wait, mutate, respond all inside with_chat_capabilities_lock","shared.rs:150–194 — per-chat SET NX EX lock serializes same-chat activations","skills.rs:632–636 — activated_skills/total_activated are global-by-design; newly_/already_enabled are per-call"],
+ note:"A rare case where the ticket’s mechanism was wrong but its symptom pointed at a real contract defect — the verdict credits the symptom, corrects the cause."},
+{k:"PORTICO-162", t:"Skill deactivation does not detach MCP servers", c:"Skills", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!86", mrn:86, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Turning a skill off doesn’t disconnect the integrations it switched on — leftovers pile up in the chat and keep influencing what the assistant does, long after you thought you turned them off.",
+ why:"handle_deactivate_skill mutates only chat_skills and never touches chat_tools nor sends a capabilities notification — servers attached by an activated skill remain listed after deactivation (matches the repro exactly). Fix !86 validated; mind the skills.rs merge overlap with !84.",
+ ev:["skills.rs:651–686 — deactivate touches only chat_skills:{chat_id}","skills.rs:578,601–603 — activate pushes servers into chat_tools:{chat_id}","mcp_assistant.rs:1819–1836 — get_chat_tools reads chat_tools → stale servers listed"],
+ note:"Checker edge for the merger: OAuth auto-attached servers (try_activate_for_chat) are never recorded in chat_tools, so the fix won’t detach those either."},
+{k:"PORTICO-160", t:"activate_integration mixed batch drops valid servers when one ID is invalid", c:"MCP orchestration", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!85", mrn:85, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Turning on several integrations at once fails completely if just one name is wrong — even the valid ones don’t get enabled, and everything has to be retried one at a time.",
+ why:"Any blocked integration flips the whole batch to success:false with newly_added:[] before the Redis persist — ready siblings are dropped. An existing unit test even demonstrates the behavior. Fix !85 ready, stacks on !82.",
+ ev:["mcp_assistant.rs:1732–1743 — non-empty blocked ⇒ success:false, newly_added:[] before persist at 1745–1752","mcp_assistant.rs:182–185 — unknown IDs default to enabled (unwrap_or(true)) → probed instead of rejected","mcp_assistant_tests.rs:2293–2311 — existing test shows a ready sibling blocked by the batch"],
+ note:""},
+{k:"PORTICO-159", t:"activate_integration waits 30s and reports “starting” for unknown server IDs", c:"MCP orchestration", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!82", mrn:82, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Asking for an integration that doesn’t exist makes the assistant hang for 30 seconds and then claim it’s “starting up” — you wait on something that will never arrive instead of being told immediately it doesn’t exist.",
+ why:"Only the “server:” prefix is validated — unknown IDs default to enabled, burn the full 30s readiness probe, and come back readiness_phase “starting”, telling the model a nonexistent server is coming up. !82 implements the ticket’s suggested registry check; land it.",
+ ev:["mcp_assistant.rs:1631–1638 — prefix-only validation; no registry membership check in the whole handler","mcp_assistant.rs:182–185,1690–1694,1717 — unknown ⇒ enabled ⇒ 30s probe (ACTIVATION_WAIT_SECONDS=30)","api.js:1510–1519 — aggregator 404 mapped to readiness_phase “starting” / error “not_discovered”"],
+ note:"Sibling of PORTICO-160 (same handler), distinct defect — confirmed not duplicates."},
+{k:"PORTICO-158", t:"GitLab MCP aggregator drops several available server tools", c:"Tool-hint & config drift", v:"CONFIRMED", r:"COORDINATE", s:"S", mr:"!81", mrn:81, warn:false, qw:true, rep:"Fabian Hans",
+ impact:"Several GitLab actions users expect (six of them, e.g. newer merge-request operations) are simply missing — the assistant says it can’t do them because the app ships an outdated GitLab integration.",
+ why:"The fragment pins @zereight/mcp-gitlab@2.1.11; the six “missing” tools simply don’t exist until 2.1.18 (verified by extracting both tarballs from npm). Not an aggregator bug — a stale pin. !81 bumps the pin; review and land.",
+ ev:["gitlab-mcp.fragment:8–10 — pins 2.1.11","npm tarball diff in /tmp: all six tools absent in 2.1.11, present in 2.1.18 and 2.1.27","managed_node.rs:1314–1321 + session.rs:608–610 — the pinned package is exactly what launches"],
+ note:"Ticket comment cites a follow-up commit that doesn’t exist on the remote (349ef9bf) — the real pushed commits are 049cbee7 + ff4d7bae."},
+{k:"PORTICO-157", t:"Google Workspace OAuth callback to 127.0.0.1:8080 refused", c:"Auth / OAuth", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!80", mrn:80, warn:false, qw:true, rep:"David Appelbaum",
+ impact:"Connecting your Google account can fail at the very last step — the browser lands on a “connection refused” page instead of finishing sign-in, and the account never connects (whenever the older sign-in path is used).",
+ why:"The legacy start_google_auth tool is still model-visible and builds a redirect to port 8080 — which the compose override never publishes to the host, so the browser callback lands on a refused connection. Every Workspace auth via that launcher fails. The reproduction pass rebased !80 onto the restored Google Workspace bundle while retaining the bearer-header and default-disable fixes.",
+ ev:["zip core/server.py:516 — start_google_auth still registered @server.tool()","google_workspace.fragment — WORKSPACE_MCP_PORT=8080; oauth_config.py builds {base_uri}:{port}/oauth2callback","generator.rs:2843 — compose publishes only 8765/8766/3834 — 8080 unpublished","generator.rs:2149–2184 — disabled_tools() has no start_google_auth entry on HEAD"],
+ note:"5 comments on ticket already converged on the same diagnosis; the code confirms it."},
+{k:"PORTICO-156", t:"Image attachments rejected — multimodal not supported in current MVP", c:"Model catalog & routing", v:"OUT-OF-SCOPE", r:"COORDINATE", s:"—", mr:"!76 closed — Won't Do", mrn:76, warn:false, qw:false, rep:"Fabian Hans",
+ impact:"Attaching an image to a chat gets rejected with “not supported” — anything involving screenshots or pictures simply doesn’t work, even though the app itself is image-capable. The block is upstream, outside this codebase.",
+ why:"The rejection string is produced nowhere in this repo or its entire git history; the bridge and middleware support image content. The owner reproduced the limitation on Gemini's upstream experimental gateway and closed Jira/MR !76 as Won't Do, rejecting the proposed broad app-side disable/rewrite. No mitigation landed.",
+ ev:["git log --all -S “not supported in the current MVP” ⇒ zero hits anywhere in history","bifrost main.rs:5991–6070 — image blocks converted/normalized properly (+tests)","middleware.py:268–281 — image content-part types accepted app-side"],
+ note:"Corrected stale report state: !76 was closed unmerged on 2026-07-09. A local-only follow-up commit exists in this checkout but is absent from GitLab/origin and is not reported as shipped."},
+{k:"PORTICO-155", t:"Pulsing prompt placeholder is too bright in dark mode", c:"Chat UI", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!75", mrn:75, warn:false, qw:true, rep:"Fabian Hans",
+ impact:"In dark mode, the pulsing “type a message” hint is nearly white and glows — distractingly bright, especially at night. Purely cosmetic, but it’s the first thing you see on every chat.",
+ why:"Dark-mode composer placeholder rests at near-white #f8fbff with a weight-650 glow pulse, while light mode uses subtle slate — the dark shimmer was never re-tuned when light mode was. Styling-only fix already on a branch; review and merge.",
+ ev:["app.css:963–967 — dark placeholder #f8fbff/#d3e3ff","app.css:740–742 — light equivalents #334155/#64748b (the asymmetry)","app.css:750–751,778 — font-weight 650 + glow text-shadow amplify it"],
+ note:""},
+{k:"PORTICO-153", t:"GPT-4.1 model family errors on prompt", c:"Model catalog & routing", v:"ALREADY-FIXED", r:"CLOSE", s:"—", mr:"fixed: 8d329c5a", mrc:"8d329c5a", warn:false, qw:false, rep:"Fabian Hans",
+ impact:"Picking GPT-4.1 used to make every message fail. GPT-4.1 has now been replaced by the supported GPT-5.6 family, so the broken choice is no longer offered on the current target.",
+ why:"The July 12 attempt could not find GPT-4.1 in the current picker because replacement commit 8d329c5a had already landed through !159. Jira closed Fixed on July 13 and the older proposed catalog MR !90 closed unmerged as superseded.",
+ ev:["8d329c5a — GPT-5.6 Sol/Terra/Luna/Ultra catalog replacement; ancestor of origin/pre-beta-tmp","!159 merged 2026-07-11 as de5340b5","!90 closed unmerged 2026-07-13 with the explicit note that GPT-4.1 was replaced by GPT-5.6"],
+ note:"Reclassified from CONFIRMED/COORDINATE to ALREADY-FIXED/CLOSE after reconciling the picker result with target history."},
+{k:"PORTICO-150", t:"Unable to use Slack MCP to leave channels", c:"Tool-hint & config drift", v:"CONFIRMED", r:"FIX-LATER", s:"S", mr:null, warn:false, qw:false, rep:"Tommy Omen",
+ impact:"Asking the assistant to leave a Slack channel always fails with a permissions error — the capability is offered but can never work with the access the app requests. Annoying, though few users need it.",
+ why:"conversations_leave is exposed by default but the fragment’s requested user scopes omit channels:write/groups:write — the tool is visible yet can never succeed. Repo-side fix is small (hide tool or request scopes); granting real leave capability also needs the Slack app admin. Niche impact → backlog.",
+ ev:["slack.fragment:27–41 — user scopes omit channels:write/groups:write","slack.fragment:7–11 — no SLACK_MCP_ENABLED_TOOLS ⇒ all default tools exposed (incl. conversations_leave)","upstream server.go:368–377 + api.go:347,398–408 — leave routes to conversations.leave, which requires those scopes"],
+ note:"Split ownership: exposing-an-unusable-tool is this repo’s defect; the scope grant belongs to whoever administers the Slack app."},
+{k:"PORTICO-145", t:"Jira MCP error “Get jira project issue types” (Bedrock 64-char tool-name limit)", c:"Model catalog & routing", v:"CONFIRMED", r:"FIX-NOW", s:"S", mr:"!69", mrn:69, warn:false, qw:true, rep:"Tommy Omen",
+ impact:"On some model back-ends, certain Jira requests (like listing a project’s issue types) always fail with a cryptic validation error — the assistant simply can’t finish the Jira task, and the error gives users no clue why.",
+ why:"The bridge sets toolSpec.name verbatim with no length guard — the Atlassian tool name is 65 chars, one over Bedrock’s documented 64 limit, producing the ticket’s verbatim AWS ValidationException. Fix !69 (aliasing) is rebased and test-validated but unmerged (verified by hand: not an ancestor of HEAD).",
+ ev:["converse.rs:440–448 — toolSpec.name set verbatim; no truncation/alias anywhere in anthropic_tools_to_bedrock (429–488)","printf | wc -c = 65 chars for the failing tool name — over the 64 limit","87c214ab on origin/codex/fix-portico145-bedrock-tool-names; merge-base confirms NOT in pre-beta-tmp"],
+ note:"Oldest ticket in the set (pre-dates the bash proper) — still unmerged."},
+];
+
+// Reproduction pass run 2026-07-12, in recommendation order. “Baseline” is a
+// clean origin/pre-beta-tmp worktree (df343515); “source app” is the foreground
+// Electron app built from this checkout. Harnesses exercise the same handlers
+// and payloads as the UI without mutating real user data unless noted.
+const REPRO = {
+  "PORTICO-191": { st:"REPRODUCED", env:"Baseline middleware harness", result:"A blank query was reported as both missing and provided, and the error claimed the 128-token response may have been truncated.", steps:["Invoke web_tools_web_search with query set to an empty string.","Let the generation include completion-token metadata.","Observe query in both argument lists and the misleading truncation sentence."] },
+  "PORTICO-190": { st:"REPRODUCED", env:"Baseline MCP stdio + mock Responses API", result:"The call succeeded and the outbound payload contained allowed_domains only; blocked_domains was silently absent.", steps:["Call Web Search with both allowed_domains=[example.test] and blocked_domains=[blocked.example].","Capture the request sent to the Responses API.","Observe that the blocked list is discarded instead of rejecting the contradictory request."] },
+  "PORTICO-189": { st:"REPRODUCED", env:"Baseline question-modal renderer flow", result:"Typing optional notes after choosing a real option changed selected_option_id to none_of_the_above.", steps:["Open an assistant question with at least two choices.","Select a normal choice.","Type anything in the notes field and submit.","Inspect the submitted answer: it says Something else rather than the selected choice."] },
+  "PORTICO-186": { st:"REPRODUCED", env:"Baseline Agent VM Rust handler", result:"A batch containing source.txt and a missing path returned failure with no files array, dropping the valid file.", steps:["Create one valid /work file.","Request display_files for that file plus a missing path.","Observe the entire response fail and the valid file disappear from the result."] },
+  "PORTICO-185": { st:"REPRODUCED", env:"Baseline Agent VM Rust handler", result:"A zero-byte file named empty.png was accepted as an image solely because of its extension.", steps:["Create an empty file named /work/empty.png.","Call request_images for it.","Observe success even though the file contains no image bytes."] },
+  "PORTICO-182": { st:"REPRODUCED", env:"Baseline MCP Assistant HTTP fixture", result:"success=true with healthCheckPassed=false still produced “All services have been restarted and are healthy.”", steps:["Run a full MCP infrastructure restart.","Return a completed restart response whose health check is false.","Observe the healthy success summary contradict the health field."] },
+  "PORTICO-181": { st:"REPRODUCED", env:"Packaged Google Workspace bundle inspection", result:"Sheets hints instruct the model to call read_sheet_range and update_sheet_range, but those tool names are not implemented or tier-exposed. Some other names in the original ticket are real, so the report scope is narrower than first filed.", steps:["Ask Google Workspace for Sheets tool hints.","Follow the suggested read_sheet_range or update_sheet_range call.","Observe that no such exposed tool exists; the actual names use the sheet-values APIs."] },
+  "PORTICO-178": { st:"REPRODUCED", env:"Baseline model-context fixture", result:"With more than 60 alphabetically earlier entries, live GPT-5 models fell beyond the hard cap; disabled model reasons were also omitted.", steps:["Populate the model catalog with 60+ alphabetically earlier models plus GPT-5.5/GPT-5.4.","Ask the assistant which models are available.","Observe the live GPT-5 entries missing and no disabled reason for GPT-5.4 Pro."] },
+  "PORTICO-177": { st:"REPRODUCED", env:"Baseline MCP Assistant Rust handler", result:"A system server and user server sharing system-one produced two rows and total=3 for only two unique IDs.", steps:["Create a user MCP config whose ID matches a system config.","Open or call the all-servers inventory.","Observe the colliding ID twice and an inflated total."] },
+  "PORTICO-169": { st:"REPRODUCED", env:"Baseline reasoning-stream parser", result:"Visible text after a literal <thinking> marker was moved into hidden reasoning and the parser remained stuck waiting for a closing tag.", steps:["Ask for an answer that literally includes an opening <thinking> example without a closing tag.","Stream the answer through the normal parser.","Observe everything after the marker disappear from visible output."] },
+  "PORTICO-164": { st:"INCONCLUSIVE", env:"Source app + baseline artifact-manager review", result:"I could not safely establish two independent live preview runtimes in this session. The existing !87 tests recovery state, not the reported cross-preview stop, so the MR should not be treated as reproduction-proven for this symptom.", steps:["Create and open artifact preview A.","Create and open artifact preview B in another chat while A is still running.","Return to A and verify its server and URL still respond.","This setup could not be completed without a disposable second preview runtime."] },
+  "PORTICO-162": { st:"REPRODUCED", env:"Baseline Skills Rust handler", result:"After deactivating a skill that owned web-tools, chat_tools still contained server:web-tools.", steps:["Activate a skill that requires an MCP server.","Confirm that server is attached to the chat.","Deactivate the skill.","Observe the now-orphaned server remain attached."] },
+  "PORTICO-160": { st:"REPRODUCED", env:"Baseline MCP Assistant handler", result:"A mixed activation request containing a ready server and bad-id failed validation before attaching the ready server.", steps:["Request activation for one valid ready integration and one invalid ID in the same call.","Wait for the activation result.","Observe the whole request fail and the valid integration remain unattached."] },
+  "PORTICO-157": { st:"REPRODUCED", env:"Baseline Google Workspace bundle/config", result:"The legacy start_google_auth tool is tier-visible and directs the browser to the subprocess callback path on 127.0.0.1:8080, which has no host listener in the packaged topology.", steps:["Invoke the exposed start_google_auth tool from chat.","Open the returned localhost callback URL.","Observe connection refused on port 8080 instead of completing app-managed OAuth."] },
+  "PORTICO-155": { st:"REPRODUCED", env:"Clean baseline visual/CSS check; fixed in current source app", result:"The baseline dark shimmer uses a near-white highlight that blooms against the composer. The foreground source app no longer showed the original intensity.", steps:["Switch the baseline app to dark mode.","Focus an empty composer and watch the placeholder shimmer.","Observe the bright band overpower the surrounding text."] },
+  "PORTICO-145": { st:"REPRODUCED", env:"Baseline Bedrock request fixture", result:"The generated Atlassian bridge tool name is 65 characters and Bedrock rejects it against the 64-character toolSpec.name limit.", steps:["Choose a Bedrock-routed model.","Ask Jira to list project issue types.","Observe the request fail before execution with a toolSpec.name length validation error."] },
+
+  "PORTICO-206": { st:"REPRODUCED", env:"Baseline frontend guard harness", result:"Instructional text and fenced example tool JSON triggered the guard even when no unverifiable claim was made, and the note was persisted into the assistant message.", steps:["Ask for instructions that mention running a command or include example tool JSON.","Let the assistant answer without claiming it executed that example.","Observe the spurious “no verified MCP tool call” system note appended to the answer."] },
+  "PORTICO-192": { st:"REPRODUCED", env:"Baseline Artifacts handler", result:"A version note longer than 50 characters returned success but was stored as 47 characters plus an ellipsis.", steps:["Create an artifact version with a descriptive note longer than 50 characters.","Reload the artifact version history.","Observe the note silently truncated rather than rejected or preserved."] },
+  "PORTICO-188": { st:"REPRODUCED", env:"Baseline question normalization harness", result:"A caller-supplied option labeled Something else was accepted, then the modal appended a second identically labeled fallback.", steps:["Ask a question with one custom option labeled Something else.","Open the question modal.","Observe two indistinguishable Something else choices."] },
+  "PORTICO-183": { st:"REPRODUCED", env:"Baseline Agent VM create fixture", result:"Two create requests for the same chat minted distinct VM IDs and replaced the chat's default mapping.", steps:["Ask the assistant to create a workspace for a chat.","Issue the same create request again without destroying the first VM.","Observe a second container/VM instead of reuse."] },
+  "PORTICO-180": { st:"REPRODUCED", env:"Baseline overflow payload fixture", result:"The documented jq .result reader returned null for a spilled Web Search response because that tool writes under response.", steps:["Produce an oversized Web Search result so it spills to a file.","Follow the documented jq '.result' extraction command.","Observe null despite the file containing results under response."] },
+  "PORTICO-179": { st:"REPRODUCED", env:"Baseline packaged Google Workspace bundle", result:"get_tool_hints advertises insert_markdown, but the Docs complete tier omits it, so the tool never appears.", steps:["Enable Google Workspace and request Docs tool hints.","Follow the hint to call insert_markdown.","Observe that insert_markdown is absent from the exposed tools."] },
+  "PORTICO-176": { st:"REPRODUCED", env:"Baseline operation-coordinator fixture", result:"Create returned after 30 seconds while retaining the mutation lease; an immediate delete received the busy error until the readiness lifecycle released it.", steps:["Create a user MCP server whose readiness takes longer than 30 seconds.","As soon as create returns, delete that server.","Observe “another operation is in progress”; retry only succeeds after the hidden lease expires."] },
+  "PORTICO-175": { st:"REPRODUCED", env:"Baseline MCP config filesystem fixture", result:"A legacy user config with a system-colliding ID appeared in list, while read/delete rejected it as a system server.", steps:["Place a user MCP config on disk with the same ID as a built-in server.","Open the integrations inventory and select that user entry.","Try to inspect or delete it and observe the collision error."] },
+  "PORTICO-174": { st:"REPRODUCED", env:"Baseline Scheduling handler", result:"A one-off task with run_at in the past was accepted; run-now on a disabled task returned behavior not described by its tool contract.", steps:["Create a one-off scheduled task with run_at earlier than the current time.","Observe creation succeed instead of a validation error.","Disable a task, run it now, and compare the response with the documented contract."] },
+  "PORTICO-173": { st:"REPRODUCED", env:"Baseline Scheduling executor fixture", result:"A model-resolution failure produced a generic failed run and left needs_attention unset, with no model ID or recovery action surfaced to the user.", steps:["Create a task that references an unavailable model.","Let the scheduled run start.","Open the failed run and observe a generic failure with no attention marker or actionable model guidance."] },
+  "PORTICO-172": { st:"INCONCLUSIVE", env:"Bounded source-app attempt", result:"The hard 1500-second timeout and lack of progress metadata are present in the executor, but I did not hold a real user task open for 25 minutes solely to force the terminal timeout.", steps:["Schedule a task that remains active longer than 1500 seconds.","Watch the task details during execution.","At timeout, verify the failure lacks elapsed/progress context."] },
+  "PORTICO-170": { st:"REPRODUCED", env:"Baseline Agent VM container fixture", result:"The created container config has CPU/memory limits but no PidsLimit and the mounted workspace has no enforced quota.", steps:["Create an Agent VM.","Inspect its Docker HostConfig and workspace mount.","Observe no PID cap and no per-workspace disk quota; an untrusted process can continue forking or filling the disk."] },
+  "PORTICO-166": { st:"REPRODUCED", env:"Baseline OAuth state-machine fixtures", result:"Across refresh/forced-auth responses, authorize_integration could report stale readiness and did not reliably clear the prior authorization before re-auth.", steps:["Authorize an OAuth integration, then invalidate its token externally.","Choose forced re-authorization.","Observe stale authorized/readiness state or failure to begin a clean consent flow."] },
+  "PORTICO-165": { st:"REPRODUCED", env:"Baseline artifact-manager fixture", result:"A bad working directory failed startup, but the persisted artifact status/error did not consistently match the returned failure.", steps:["Create an artifact whose start command uses a nonexistent working directory.","Wait for startup to fail.","Reload artifact status and compare it with the returned error; the failure detail is missing/inconsistent."] },
+  "PORTICO-163": { st:"REPRODUCED", env:"Baseline concurrent activation fixture", result:"Two overlapping activations could return the shared Redis snapshot after the sibling call modified it, so one response included the other's skill.", steps:["Start two skill activations for the same chat concurrently.","Capture each response independently.","Observe at least one response include state introduced by the other request."] },
+  "PORTICO-159": { st:"REPRODUCED", env:"Baseline MCP Assistant readiness fixture", result:"An unknown server ID entered the readiness wait and returned a “starting” style response after roughly 30 seconds instead of failing immediately.", steps:["Call activate_integration with a syntactically valid but nonexistent server ID.","Wait for the response.","Observe a long delay and misleading starting/readiness language."] },
+  "PORTICO-158": { st:"REPRODUCED", env:"Baseline GitLab bundle vs aggregator inventory", result:"The upstream GitLab server exposed tools that were absent from the aggregated OpenAPI inventory, making those capabilities unreachable from chat.", steps:["Compare the GitLab MCP server's own tools/list result with the app's aggregated GitLab tools.","Attempt one of the missing tools from chat.","Observe that the aggregator never exposes it."] },
+  "PORTICO-156": { st:"REPRODUCED", env:"Source app, non-multimodal model", result:"Attaching an image to a model without current multimodal support produced the upstream unsupported-image failure. The app cannot fully fix the provider limitation, but can prevent or explain it better.", steps:["Choose a model marked non-multimodal.","Attach an image and send a prompt about it.","Observe the request rejected as unsupported rather than handled in chat."] },
+  "PORTICO-153": { st:"NOT REPRODUCED", env:"Current source app + target-history reconciliation", result:"GPT-4.1 was absent from the current picker. Target history now explains why: 8d329c5a replaced it with GPT-5.6 before this attempt, so the reported broken choice no longer exists on the current target.", steps:["Open the current model picker.","Search for the GPT-4.1 family.","Observe it is absent, then verify the GPT-5.6 replacement commit is in target history."] },
+
+  "PORTICO-205": { st:"INCONCLUSIVE", env:"Bounded local disk/build review", result:"The build created uniquely tagged images and no automatic GC path was observed, but reproducing the reported 100GB/month growth would require weeks of destructive repeated builds.", steps:["Record Docker/OrbStack image and build-cache usage.","Build/install distinct PORTICO build numbers repeatedly over time.","Recheck usage and verify old PORTICO images/cache are never reclaimed automatically."] },
+  "PORTICO-150": { st:"INCONCLUSIVE", env:"Current Slack configuration", result:"The leave tool is exposed while required write scopes are absent, but I did not leave a real user channel to create an irreversible Slack-side effect.", steps:["Authorize Slack with the app's normal requested scopes.","Ask the assistant to leave a disposable test channel.","Observe conversations.leave fail for missing channel/group write scope."] },
+
+  "PORTICO-197": { st:"NOT REPRODUCED", env:"Current source + scheduled-chat ownership regression", result:"Follow-up messages remained enabled for service-created scheduled output chats; the pre-existing ownership fix is present.", steps:["Open a completed scheduled task's output chat.","Send a follow-up question.","Observe the message accepted and the conversation continue normally."] },
+  "PORTICO-184": { st:"NOT REPRODUCED", env:"Bundled Slack server inventory", result:"No slack_read_canvas tool exists in the bundled server, so there is no shipped capability being hidden or broken to reproduce.", steps:["List every tool from the bundled Slack MCP server.","Search for canvas read/edit tools.","Observe none are implemented; treat this as a feature request, not a regression."] }
+};
+
+// Live delivery state refreshed 2026-07-15 from all 39 Jira records + issue
+// history/comments, GitLab MR state, origin/pre-beta-tmp, and the read-only
+// #tmp-portico-jupiter-bug-bashing Slack thread. Omitted tickets default to
+// To Do / unresolved / still in Jupiter with no confirmed delivery change.
+const DELIVERY = {
+  "PORTICO-206": { status:"Pending Triage", resolution:null, jupiter:true, changed:false, note:"Jupiter label only; no PORTICO-108 parent." },
+  "PORTICO-205": { status:"In Progress", resolution:null, jupiter:true, changed:true, updated:"2026-07-14", note:"Phase 1 and Phase 2 merged; final lifecycle automation is open, green, and mergeable.", refs:[{label:"!147 merged", mr:147},{label:"!160 merged", mr:160},{label:"!164 open", mr:164}] },
+  "PORTICO-189": { status:"To Do", resolution:null, jupiter:false, changed:true, updated:"2026-07-13", note:"Product moved the verified wrong-option submission bug to future prioritization as an enhancement.", refs:[{label:"!111 remains open", mr:111}] },
+  "PORTICO-188": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Product classified the duplicate-label behavior as frontend UX confusion rather than a true bug.", refs:[{label:"!110 remains open", mr:110}] },
+  "PORTICO-184": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Closed as unreproducible / not a shipped capability; the existing MR is unneeded.", refs:[{label:"!107 remains open", mr:107}] },
+  "PORTICO-179": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Product classified native Markdown import as an enhancement / nice-to-have.", refs:[{label:"!103 remains open", mr:103}] },
+  "PORTICO-178": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Product could not reproduce it; the code/repro finding and proposed MR remain.", refs:[{label:"!102 remains open", mr:102}] },
+  "PORTICO-177": { status:"Closed", resolution:"Duplicate", jupiter:true, changed:true, updated:"2026-07-13", note:"Jira says PORTICO-175 will address it; this conflicts with the audit's distinct-root-cause finding.", refs:[{label:"!100 remains open", mr:100}] },
+  "PORTICO-174": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Product said the past-run / disabled-run behavior did not appear to be a real bug.", refs:[{label:"!96 remains open", mr:96}] },
+  "PORTICO-173": { status:"To Do", resolution:null, jupiter:false, changed:true, updated:"2026-07-13", note:"Product classified actionable scheduled-model failure text as an improvement, not a Jupiter bug.", refs:[{label:"!97 open, conflicts", mr:97}] },
+  "PORTICO-170": { status:"In Progress", resolution:null, jupiter:true, changed:false, note:"Still assigned and In Progress; !94 remains open, green, and mergeable." },
+  "PORTICO-169": { status:"In Progress", resolution:null, jupiter:true, changed:true, updated:"2026-07-14", note:"Independently reproduced in Slack; !92 has before/after validation, approval, a green pipeline, and no conflicts.", refs:[{label:"!92 approved", mr:92}] },
+  "PORTICO-166": { status:"Closed", resolution:"Cannot reproduce", jupiter:true, changed:true, updated:"2026-07-14", note:"Final Jira resolution is Cannot reproduce after brief Fixed/reopen churn; related PORTICO-244 work landed, but the ticket's partial MR did not.", refs:[{label:"!88 remains open", mr:88},{label:"PORTICO-244 !167 merged", mr:167}] },
+  "PORTICO-164": { status:"In Progress", resolution:null, jupiter:true, changed:true, updated:"2026-07-15", note:"Assignee expanded the Rust-path root cause. Existing !87 changes dead Python code and should not land.", refs:[{label:"!87 stale", mr:87}] },
+  "PORTICO-163": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Product treated the response-snapshot ambiguity as a low-priority nice-to-have.", refs:[{label:"!84 remains open", mr:84}] },
+  "PORTICO-156": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-09", note:"Corrects stale report state: upstream Gemini limitation accepted; broad app-side mitigation rejected and closed unmerged.", refs:[{label:"!76 closed", mr:76}] },
+  "PORTICO-155": { status:"Closed", resolution:"Won't Do", jupiter:true, changed:true, updated:"2026-07-13", note:"Product classified the bright dark-mode shimmer as a design improvement, while the styling MR remains open.", refs:[{label:"!75 remains open", mr:75}] },
+  "PORTICO-153": { status:"Closed", resolution:"Fixed", jupiter:true, changed:true, updated:"2026-07-13", note:"GPT-4.1 was replaced by GPT-5.6; the older proposed MR closed unmerged as superseded.", refs:[{label:"8d329c5a landed", commit:"8d329c5aba945d2dd43fe8b2e18a1047c3bea603"},{label:"!90 closed", mr:90}] },
+  "PORTICO-150": { status:"To Do", resolution:null, jupiter:false, changed:true, updated:"2026-07-13", note:"Product called it a fair bug but not release-blocking and moved it to the general backlog." },
+};
+function deliveryOf(d) {
+  return DELIVERY[d.k] || { status:"To Do", resolution:null, jupiter:true, changed:false, note:"" };
+}
+function deliveryKind(d) {
+  const p = deliveryOf(d);
+  if (!p.jupiter) return "descoped";
+  if (p.status === "Closed") return "closed";
+  if (p.status === "In Progress") return "active";
+  if (p.status === "Pending Triage") return "pending";
+  return "open";
+}
+function deliveryLabel(d) {
+  const p = deliveryOf(d);
+  return p.status + (p.resolution ? " · " + p.resolution : "");
+}
+function deliveryRefURL(ref) {
+  if (ref.mr) return GITLAB + "/-/merge_requests/" + ref.mr;
+  if (ref.commit) return GITLAB + "/-/commit/" + ref.commit;
+  return null;
+}
+
+const clusterOrder = ["MCP orchestration","Agent VM & Docker","Tool-hint & config drift","Scheduling","Model catalog & routing","Artifacts","Chat UI","Tool-call validation","Skills","Auth / OAuth","Web tools"];
+const reporters = [...new Set(DATA.map(d => d.rep))].sort();
+
+// Severity = this triage's independent judgment of user impact (NOT the JIRA priority field).
+// High: core flows broken, silent wrong results, or machine-level harm. Medium: real friction or
+// misleading behavior, recoverable. Low: cosmetic / niche / edge. None: no current user impact.
+const SEV = {
+  "PORTICO-206":"Medium", // trust damage on correct answers, persisted — but intermittent, content still correct
+  "PORTICO-205":"High",   // fills the user's disk ~100GB/month; whole-machine degradation
+  "PORTICO-197":"None",   // already fixed before filing — no impact on current builds
+  "PORTICO-192":"Low",    // silent loss limited to a ~50-char note
+  "PORTICO-191":"Medium", // misleading error sends agent+user chasing the wrong fix
+  "PORTICO-190":"Medium", // silent violation of an explicit block-list (only when both lists passed)
+  "PORTICO-189":"High",   // wrong answer submitted at exactly the moments the assistant stops to ask
+  "PORTICO-188":"Low",    // ambiguous duplicate label; edge case
+  "PORTICO-186":"Medium", // whole batch fails on one bad path; recoverable by retry
+  "PORTICO-185":"Low",    // confusing accept/reject; corrupt bytes blocked downstream
+  "PORTICO-184":"None",   // not a bug — capability never existed
+  "PORTICO-183":"High",   // resource leak per create; machine slows as containers pile up
+  "PORTICO-182":"Medium", // false "healthy" report; discovered on next failing action
+  "PORTICO-181":"Medium", // assistant coached with phantom abilities → repeated failing attempts
+  "PORTICO-180":"Medium", // assistant can report "no results" when results exist (tool-dependent)
+  "PORTICO-179":"Low",    // import falls back to degraded formatting
+  "PORTICO-178":"Medium", // wrong model-availability answers; users pick erroring models
+  "PORTICO-177":"Low",    // confusing inventory counts/duplicates
+  "PORTICO-176":"Low",    // delete blocked up to ~2min, self-resolves
+  "PORTICO-175":"Medium", // permanent zombie entry, no in-product recovery (rare precondition)
+  "PORTICO-174":"Medium", // task accepted then silently never runs
+  "PORTICO-173":"Medium", // automation fails with cryptic error and no attention flag
+  "PORTICO-172":"Medium", // >25min scheduled work killed with bare timeout
+  "PORTICO-170":"High",   // no disk/PID caps on code execution — host exhaustion possible (security)
+  "PORTICO-169":"High",   // entire visible answer silently swallowed
+  "PORTICO-166":"High",   // users stuck in loops repairing broken account connections
+  "PORTICO-165":"Low",    // missing error message on failed start
+  "PORTICO-164":"High",   // running previews force-killed within ~60s whenever the sweep runs
+  "PORTICO-163":"Low",    // misleading confirmation message; data unaffected
+  "PORTICO-162":"Medium", // stale integrations keep influencing the assistant after skill off
+  "PORTICO-160":"Low",    // batch enable fails wholesale; agent retries individually
+  "PORTICO-159":"Low",    // 30s hang + wrong "starting" status for nonexistent integration
+  "PORTICO-158":"Medium", // six expected GitLab actions missing (stale pin)
+  "PORTICO-157":"High",   // Google account connection fails at the last step via legacy path
+  "PORTICO-156":"High",   // image attachments rejected product-wide (upstream block)
+  "PORTICO-155":"Low",    // cosmetic dark-mode brightness
+  "PORTICO-153":"None",   // GPT-4.1 was replaced by GPT-5.6 — no current picker impact
+  "PORTICO-150":"Low",    // niche action always fails with permissions error
+  "PORTICO-145":"Medium", // Jira operations fail on Bedrock back-ends with cryptic error
+};
+const sevOrder = ["High","Medium","Low","None"];
+const SEVM = {
+  "High":   { color: "#d03b3b", icon: "▲", darkColor: "#d03b3b" },
+  "Medium": { color: "#fab219", icon: "●", darkColor: "#fab219" },
+  "Low":    { color: "#898781", icon: "●", darkColor: "#898781" },
+  "None":   { color: "#898781", icon: "○", darkColor: "#898781" },
+};
+function sevOf(d) { return SEV[d.k] || "Medium"; }
+
+// Report count = independent report events of the same defect: the original filing plus
+// re-reports relayed into the JIRA comments from #tmp-portico-jupiter-bug-bashing (distinct
+// Slack thread or distinct reporter; same-person follow-ups in the same thread not counted).
+// Derived from reading all 88 comments across the 39 tickets.
+const REPORTS = {
+  "PORTICO-189": { n: 3, who: "dappelbaum (filing) + joem (screenshot & recording, 2026-07-08) + ngosalia (+1, same day) — 3 distinct reporters" },
+  "PORTICO-153": { n: 3, who: "fhans (filing) + dappelbaum (additional bug-bash report) + dappelbaum (registry-flags addendum, separate thread)" },
+  "PORTICO-157": { n: 2, who: "dappelbaum (filing) + dappelbaum (separate OAuth session-binding incident, new thread, later escalated)" },
+  "PORTICO-164": { n: 2, who: "dappelbaum (filing) + follow-up reporter with a deterministic 2/2 single-artifact repro" },
+  "PORTICO-178": { n: 2, who: "dappelbaum (filing) + stale agent-vm-ID addendum report (separate thread)" },
+  "PORTICO-185": { n: 2, who: "dappelbaum (filing + inverse repro) + sibling ticket PORTICO-187 (same content-gate defect, linked as covered by !108)" },
+};
+function reportsOf(d) { return REPORTS[d.k] || { n: 1, who: "single report (original filing only)" }; }
+function sevBadge(s) {
+  return '<span style="white-space:nowrap;"><span aria-hidden="true" style="color:' + SEVM[s].color + '; font-size:10px;">' + SEVM[s].icon + '</span> ' + s + "</span>";
+}
+
+function mrURL(d) {
+  if (d.mrn) return GITLAB + "/-/merge_requests/" + d.mrn;
+  if (d.mrc) return GITLAB + "/-/commit/" + d.mrc;
+  if (d.mrb) return GITLAB + "/-/commits/" + d.mrb;
+  return null;
+}
+
+// Completion state is deliberately separate from the report data and filters so it
+// remains stable as the table is sorted, searched, or refreshed with new metadata.
+const DONE_STORAGE_KEY = "portico:bug-bash-triage:done:v1";
+const DATA_KEYS = new Set(DATA.map(d => d.k));
+let doneStorageAvailable = true;
+function loadDoneKeys() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DONE_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(saved) ? saved.filter(k => DATA_KEYS.has(k)) : []);
+  } catch (error) {
+    doneStorageAvailable = false;
+    return new Set();
+  }
+}
+const doneKeys = loadDoneKeys();
+function saveDoneKeys() {
+  try {
+    localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify([...doneKeys].sort()));
+    doneStorageAvailable = true;
+  } catch (error) {
+    doneStorageAvailable = false;
+  }
+}
+
+// ---------- State ----------
+const state = {
+  recs: new Set(),        // empty = all
+  verdicts: new Set(),    // empty = all
+  sevs: new Set(),        // empty = all
+  progress: "all",
+  cluster: "all",
+  rep: "all",
+  mr: "all",
+  delivery: "all",
+  qw: false,
+  multi: false,
+  q: "",
+  sort: { key: "key", dir: "desc" },
+};
+const openKeys = new Set();
+
+function mrClass(d) { return d.mr ? (d.warn ? "warn" : "has") : "none"; }
+function keyNum(d) { return parseInt(d.k.replace("PORTICO-", ""), 10); }
+function matches(d) {
+  if (state.recs.size && !state.recs.has(d.r)) return false;
+  if (state.verdicts.size && !state.verdicts.has(d.v)) return false;
+  if (state.sevs.size && !state.sevs.has(sevOf(d))) return false;
+  if (state.progress === "remaining" && doneKeys.has(d.k)) return false;
+  if (state.progress === "done" && !doneKeys.has(d.k)) return false;
+  if (state.cluster !== "all" && d.c !== state.cluster) return false;
+  if (state.rep !== "all" && d.rep !== state.rep) return false;
+  if (state.mr === "has" && !d.mr) return false;
+  if (state.mr === "warn" && !(d.mr && d.warn)) return false;
+  if (state.mr === "none" && d.mr) return false;
+  const dk = deliveryKind(d);
+  if (state.delivery === "changed" && !deliveryOf(d).changed) return false;
+  if (["closed","descoped","active"].includes(state.delivery) && dk !== state.delivery) return false;
+  if (state.delivery === "open" && !["open","pending"].includes(dk)) return false;
+  if (state.qw && !d.qw) return false;
+  if (state.multi && reportsOf(d).n < 2) return false;
+  if (state.q) {
+    const q = state.q.toLowerCase();
+    const p = deliveryOf(d);
+    const hay = (d.k + " " + d.t + " " + d.why + " " + d.impact + " " + d.rep + " " + d.c + " " + sevOf(d) + " " + reportsOf(d).who + " " + (d.mr || "") + " " + (d.note || "") + " " + (d.ev || []).join(" ") + " " + p.status + " " + (p.resolution || "") + " " + (p.note || "") + " " + (p.refs || []).map(ref => ref.label).join(" ")).toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  return true;
+}
+function filtered() { return DATA.filter(matches); }
+
+const SIZE_ORD = { "S": 0, "M": 1, "L": 2, "—": 3 };
+const MR_ORD = { "has": 0, "warn": 1, "none": 2 };
+const DELIVERY_ORD = { "active": 0, "pending": 1, "open": 2, "descoped": 3, "closed": 4 };
+const SORTS = {
+  key:      d => keyNum(d),                      // default dir "desc" = newest first (matches original listing)
+  reporter: d => d.rep.toLowerCase(),
+  verdict:  d => verdictOrder.indexOf(d.v),
+  rec:      d => recOrder.indexOf(d.r),
+  sev:      d => sevOrder.indexOf(sevOf(d)),     // "asc" = High first
+  reports:  d => -reportsOf(d).n,                // "asc" = most-reported first
+  size:     d => SIZE_ORD[d.s] ?? 4,
+  mr:       d => MR_ORD[mrClass(d)],
+  delivery: d => DELIVERY_ORD[deliveryKind(d)] ?? 5,
+  title:    d => d.t.toLowerCase(),
+};
+function sorted(list) {
+  const f = SORTS[state.sort.key] || SORTS.key;
+  const dir = state.sort.dir === "desc" ? -1 : 1;
+  return [...list].sort((a, b) => {
+    const va = f(a), vb = f(b);
+    if (va < vb) return -1 * dir;
+    if (va > vb) return  1 * dir;
+    return keyNum(b) - keyNum(a); // stable tiebreak: newest first
+  });
+}
+
+// ---------- Filter controls ----------
+function togBtn(label, swatchColor, pressed, onclick, count) {
+  const b = document.createElement("button");
+  b.className = "ftog"; b.type = "button";
+  b.setAttribute("aria-pressed", pressed ? "true" : "false");
+  b.innerHTML = (swatchColor ? '<span class="swatch" style="background:' + swatchColor + ';"></span>' : "") + label +
+    (count != null ? ' <span style="color:var(--ink-3); font-weight:600;">' + count + "</span>" : "");
+  b.addEventListener("click", onclick);
+  return b;
+}
+function buildFilters() {
+  const fr = document.getElementById("frecs");
+  fr.replaceChildren(...recOrder.map(r =>
+    togBtn(r, REC[r].color, state.recs.has(r), () => { state.recs.has(r) ? state.recs.delete(r) : state.recs.add(r); update(); },
+      DATA.filter(d => d.r === r).length)));
+  const fv = document.getElementById("fverdicts");
+  fv.replaceChildren(...verdictOrder.map(v =>
+    togBtn(VICON[v] + " " + v, null, state.verdicts.has(v), () => { state.verdicts.has(v) ? state.verdicts.delete(v) : state.verdicts.add(v); update(); },
+      DATA.filter(d => d.v === v).length)));
+  const fs = document.getElementById("fsevs");
+  fs.replaceChildren(...sevOrder.map(s =>
+    togBtn('<span aria-hidden="true" style="color:' + SEVM[s].color + '; font-size:10px;">' + SEVM[s].icon + "</span> " + s, null, state.sevs.has(s),
+      () => { state.sevs.has(s) ? state.sevs.delete(s) : state.sevs.add(s); update(); },
+      DATA.filter(d => sevOf(d) === s).length)));
+  const fc = document.getElementById("fcluster");
+  if (!fc.options.length) {
+    const fp = document.getElementById("fprogress");
+    fp.addEventListener("change", () => { state.progress = fp.value; update(); });
+    fc.appendChild(new Option("All clusters (" + DATA.length + ")", "all"));
+    clusterOrder.forEach(c => fc.appendChild(new Option(c + " (" + DATA.filter(d => d.c === c).length + ")", c)));
+    fc.addEventListener("change", () => { state.cluster = fc.value; update(); });
+    const frep = document.getElementById("frep");
+    frep.appendChild(new Option("All reporters (" + DATA.length + ")", "all"));
+    reporters.forEach(r => frep.appendChild(new Option(r + " (" + DATA.filter(d => d.rep === r).length + ")", r)));
+    frep.addEventListener("change", () => { state.rep = frep.value; update(); });
+    const fm = document.getElementById("fmr");
+    fm.addEventListener("change", () => { state.mr = fm.value; update(); });
+    const fd = document.getElementById("fdelivery");
+    fd.addEventListener("change", () => { state.delivery = fd.value; update(); });
+    const fqw = document.getElementById("fqw");
+    fqw.addEventListener("click", () => { state.qw = !state.qw; fqw.setAttribute("aria-pressed", state.qw ? "true" : "false"); update(); });
+    const fmulti = document.getElementById("fmulti");
+    fmulti.addEventListener("click", () => { state.multi = !state.multi; fmulti.setAttribute("aria-pressed", state.multi ? "true" : "false"); update(); });
+    const fq = document.getElementById("fq");
+    fq.addEventListener("input", () => { state.q = fq.value.trim(); update(); });
+    document.getElementById("freset").addEventListener("click", resetFilters);
+  }
+  document.getElementById("fprogress").value = state.progress;
+  fc.value = state.cluster;
+  document.getElementById("frep").value = state.rep;
+  document.getElementById("fmr").value = state.mr;
+  document.getElementById("fdelivery").value = state.delivery;
+}
+function resetFilters() {
+  state.recs.clear(); state.verdicts.clear(); state.sevs.clear();
+  state.progress = "all"; state.cluster = "all"; state.rep = "all"; state.mr = "all"; state.delivery = "all"; state.qw = false; state.multi = false; state.q = "";
+  document.getElementById("fmulti").setAttribute("aria-pressed", "false");
+  document.getElementById("fprogress").value = "all";
+  document.getElementById("fcluster").value = "all";
+  document.getElementById("frep").value = "all";
+  document.getElementById("fmr").value = "all";
+  document.getElementById("fdelivery").value = "all";
+  document.getElementById("fqw").setAttribute("aria-pressed", "false");
+  document.getElementById("fq").value = "";
+  update();
+}
+function filtersActive() {
+  return state.recs.size || state.verdicts.size || state.sevs.size || state.progress !== "all" || state.cluster !== "all" || state.rep !== "all" || state.mr !== "all" || state.delivery !== "all" || state.qw || state.multi || state.q;
+}
+
+// ---------- Rec bars ----------
+function renderRecBars(list) {
+  const counts = Object.fromEntries(recOrder.map(r => [r, list.filter(d => d.r === r).length]));
+  const maxRec = Math.max(1, ...Object.values(counts));
+  const recbars = document.getElementById("recbars");
+  recbars.replaceChildren();
+  recOrder.forEach(r => {
+    const n = counts[r];
+    const w = (n / maxRec) * 100;
+    const row = document.createElement("div");
+    row.className = "recrow";
+    row.innerHTML =
+      '<div class="recname"><span>' + r + '</span><span class="swatch" style="background:' + REC[r].color + ';"></span></div>' +
+      '<div class="recbarzone"><div class="recbar" style="width:' + w + '%; background:' + REC[r].color + ';"></div>' +
+      '<div class="recbar-label" style="left: calc(' + w + '% + 8px);">' + n + '</div></div>' +
+      '<div class="recdesc">' + REC[r].desc + '</div>';
+    recbars.appendChild(row);
+  });
+  document.getElementById("recscope").textContent = filtersActive() ? " · filtered: " + list.length + " of " + DATA.length : "";
+  const legendHTML = recOrder.map(r =>
+    '<span class="li"><span class="swatch" style="background:' + REC[r].color + ';"></span>' + r + " (" + counts[r] + ")</span>"
+  ).join("");
+  document.getElementById("reclegend").innerHTML = legendHTML;
+  document.getElementById("clusterlegend").innerHTML = legendHTML;
+}
+
+// ---------- Clusters ----------
+function renderClusters(list) {
+  const clustersEl = document.getElementById("clusters");
+  clustersEl.replaceChildren();
+  let any = false;
+  clusterOrder.forEach(c => {
+    const items = list.filter(d => d.c === c);
+    if (!items.length) return;
+    any = true;
+    const row = document.createElement("div");
+    row.className = "clusterrow";
+    const chips = items.map(d =>
+      '<a class="chip" href="#row-' + d.k + '" data-k="' + d.k + '" style="background:' + REC[d.r].color + '; color:' + REC[d.r].ink + ';">' + d.k.replace("PORTICO-", "") + '</a>'
+    ).join("");
+    row.innerHTML = '<div class="cname">' + c + '</div><div class="ccount">' + items.length + '</div><div class="chips">' + chips + '</div>';
+    clustersEl.appendChild(row);
+  });
+  if (!any) {
+    const empty = document.createElement("p");
+    empty.className = "subtle"; empty.textContent = "No tickets match the current filters.";
+    clustersEl.appendChild(empty);
+  }
+}
+
+// ---------- Table ----------
+const COLS = [
+  { key: "done",     label: "Done",     sortable: false },
+  { key: "key",      label: "Ticket",   sortable: true },
+  { key: "verdict",  label: "Verdict",  sortable: true },
+  { key: "rec",      label: "Rec",      sortable: true },
+  { key: "sev",      label: "Severity", sortable: true },
+  { key: "reports",  label: "Reports",  sortable: true },
+  { key: "size",     label: "Size",     sortable: true },
+  { key: "mr",       label: "Fix MR",   sortable: true },
+  { key: "delivery", label: "Delivery / Jira", sortable: true },
+  { key: "impact",   label: "User impact — what people actually feel", sortable: false },
+  { key: "title",    label: "Technical rationale & evidence", sortable: true },
+];
+function renderHead() {
+  const tr = document.getElementById("thead-row");
+  tr.replaceChildren(...COLS.map(col => {
+    const th = document.createElement("th");
+    if (!col.sortable) { th.className = "plain"; th.textContent = col.label; return th; }
+    const active = state.sort.key === col.key;
+    if (active) th.setAttribute("aria-sort", state.sort.dir === "asc" ? "ascending" : "descending");
+    const b = document.createElement("button");
+    b.className = "sortbtn"; b.type = "button";
+    b.innerHTML = col.label + (active ? ' <span class="arrow">' + (state.sort.dir === "asc" ? "▲" : "▼") + "</span>" : "");
+    b.addEventListener("click", () => {
+      if (state.sort.key === col.key) state.sort.dir = state.sort.dir === "asc" ? "desc" : "asc";
+      else state.sort = { key: col.key, dir: "asc" };
+      update();
+    });
+    th.appendChild(b);
+    return th;
+  }));
+}
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function renderDelivery(d) {
+  const p = deliveryOf(d);
+  const kind = deliveryKind(d);
+  const scope = p.jupiter ? "Jupiter label retained" : "Removed from Jupiter";
+  const stamp = p.updated ? " · " + p.updated : "";
+  const refs = (p.refs || []).map(ref => {
+    const url = deliveryRefURL(ref);
+    return url ? '<a href="' + url + '" target="_blank" rel="noopener">' + esc(ref.label) + '</a>' : esc(ref.label);
+  }).join(" · ");
+  const note = p.note ? '<div class="delivery-note">' + esc(p.note) + (refs ? '<br>' + refs : "") + '</div>' : (refs ? '<div class="delivery-note">' + refs + '</div>' : "");
+  return '<span class="delivery-badge ' + kind + '">' + esc(deliveryLabel(d)) + '</span>' +
+    '<span class="delivery-scope">' + (p.changed ? "Updated · " : "") + esc(scope + stamp) + '</span>' + note;
+}
+function renderTable(list) {
+  const tbody = document.querySelector("#ttable tbody");
+  tbody.replaceChildren();
+  if (!list.length) {
+    const tr = document.createElement("tr");
+    tr.className = "emptyrow";
+    tr.innerHTML = '<td colspan="11">No tickets match the current filters — <a href="#" onclick="return false;" id="emptyreset" style="color:inherit;">reset filters</a>.</td>';
+    tbody.appendChild(tr);
+    tr.querySelector("#emptyreset").addEventListener("click", resetFilters);
+    return;
+  }
+  sorted(list).forEach(d => {
+    const tr = document.createElement("tr");
+    const isDone = doneKeys.has(d.k);
+    tr.className = "trow" + (isDone ? " is-done" : ""); tr.id = "row-" + d.k; tr.dataset.delivery = deliveryKind(d);
+    const url = mrURL(d);
+    const mrText = d.mr || "—";
+    const mrLinked = url ? '<a href="' + url + '" target="_blank" rel="noopener">' + mrText + "</a>" : mrText;
+    const mr = d.mr && d.warn
+      ? mrLinked + ' <span class="mrwarn" title="MR needs action before landing, or should not land — see callout">⚠</span>'
+      : mrLinked;
+    const open = openKeys.has(d.k) ? " open" : "";
+    const evd = d.ev && d.ev.length
+      ? '<details class="evd" data-k="' + d.k + '"' + open + '><summary>evidence (' + d.ev.length + ')' + (d.note ? " + checker note" : "") + '</summary><ul>' +
+        d.ev.map(e => "<li><code>" + e.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</code></li>").join("") + "</ul>" +
+        (d.note ? '<div class="checknote">' + d.note + "</div>" : "") + "</details>"
+      : (d.note ? '<div class="checknote">' + d.note + "</div>" : "");
+    const rp = REPRO[d.k];
+    const reproClass = rp ? rp.st.toLowerCase().replace(/ /g, "-") : "inconclusive";
+    const repro = rp
+      ? '<details class="repro"><summary><span class="repro-status ' + reproClass + '">' + esc(rp.st) + '</span>reproduction attempt</summary>' +
+        '<div class="repro-body"><p class="repro-env"><strong>Environment:</strong> ' + esc(rp.env) + '</p><ol>' +
+        rp.steps.map(step => '<li>' + esc(step) + '</li>').join("") + '</ol><p><strong>Observed:</strong> ' + esc(rp.result) + '</p></div></details>'
+      : "";
+    tr.innerHTML =
+      '<td class="done-cell"><input class="done-check" type="checkbox" data-k="' + d.k + '" aria-label="Mark ' + d.k + ' done"' + (isDone ? " checked" : "") + '></td>' +
+      '<td class="key"><a href="' + JIRA + d.k + '" target="_blank" rel="noopener" title="Open ' + d.k + ' in JIRA">' + d.k + "</a>" +
+        (d.qw ? ' <span title="quick win: confirmed + small fix" style="color:var(--good-text);">●</span>' : "") +
+        '<span class="rep" title="Reporter">' + d.rep + "</span></td>" +
+      '<td class="vcell">' + (VICON[d.v] || "") + " " + d.v + "</td>" +
+      '<td><span class="badge" style="background:' + REC[d.r].color + '; color:' + REC[d.r].ink + ';">' + d.r + "</span></td>" +
+      '<td class="vcell">' + sevBadge(sevOf(d)) + "</td>" +
+      '<td style="font-variant-numeric:tabular-nums; white-space:nowrap;" title="' + reportsOf(d).who.replace(/"/g, "&quot;") + '">' +
+        (reportsOf(d).n > 1 ? '<strong>' + reportsOf(d).n + "×</strong>" : '<span style="color:var(--ink-3);">1×</span>') + "</td>" +
+      '<td style="font-variant-numeric:tabular-nums;">' + d.s + "</td>" +
+      '<td class="mrcell">' + mr + "</td>" +
+      '<td>' + renderDelivery(d) + "</td>" +
+      '<td class="impact">' + d.impact + "</td>" +
+      '<td><div class="ttitle">' + d.t + '</div><div class="why">' + d.why + "</div>" + repro + evd + "</td>";
+    tr.querySelector(".done-check").addEventListener("change", event => {
+      if (event.currentTarget.checked) doneKeys.add(d.k); else doneKeys.delete(d.k);
+      saveDoneKeys();
+      update();
+    });
+    tbody.appendChild(tr);
+  });
+}
+function renderCount(list) {
+  document.getElementById("fcount").innerHTML = "Showing <strong>" + list.length + "</strong> of " + DATA.length + " tickets";
+}
+function renderProgress() {
+  const done = DATA.filter(d => doneKeys.has(d.k)).length;
+  const percent = DATA.length ? Math.round((done / DATA.length) * 100) : 0;
+  const track = document.getElementById("progress-track");
+  track.setAttribute("aria-valuemax", DATA.length);
+  track.setAttribute("aria-valuenow", done);
+  track.setAttribute("aria-valuetext", done + " of " + DATA.length + " tickets completed");
+  document.getElementById("progress-fill").style.width = percent + "%";
+  document.getElementById("progress-text").innerHTML = "<strong>" + done + "</strong> of " + DATA.length + " done";
+  document.getElementById("progress-note").textContent = doneStorageAvailable ? "Saved in this browser" : "Local saving is unavailable";
+}
+
+// ---------- Update ----------
+function update() {
+  const list = filtered();
+  buildFilters();
+  renderProgress();
+  renderRecBars(list);
+  renderClusters(list);
+  renderHead();
+  renderTable(list);
+  renderCount(list);
+}
+// Wire the MR links in the fleet callout
+document.querySelectorAll("a.ext[data-mr]").forEach(a => {
+  a.href = GITLAB + "/-/merge_requests/" + a.dataset.mr;
+  a.target = "_blank"; a.rel = "noopener";
+});
+update();
+
+// ---------- Tooltip + chip navigation (delegated) ----------
+const tip = document.getElementById("tip");
+function showTip(d, x, y) {
+  tip.innerHTML = '<span class="t-key">' + d.k + "</span> · " + d.v + " · " + d.r + " · " + sevOf(d) + " severity" + (d.s !== "—" ? " · size " + d.s : "") +
+    (reportsOf(d).n > 1 ? " · reported " + reportsOf(d).n + "×" : "") +
+    '<br><span class="t-meta">' + deliveryLabel(d) + (deliveryOf(d).jupiter ? " · Jupiter" : " · removed from Jupiter") + "<br>" + d.t + " — reported by " + d.rep + "</span>";
+  tip.style.display = "block";
+  const pad = 14;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(x + pad, window.innerWidth - w - 8) + "px";
+  tip.style.top = (y - h - pad < 8 ? y + pad : y - h - pad) + "px";
+}
+function chipData(el) { return DATA.find(x => x.k === el.dataset.k); }
+document.addEventListener("mousemove", e => {
+  const chip = e.target.closest && e.target.closest("a.chip");
+  if (chip) showTip(chipData(chip), e.clientX, e.clientY);
+  else tip.style.display = "none";
+});
+document.addEventListener("focusin", e => {
+  const chip = e.target.closest && e.target.closest("a.chip");
+  if (chip) { const r = chip.getBoundingClientRect(); showTip(chipData(chip), r.left + r.width / 2, r.top); }
+});
+document.addEventListener("focusout", () => { tip.style.display = "none"; });
+document.addEventListener("click", e => {
+  const chip = e.target.closest && e.target.closest("a.chip");
+  if (!chip) return;
+  const d = chipData(chip);
+  document.querySelectorAll("tr.hl").forEach(x => x.classList.remove("hl"));
+  const row = document.getElementById("row-" + d.k);
+  if (row) row.classList.add("hl");
+});
+// Track expanded evidence across re-renders
+document.addEventListener("toggle", e => {
+  const det = e.target;
+  if (det.matches && det.matches("details.evd")) {
+    if (det.open) openKeys.add(det.dataset.k); else openKeys.delete(det.dataset.k);
+  }
+}, true);
+</script>
+</body>
+</html>

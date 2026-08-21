@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-21T00:00:00.000Z",
+  "tokens": [
+    {
+      "clientId": "fixture-scoped",
+      "displayName": "Fixture Scoped",
+      "tokenHash": "sha256:fedcba9876543210fedcba9876543210:39798b6c37609b02484954ba0042af637cf4df9fc2962fbd19c3338d42b09bf5",
+      "tokenFile": "tokens/fixture-scoped.token",
+      "scopes": [
+        "bridge:status",
+        "oauth:access-token:fixture"
+      ],
+      "createdAt": "2026-07-21T00:00:00.000Z",
+      "updatedAt": "2026-07-21T00:00:00.000Z",
+      "revoked": false
+    }
+  ]
+}

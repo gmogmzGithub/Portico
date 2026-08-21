@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "marketplaces": [
+    {
+      "id": "anthropic-agent-skills",
+      "name": "anthropic-agent-skills",
+      "description": "Public example skills from Anthropic.",
+      "source": {
+        "type": "github",
+        "repo": "anthropics/skills",
+        "repoUrl": "https://github.com/anthropics/skills",
+        "ref": "main"
+      },
+      "owner": {
+        "name": "Anthropic",
+        "email": ""
+      },
+      "enabled": true,
+      "isOfficial": false,
+      "ootb": true
+    }
+  ]
+}

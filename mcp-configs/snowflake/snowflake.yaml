@@ -1,0 +1,32 @@
+deployment_type: docker
+description: MCP Server for Snowflake including Cortex AI, object management, SQL orchestration, semantic view consumption, and more
+display_name: Snowflake
+id: snowflake
+is_core: false
+name: Snowflake
+required_env_vars: []
+create_dirs:
+  - ~/.snowflake/
+runtime_files:
+  - filename: mcp_config.yaml
+    source: ~/.snowflake/mcp_config.yaml
+  - source: ~/.snowflake/connections.toml
+    target: /root/.snowflake/connections.toml
+    sensitive: true
+user_installed: false
+tool_rename_mapping:
+  cortex_agent: "Cortex Agent"
+  cortex_analyst: "Cortex Analyst"
+  create_object: "Create Object"
+  create_or_alter_object: "Create or Alter Object"
+  describe_object: "Describe Object"
+  describe_semantic_view: "Describe Semantic View"
+  drop_object: "Drop Object"
+  get_semantic_view_ddl: "Get Semantic View DDL"
+  list_objects: "List Objects"
+  list_semantic_views: "List Semantic Views"
+  query_semantic_view: "Query Semantic View"
+  run_snowflake_query: "Run Snowflake Query"
+  show_semantic_dimensions: "Show Semantic Dimensions"
+  show_semantic_metrics: "Show Semantic Metrics"
+  write_semantic_view_query_tool: "Write Semantic View Query"

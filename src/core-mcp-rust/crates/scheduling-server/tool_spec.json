@@ -1,0 +1,300 @@
+[
+  {
+    "name": "create_task",
+    "title": null,
+    "description": "Create a scheduled task that will later execute through the Subagents MCP server. The task stores a prompt, schedule, target model or agent, and optional skills or MCP integrations to enable at run time.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "A concise 3-5 word display name generated from the task prompt. Infer this name yourself; do not ask the user to provide one."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "An action-oriented job specification for the future agent. Use first-person owner wording such as 'Remind me' or 'Check my'; do not supply assumed output or save conversational text that could be mistaken for advice addressed to the model."
+        },
+        "model_id": {
+          "type": "string",
+          "description": "The target Open WebUI model or agent ID to execute through subagents_run_subagent."
+        },
+        "schedule": {
+          "type": "object",
+          "description": "Schedule definition. Use kind='cron' with a 5-field crontab plus timezone for recurring tasks, or kind='once' with run_at plus timezone for one-off tasks.",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["cron", "once"]
+            },
+            "cron_expression": {
+              "type": "string"
+            },
+            "run_at": {
+              "type": "string"
+            },
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone used to interpret recurring wall-clock schedules and preserve them across daylight-saving changes. Default to the current user's timezone when they did not name another zone."
+            }
+          },
+          "required": ["kind", "timezone"]
+        },
+        "skill_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional skills to pin for every run. Leave empty by default: scheduled agents can activate relevant skills ad hoc from the task instructions.",
+          "default": []
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional MCP servers or integrations to enable when the scheduled task starts.",
+          "default": []
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the task should be eligible for scheduled execution immediately.",
+          "default": true
+        }
+      },
+      "required": ["name", "prompt", "model_id", "schedule"]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "get_task",
+    "title": null,
+    "description": "Fetch a single scheduled task by id.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Scheduled task id."
+        }
+      },
+      "required": ["task_id"]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "list_tasks",
+    "title": null,
+    "description": "List scheduled tasks stored in the Application Support scheduled_tasks directory.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "include_disabled": {
+          "type": "boolean",
+          "description": "Include disabled tasks in the response.",
+          "default": true
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "update_task",
+    "title": null,
+    "description": "Update mutable fields on a scheduled task. Replacing the schedule or toggling enabled recomputes next_run_at from the current time.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Scheduled task id."
+        },
+        "name": {
+          "type": "string",
+          "description": "Concise model-generated display name (maximum 80 characters)."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Replacement action-oriented job specification for future runs. Use first-person owner wording such as 'Remind me' or 'Check my' rather than referring to 'the user', and do not supply assumed output or conversational text."
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["cron", "once"]
+            },
+            "cron_expression": {
+              "type": "string"
+            },
+            "run_at": {
+              "type": "string"
+            },
+            "timezone": {
+              "type": "string",
+              "description": "IANA timezone for recurring wall-clock evaluation. Default to the current user's timezone unless the task explicitly uses another zone."
+            }
+          },
+          "required": ["kind", "timezone"]
+        },
+        "skill_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional skills to pin for every run. Leave empty to allow ad-hoc skill activation from the task instructions."
+        },
+        "tool_server_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": ["task_id"]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "delete_task",
+    "title": null,
+    "description": "Delete a scheduled task definition.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Scheduled task id."
+        }
+      },
+      "required": ["task_id"]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "run_task_now",
+    "title": null,
+    "description": "Start an immediate run of a scheduled task and return a handle (run_id, chat_id) without waiting for completion. The run executes asynchronously through the scheduling daemon; poll get_task to see last_run_* once it terminates. Idempotent: if a run is already in flight for the task, the existing handle is returned with status=already_running. Use cancel_run to abort an in-flight run.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Scheduled task id."
+        }
+      },
+      "required": ["task_id"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": { "type": "string" },
+        "run_id": { "type": "string" },
+        "chat_id": { "type": "string" },
+        "started_at": { "type": "string" },
+        "trigger": { "type": "string", "enum": ["manual", "scheduled"] },
+        "status": { "type": "string", "enum": ["running", "already_running"] }
+      },
+      "required": ["task_id", "run_id", "chat_id", "status"]
+    },
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "cancel_run",
+    "title": null,
+    "description": "Cancel an in-flight run for a scheduled task. Sets a cancellation marker observed by the upstream subagent polling loop; the run terminates asynchronously and last_run_status becomes 'cancelled'. Returns immediately. If no run is in flight, status='no_run_in_flight'. Optional run_id ensures the call targets a specific run (returns an error on mismatch).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Scheduled task id whose in-flight run should be cancelled."
+        },
+        "run_id": {
+          "type": "string",
+          "description": "Optional: only cancel if the in-flight run has this run_id."
+        }
+      },
+      "required": ["task_id"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": { "type": "string" },
+        "run_id": { "type": "string" },
+        "chat_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["cancelling", "no_run_in_flight"] }
+      },
+      "required": ["task_id", "status"]
+    },
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  },
+  {
+    "name": "finalize_run",
+    "title": null,
+    "description": "Internal scheduled-run finalizer. Scheduled task subagents MUST call this exactly once before ending the run. A scheduled run is only marked successful when this tool records status='success'.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Scheduled task id for the active run."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["success", "failed", "needs_attention"],
+          "description": "Assistant's explicit verdict for whether the scheduled task completed its requested work."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief user-facing summary of the outcome."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Required when status is failed or needs_attention; optional detail for success."
+        }
+      },
+      "required": ["task_id", "status", "summary"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "success": { "type": "boolean" },
+        "task_id": { "type": "string" },
+        "run_id": { "type": "string" },
+        "chat_id": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "required": ["success", "task_id", "run_id", "chat_id"]
+    },
+    "icons": null,
+    "annotations": null,
+    "_meta": null
+  }
+]

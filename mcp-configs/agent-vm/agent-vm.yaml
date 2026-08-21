@@ -1,0 +1,44 @@
+name: "Agent VM MCP Server"
+id: "agent-vm"
+display_name: "Agent VM"
+deployment_type: "docker"
+experimental: false
+is_core: true
+always_enabled: true
+user_installed: false
+description: "Persistent Docker container management for long-horizon agentic tasks - VMs persist across tool calls, workspace file management, and ephemeral script execution"
+use_cases:
+  - "Create persistent execution environments for multi-step tasks"
+  - "Execute bash commands in isolated containers"
+  - "Run Python scripts with state persistence"
+  - "Manage files within agent VM containers"
+  - "Transfer files between workspace and VM"
+  - "List and write files to chat workspace directories"
+  - "Execute ephemeral skill scripts in isolated containers"
+tool_rename_mapping:
+  bash: "Run Bash Command"
+  create: "Create Agent VM"
+  create_file: "Create File"
+  create_files: "Create Files"
+  delete_file: "Delete File"
+  destroy: "Destroy Agent VM"
+  display_files: "Display Files in Chat"
+  edit_file: "Edit File"
+  edit_files: "Edit Files"
+  execute_skill_script: "Execute Skill Script"
+  find_files: "Find Files"
+  get_status: "Get VM Status"
+  get_workspace_file_link: "Get Workspace File Link"
+  grep: "Search File Contents"
+  grep_file: "Search Single File"
+  list_files: "List Files"
+  python: "Run Python Script"
+  read_file: "Read File"
+  read_files: "Read Files"
+  read_fragment: "Read File Fragment"
+  request_images: "Request Images"
+  request_sensitive_information: "Request Sensitive Information"
+  set_chat_workspace: "Set Chat Workspace"
+  unzip_file: "Unzip File"
+
+required_env_vars: []

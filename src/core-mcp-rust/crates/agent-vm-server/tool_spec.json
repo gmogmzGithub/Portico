@@ -1,0 +1,941 @@
+[
+  {
+    "name": "create",
+    "title": null,
+    "description": "Create or reuse the chat's default persistent Docker container (Agent VM). If this chat already has a usable default Agent VM, the existing vm_id is returned and the response reports reused=true. Concurrent create requests for the same chat are serialized so only one default VM is created. If the mapped default VM is stopped, missing, or otherwise unusable, it is removed from metadata/container state and replaced with a new default VM. Returns a vm_id GUID that MUST be used for subsequent VM operations. The chat's configured workspace is mounted writable at /work inside the VM. When speaking to users, treat /work as the internal VM mount path and refer to the selected folder or generated chat workspace as their workspace.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "The chat session ID that will own this VM"
+        },
+        "timeout_hours": {
+          "type": "number",
+          "description": "VM timeout in hours (default: 24, max: 24). VM auto-destroys after this period of inactivity.",
+          "default": 24,
+          "minimum": 1,
+          "maximum": 24
+        }
+      },
+      "required": [
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "destroy",
+    "title": null,
+    "description": "Destroy an Agent VM. Only the chat session that created the VM can destroy it (ownership verification).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "requester_chat_id": {
+          "type": "string",
+          "description": "The chat session ID making the request (must match VM owner)"
+        }
+      },
+      "required": [
+        "vm_id",
+        "requester_chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_status",
+    "title": null,
+    "description": "Get the status of an Agent VM including container state, resource usage, and time remaining.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        }
+      },
+      "required": [
+        "vm_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "bash",
+    "title": null,
+    "description": "Execute a bash command in the Agent VM; returns stdout, stderr, exit code. Use jq (preinstalled) for JSON work. NOT for managing this app's skills, agents, or marketplaces — no `claude` CLI exists; use the skills_*/subagents_* tools.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "command": {
+          "type": "string",
+          "description": "The bash command to execute"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Command timeout in seconds (default: 300)",
+          "default": 300
+        },
+        "working_directory": {
+          "type": "string",
+          "description": "Working directory for command execution (default: /work)",
+          "default": "/work"
+        }
+      },
+      "required": [
+        "vm_id",
+        "command"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "python",
+    "title": null,
+    "description": "Execute a Python script in the Agent VM. The script is written to a temp file and executed with python3. Never use it to manage this app's skills, agents, or marketplaces — use the native skills_*/subagents_* tools.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "script": {
+          "type": "string",
+          "description": "The Python script content to execute"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Script timeout in seconds (default: 300)",
+          "default": 300
+        }
+      },
+      "required": [
+        "vm_id",
+        "script"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "create_file",
+    "title": null,
+    "description": "Create or overwrite a file in the Agent VM. Set append=true to append content to an existing file instead of replacing it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path within the VM where to create the file (relative to /work or absolute)"
+        },
+        "content": {
+          "type": "string",
+          "description": "File content to write"
+        },
+        "append": {
+          "type": "boolean",
+          "description": "If true, append content to the file instead of overwriting it. Defaults to false.",
+          "default": false
+        }
+      },
+      "required": [
+        "vm_id",
+        "path",
+        "content"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "create_files",
+    "title": null,
+    "description": "Create multiple files in the Agent VM in a single operation. More efficient than multiple agent_vm_create_file calls. Ideal for creating web apps with HTML, CSS, and JS files.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "files": {
+          "type": "array",
+          "description": "Array of files to create",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path within the VM (relative to /work or absolute)"
+              },
+              "content": {
+                "type": "string",
+                "description": "File content to write"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ]
+          }
+        }
+      },
+      "required": [
+        "vm_id",
+        "files"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "edit_file",
+    "title": null,
+    "description": "Edit a file in the Agent VM by replacing a specific string with a new string. Requires old_string to appear exactly once (unique match) unless replace_all is True. Use for making targeted changes without recreating entire files.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Path to the file within the VM (relative to /work or absolute)"
+        },
+        "old_string": {
+          "type": "string",
+          "description": "The exact text to find and replace. Must be unique in the file unless replace_all is True."
+        },
+        "new_string": {
+          "type": "string",
+          "description": "The text to replace old_string with. Can be empty to delete the old_string."
+        },
+        "replace_all": {
+          "type": "boolean",
+          "description": "If True, replace all occurrences. If False (default), old_string must appear exactly once.",
+          "default": false
+        }
+      },
+      "required": [
+        "vm_id",
+        "file_path",
+        "old_string",
+        "new_string"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "edit_files",
+    "title": null,
+    "description": "Edit multiple files in the Agent VM in a single operation. Each file must have been read first (via agent_vm_read_file or agent_vm_read_files). More efficient than multiple agent_vm_edit_file calls.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "edits": {
+          "type": "array",
+          "description": "Array of edit operations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file_path": {
+                "type": "string",
+                "description": "Path to the file within the VM (relative to /work or absolute)"
+              },
+              "old_string": {
+                "type": "string",
+                "description": "The exact text to find and replace"
+              },
+              "new_string": {
+                "type": "string",
+                "description": "The replacement text"
+              },
+              "replace_all": {
+                "type": "boolean",
+                "description": "If True, replace all occurrences (default: False)",
+                "default": false
+              }
+            },
+            "required": [
+              "file_path",
+              "old_string",
+              "new_string"
+            ]
+          }
+        }
+      },
+      "required": [
+        "vm_id",
+        "edits"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "read_file",
+    "title": null,
+    "description": "Read a file from the Agent VM.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the file within the VM"
+        }
+      },
+      "required": [
+        "vm_id",
+        "path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "read_fragment",
+    "title": null,
+    "description": "Read a text file from the Agent VM in character-based chunks. Use this for very large JSON, logs, markdown, or code files when reading the whole file would be too large.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the file within the VM"
+        },
+        "offset_chars": {
+          "type": "integer",
+          "description": "Character offset to start reading from (default: 0)",
+          "default": 0,
+          "minimum": 0
+        },
+        "max_chars": {
+          "type": "integer",
+          "description": "Maximum number of characters to return. Keep this small for inspection workflows (default: 1500, max: 2000).",
+          "default": 1500,
+          "minimum": 1,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "vm_id",
+        "path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "read_files",
+    "title": null,
+    "description": "Read multiple files from the Agent VM in a single operation. More efficient than multiple agent_vm_read_file calls. Returns content for each file along with success/failure status.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "paths": {
+          "type": "array",
+          "description": "Array of file paths to read",
+          "items": {
+            "type": "string",
+            "description": "Path to file within the VM (relative to /work or absolute)"
+          }
+        }
+      },
+      "required": [
+        "vm_id",
+        "paths"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "delete_file",
+    "title": null,
+    "description": "Delete a file or directory from the Agent VM.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the file or directory to delete"
+        },
+        "recursive": {
+          "type": "boolean",
+          "description": "If true, delete directories recursively (default: false)",
+          "default": false
+        }
+      },
+      "required": [
+        "vm_id",
+        "path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "list_files",
+    "title": null,
+    "description": "List files and directories in the Agent VM.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "directory": {
+          "type": "string",
+          "description": "Directory path to list (default: /work)",
+          "default": "/work"
+        },
+        "recursive": {
+          "type": "boolean",
+          "description": "If true, list recursively (default: false)",
+          "default": false
+        }
+      },
+      "required": [
+        "vm_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "execute_skill_script",
+    "title": null,
+    "description": "Execute a Python script from an activated skill inside the target Agent VM. The script runs with the chat workspace mounted at /work. Pass vm_id to target a specific VM, or chat_id to resolve the default VM for that chat.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skill_name": {
+          "type": "string",
+          "description": "The name of the activated skill containing the script"
+        },
+        "script_name": {
+          "type": "string",
+          "description": "The script to execute. Supports either 'process.py' or 'scripts/process.py'."
+        },
+        "vm_id": {
+          "type": "string",
+          "description": "Optional explicit Agent VM target. If provided with chat_id, it must belong to that chat."
+        },
+        "chat_id": {
+          "type": "string",
+          "description": "Optional chat session ID used to resolve the default Agent VM when vm_id is omitted and to validate ownership when vm_id is provided."
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional command line arguments for the script",
+          "default": []
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "Script execution timeout in seconds (default: 300, max: 600)",
+          "default": 300,
+          "minimum": 1,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "skill_name",
+        "script_name"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "get_workspace_file_link",
+    "title": null,
+    "description": "Get a downloadable link for a file already present under /work in an Agent VM. This tool is link-only: it never displays image previews and never provides image pixels to the model. Use agent_vm_display_files to explicitly show files inline to the user, and agent_vm_request_images when the model must inspect image pixels.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. The file must be in that VM's /work workspace."
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Path to an existing file under /work, for example /work/report.pdf"
+        }
+      },
+      "required": [
+        "vm_id",
+        "file_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "display_files",
+    "title": "Display Files",
+    "description": "Explicitly display one or more existing /work files inline in the chat for the user. Use this after generating user-visible previews, images, screenshots, reports, or other deliverables that should appear in the conversation. This tool does not attach image pixels to the model; use agent_vm_request_images for model visual inspection.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. The files must be in that VM's /work workspace."
+        },
+        "file_paths": {
+          "type": "array",
+          "description": "One to 20 existing file paths under /work to display inline in chat.",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "vm_id",
+        "file_paths"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "request_images",
+    "title": "Request Images",
+    "description": "Request one or more existing /work image files as actual image inputs for the immediate next model request. Use this when the main LLM must inspect pixels, compare rendered previews, or perform visual QA. This tool does not display anything to the user; use agent_vm_display_files for user-visible previews.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. The image files must be in that VM's /work workspace."
+        },
+        "file_paths": {
+          "type": "array",
+          "description": "One to 20 existing image file paths under /work. Each image must be within the current inline image size limit.",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "vm_id",
+        "file_paths"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "request_sensitive_information",
+    "title": "Request Sensitive Information",
+    "description": "Ask the user for one sensitive text value in a native masked-input modal, store the submitted value in the chat workspace at a generated /work/.sensitive/... file, and return only file path and expiry metadata. Use this only when code execution needs an API key, token, password, client secret, private key, or similar secret. Never use it to collect credentials that a custom MCP server must persist through required_env_vars: the temporary workspace file cannot configure that server; use mcp_assistant_trigger_guided_setup as the only credential prompt. An integration-specific workflow may still use this tool when it explicitly consumes the temporary file through code execution. The response never contains the submitted secret. The file expires and is deleted after 15 minutes; use it from code execution without reading, printing, echoing, summarizing, linking, or displaying the contents. The prompt parameter is user-visible: write it in plain language for non-technical users, and do not mention code execution, Agent VM, sandbox, /work, workspace files, storage, deletion, chat visibility, or model visibility. When the user must complete prerequisite steps before entering the value, put those instructions and HTTP(S) links in the optional preamble so the modal is self-contained.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Chat ID (extract from system prompt: 'Chat ID: {id}')"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Short plain-language request shown to the user explaining what sensitive value is needed. Do not mention code execution, Agent VM, sandbox, /work, workspace files, storage, deletion, chat visibility, or model visibility."
+        },
+        "preamble": {
+          "type": "string",
+          "description": "Optional sanitized Markdown instructions shown above the sensitive-value prompt. Use this for prerequisite steps or HTTP(S) links the user may need before entering the value. Do not include secrets or repeat storage, deletion, chat visibility, or model visibility wording.",
+          "maxLength": 4000
+        },
+        "vm_id": {
+          "type": "string",
+          "description": "Optional Agent VM target. If omitted, the tool uses the chat's default Agent VM when available, otherwise the configured chat workspace."
+        },
+        "label": {
+          "type": "string",
+          "description": "Optional short label for the sensitive value, used only to make the generated filename understandable"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "Optional timeout for the modal flow",
+          "minimum": 30,
+          "maximum": 3600
+        },
+        "visual_aids": {
+          "type": "array",
+          "maxItems": 8,
+          "description": "Optional screenshots illustrating numbered steps in the preamble's first ordered list. Each entry adds a magnifier icon to the matching step in the secure dialog; hovering or focusing it shows the image in a tooltip. image_url must be a chat-workspace download URL returned by skills_get_skill_assets (http://localhost:9876/workspace/...); other URLs are rejected.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20,
+                "description": "1-based step number within the preamble's first ordered list"
+              },
+              "image_url": {
+                "type": "string",
+                "description": "Workspace download URL from skills_get_skill_assets"
+              },
+              "alt": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "Short description of the screenshot"
+              }
+            },
+            "required": [
+              "step",
+              "image_url"
+            ]
+          }
+        }
+      },
+      "required": [
+        "chat_id",
+        "prompt"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "set_chat_workspace",
+    "title": "Set Chat Workspace",
+    "description": "Ask the user for consent in a native Electron modal before setting the host folder used as this chat's Agent VM workspace. The tool accepts an absolute host_path or the user's home shorthand (~ or ~/...) and returns success only if the user approves and Electron successfully applies the workspace. Pass ~ paths through literally so Electron resolves them on the host; never pass internal container paths such as /app/mcpo-runtime-homes/.... Use the optional preamble to explain why the folder is needed in plain language. Use this only when the user needs a specific local folder mounted as /work for the specified chat_id.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "chat_id": {
+          "type": "string",
+          "description": "Chat ID (extract from system prompt: 'Chat ID: {id}')"
+        },
+        "host_path": {
+          "type": "string",
+          "description": "Host filesystem path to the folder that should become this chat's Agent VM workspace. Use an absolute path, ~, or ~/...; unsupported ~user expansion and internal container paths are rejected. The user sees this path in the consent modal before it is applied."
+        },
+        "preamble": {
+          "type": "string",
+          "description": "Optional sanitized Markdown shown above the workspace permission question. Explain in plain language why this folder is needed. Do not include secrets. HTTP(S) links are allowed.",
+          "maxLength": 4000
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "Optional timeout for the consent modal flow",
+          "minimum": 30,
+          "maximum": 3600
+        }
+      },
+      "required": [
+        "chat_id",
+        "host_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "unzip_file",
+    "title": null,
+    "description": "Extract a zip file into the Agent VM. Use this to unpack uploaded zip archives containing projects (React, Vite, etc.) into the working directory.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "zip_path": {
+          "type": "string",
+          "description": "Path to the zip file (e.g., '/work/project.zip' or '/work/archives/myapp.zip')"
+        },
+        "dest_path": {
+          "type": "string",
+          "description": "Destination directory for extraction (default: /work). Files extract relative to this path.",
+          "default": "/work"
+        },
+        "strip_components": {
+          "type": "integer",
+          "description": "Number of leading path components to strip (like tar --strip-components). Use 1 to remove the top-level folder from the zip.",
+          "default": 0
+        }
+      },
+      "required": [
+        "vm_id",
+        "zip_path"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "find_files",
+    "title": null,
+    "description": "Find files in the Agent VM by name pattern (glob). Use to discover files in extracted projects. Returns file paths sorted by modification time.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Glob pattern to match (e.g., '**/*.js', 'src/**/*.tsx', '*.json')"
+        },
+        "path": {
+          "type": "string",
+          "description": "Directory to search in (default: /work)",
+          "default": "/work"
+        },
+        "max_results": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default: 100)",
+          "default": 100
+        }
+      },
+      "required": [
+        "vm_id",
+        "pattern"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "grep",
+    "title": null,
+    "description": "Search file contents in the Agent VM using regex patterns (like grep). Use to find code patterns, function definitions, imports, etc.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern to search for (e.g., 'function.*login', 'import.*React')"
+        },
+        "path": {
+          "type": "string",
+          "description": "File or directory to search in (default: /work)",
+          "default": "/work"
+        },
+        "file_pattern": {
+          "type": "string",
+          "description": "Glob pattern to filter files (e.g., '*.js', '*.{ts,tsx}')"
+        },
+        "case_insensitive": {
+          "type": "boolean",
+          "description": "Case insensitive search (default: false)",
+          "default": false
+        },
+        "context_lines": {
+          "type": "integer",
+          "description": "Number of context lines before and after match (default: 0)",
+          "default": 0
+        },
+        "max_results": {
+          "type": "integer",
+          "description": "Maximum number of matching lines to return (default: 50)",
+          "default": 50
+        },
+        "output_mode": {
+          "type": "string",
+          "enum": [
+            "content",
+            "files",
+            "count"
+          ],
+          "description": "Output mode: 'content' (matching lines), 'files' (file paths only), 'count' (match counts per file)",
+          "default": "content"
+        }
+      },
+      "required": [
+        "vm_id",
+        "pattern"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  },
+  {
+    "name": "grep_file",
+    "title": null,
+    "description": "Search a single text file in the Agent VM for one or more patterns and return per-pattern matches with exact character offsets plus before/after excerpts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "vm_id": {
+          "type": "string",
+          "description": "The VM GUID returned by agent_vm_create. Always use the vm_id returned by the most recent Agent VM tool response, because automatic recovery may return a replacement vm_id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the file to search. Relative paths are resolved under /work."
+        },
+        "patterns": {
+          "type": "array",
+          "description": "One or more search patterns. Duplicate patterns are collapsed into one result group.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "match_mode": {
+          "type": "string",
+          "enum": [
+            "literal",
+            "regex"
+          ],
+          "description": "How to interpret each pattern: 'literal' for exact substring search or 'regex' for Rust regex syntax.",
+          "default": "literal"
+        },
+        "case_insensitive": {
+          "type": "boolean",
+          "description": "Case insensitive matching (default: false)",
+          "default": false
+        },
+        "before_chars": {
+          "type": "integer",
+          "description": "How many characters of leading context to include before each match (default: 100, max: 1000)",
+          "default": 100
+        },
+        "after_chars": {
+          "type": "integer",
+          "description": "How many characters of trailing context to include after each match (default: 100, max: 1000)",
+          "default": 100
+        },
+        "max_results_per_pattern": {
+          "type": "integer",
+          "description": "Maximum number of match objects to return for each pattern (default: 25, max: 100)",
+          "default": 25
+        }
+      },
+      "required": [
+        "vm_id",
+        "path",
+        "patterns"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "_meta": null,
+    "execution": null
+  }
+]

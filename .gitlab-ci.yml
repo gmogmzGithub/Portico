@@ -1,0 +1,28 @@
+stages:
+  - test
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+# Rust-only for now: this image carries just the Rust toolchain, while
+# run-tests.sh defaults every suite on. The Node, Python, shell and
+# small-integration suites need node, python3 and a Docker daemon, so they are
+# explicitly disabled rather than left to fail at require_command. Turning them
+# back on means moving to a multi-toolchain image with Docker-in-Docker.
+#
+# All crates use rustls (no openssl-sys), so the slim image needs no extra
+# system packages. Keep RUST_VERSION in step with the ARG RUST_VERSION pinned
+# in the service Dockerfiles.
+test:rust:
+  stage: test
+  image: rust:1.96.0-slim-trixie
+  variables:
+    RUN_RUST: "1"
+    RUN_NODE: "0"
+    RUN_PYTHON: "0"
+    RUN_SHELL: "0"
+    RUN_SMALL_INTEGRATION: "0"
+  script:
+    - ./run-tests.sh

@@ -1,0 +1,102 @@
+# syntax=docker/dockerfile:1.7
+
+FROM node:22-slim AS node-runtime
+
+FROM python:3.12-slim
+
+ARG TARGETARCH
+
+LABEL com.portico.ai-chat.image-role="agent-vm"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    NODE_PATH=/usr/local/lib/node_modules \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_CACHE=/tmp/.npm \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_UPDATE_NOTIFIER=false \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN printf 'Acquire::Retries "5";\nAcquire::ForceIPv4 "true";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80-retries
+
+RUN set -eux; \
+    rm -f /etc/apt/apt.conf.d/docker-clean; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.list.d/debian.sources; \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+    fi; \
+    if [ -f /etc/apt/sources.list ]; then \
+        sed -i 's/\(^deb .* main\)$/\1 contrib/' /etc/apt/sources.list; \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list; \
+    fi; \
+    echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
+        | debconf-set-selections
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        bash \
+        ca-certificates \
+        curl \
+        fontconfig \
+        fonts-crosextra-caladea \
+        fonts-crosextra-carlito \
+        fonts-inter \
+        fonts-lato \
+        fonts-liberation \
+        fonts-liberation2 \
+        fonts-noto-core \
+        fonts-noto-mono \
+        fonts-open-sans \
+        fonts-roboto \
+        jq \
+        libmagic1 \
+        libreoffice \
+        poppler-utils \
+        ttf-mscorefonts-installer \
+        unzip; \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/*; \
+    rm -rf /usr/share/doc/* /usr/share/info/* /usr/share/man/*; \
+    fc-cache -f -v
+
+RUN libreoffice --headless --terminate_after_init || true
+
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Deck generation from /work scripts resolves through NODE_PATH (set above),
+# so a global install is enough — no per-workspace npm install needed.
+RUN set -eux; \
+    npm install -g "pptxgenjs@^4.0.1"; \
+    rm -rf /tmp/.npm
+
+RUN set -eux; \
+    pip install --no-cache-dir --no-compile \
+        "Pillow>=10.0.0" \
+        "defusedxml>=0.7.1" \
+        "lxml>=5.0.0" \
+        "markitdown[pptx]>=0.1.0" \
+        "matplotlib>=3.7.0" \
+        "numpy>=1.24.0" \
+        "openpyxl>=3.1.0" \
+        "pandas>=2.0.0" \
+        "pdf2image>=1.16.0" \
+        "pdfplumber>=0.10.0" \
+        "pypdf>=4.0.0" \
+        "pyyaml>=6.0.0" \
+        "python-docx>=1.1.0" \
+        "python-pptx>=1.0.0" \
+        "reportlab>=4.0.0" \
+        "requests>=2.31.0"
+
+RUN set -eux; \
+    node --version; \
+    npm --version; \
+    mkdir -p /skill /work/input /work/output
+
+WORKDIR /work
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true"

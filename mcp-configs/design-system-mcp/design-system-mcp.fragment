@@ -1,0 +1,7 @@
+{
+  "oauth": {
+    "server_url": "https://mcp.example.invalid"
+  },
+  "type": "streamable-http",
+  "url": "https://mcp.example.invalid/design-system-mcp/mcp"
+}

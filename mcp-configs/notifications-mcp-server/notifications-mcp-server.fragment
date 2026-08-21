@@ -1,0 +1,4 @@
+{
+  "type": "streamable-http",
+  "url": "https://notifications-mcp-server.sandbox.example.invalid/mcp"
+}

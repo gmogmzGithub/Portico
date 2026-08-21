@@ -1,0 +1,13 @@
+{
+  "_comment": "Runtime tunables and feature flags. Read at runtime by middleware.py via /app/optimization_flags.json (mounted in docker-compose.yml) and at build/compose-gen time by host scripts. Override priority: env OWUI_OPT_<FLAG_NAME> > this file > in-code default.",
+  "disable_glean_read_document_by_default": true,
+  "company_knowledge_compact_glean_overflow_guidance": true,
+  "company_knowledge_prefer_google_workspace_doc_reads": true,
+  "subagent_integration_activation_restriction": true,
+  "subagent_auto_enable_code_execution": true,
+  "retry_transient_tool_execution_failures": true,
+  "atlassian_seed_query_guidance": true,
+  "slack_multi_channel_budget_guidance": true,
+  "tool_confirmation_gate": false,
+  "tool_allowlist": false
+}

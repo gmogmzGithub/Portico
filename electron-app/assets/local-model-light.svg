@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Local model">
+  <circle cx="32" cy="32" r="32" fill="#F8FAFC"/>
+  <path d="M32 8.5 52.4 20.3v23.4L32 55.5 11.6 43.7V20.3L32 8.5Z" fill="#111827"/>
+  <path d="M32 17.5 44.6 24.8v14.4L32 46.5 19.4 39.2V24.8L32 17.5Z" fill="#F8FAFC"/>
+  <path d="M32 18.4v27.2M20.2 25.3 43.8 38.7M43.8 25.3 20.2 38.7" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="7.2" fill="#111827"/>
+</svg>

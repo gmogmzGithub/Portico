@@ -1,0 +1,163 @@
+{
+  "type": "function",
+  "function": {
+    "name": "google_workspace_modify_doc_text",
+    "description": "Modifies text in a Google Doc - can insert/replace text and/or apply formatting.\n\nSupports five positioning modes:\n1. Location-based: Use location='end' or location='start' for common operations\n2. Index-based: Use start_index/end_index to specify exact positions\n3. Search-based: Use search/position to find text and operate relative to it\n4. Heading-based: Use heading/section_position to target a specific section\n5. Range-based: Use range parameter for semantic text selection\n\nArgs:\n    document_id: ID of the document to update\n\n    Location-based positioning (simplest):\n    location: Semantic location for insertion. Values:\n        - \"end\": Append to document end (most common operation)\n        - \"start\": Insert at document beginning (after initial section break)\n\n    Index-based positioning (traditional):\n    start_index: Start position for operation (0-based)\n    end_index: End position for text replacement/formatting\n\n    Search-based positioning (replaces ONE occurrence):\n    search: Text to search for in the document\n    position: Where to insert relative to search result:\n        - \"before\": Insert before the found text\n        - \"after\": Insert after the found text\n        - \"replace\": Replace the found text (ONE occurrence only!)\n                     For replacing ALL occurrences, use find_and_replace_doc instead\n    occurrence: Which occurrence to target (1=first, 2=second, -1=last). Default: 1\n    match_case: Whether to match case exactly. Default depends on mode:\n        - Heading mode: False (case-insensitive, more user-friendly for sections)\n        - Search mode: True (case-sensitive, more precise for text search)\n\n    Heading-based positioning (structural):\n    heading: Section heading text to target\n    section_position: Where to insert within the section:\n        - \"start\": Insert right after the heading\n        - \"end\": Insert at the end of the section (before next same-level heading)\n\n    Range-based positioning (semantic):\n    range: Dictionary specifying a semantic range. Supported formats:\n\n        1. Range by search bounds - select from start text to end text:\n           {\"start\": {\"search\": \"Introduction\", \"occurrence\": 1},\n            \"end\": {\"search\": \"Conclusion\", \"occurrence\": 1}}\n\n        2. Search with boundary extension - find text and extend to boundary:\n           {\"search\": \"keyword\", \"extend\": \"paragraph\"}\n           extend options: \"paragraph\", \"sentence\", \"line\", \"section\"\n\n        3. Search with character offsets - include surrounding context:\n           {\"search\": \"keyword\", \"before_chars\": 50, \"after_chars\": 100}\n\n        4. Section reference - select entire section by heading:\n           {\"section\": \"The Velocity Trap\", \"include_heading\": False,\n            \"include_subsections\": True}\n\n        All range formats support \"match_case\": True/False (default True)\n\n    Text and formatting:\n    text: New text to insert or replace with.\n        TIP: Paragraph breaks are automatic - you generally only need a single \\n\n        between lines, not \\n\\n. Google Docs automatically creates paragraph spacing.\n        For example: \"Line 1\\nLine 2\" creates two paragraphs with proper spacing.\n\n        LINE BREAKS vs PARAGRAPHS:\n        - Use \\n for a new paragraph (like pressing Enter)\n        - Use \\v for a line break within the same paragraph (like Shift+Enter)\n        Example: \"Line 1\\vLine 2\" keeps both lines in ONE paragraph.\n    bold: Whether to make text bold (True/False/None to leave unchanged)\n    italic: Whether to make text italic (True/False/None to leave unchanged)\n    underline: Whether to underline text (True/False/None to leave unchanged)\n    strikethrough: Whether to strikethrough text (True/False/None to leave unchanged)\n    small_caps: Whether to make text small caps (True/False/None to leave unchanged)\n    subscript: Whether to make text subscript (True/False/None to leave unchanged, mutually exclusive with superscript)\n    superscript: Whether to make text superscript (True/False/None to leave unchanged, mutually exclusive with subscript)\n    font_size: Font size in points\n    font_family: Font family name (e.g., \"Arial\", \"Times New Roman\")\n    link: URL to create a hyperlink. Use empty string \"\" to remove an existing link.\n        Supports http://, https://, or # (for internal document bookmarks).\n    foreground_color: Text color as hex (#FF0000, #F00) or named color (red, blue, green, etc.)\n    background_color: Background/highlight color as hex or named color\n\n    Paragraph formatting:\n    line_spacing: Line spacing. Accepts multiple intuitive formats:\n        - Named strings: 'single', 'double', '1.5x', '1.15x'\n        - Decimal multipliers: 1.0 (single), 1.5 (150%), 2.0 (double) - auto-converted\n        - Percentage values: 100 (single), 115 (1.15x default), 150 (1.5x), 200 (double)\n        Custom percentage values from 50-1000 are supported.\n    heading_style: Change paragraph to a named style. Valid values:\n        - \"HEADING_1\" through \"HEADING_6\": Heading levels\n        - \"NORMAL_TEXT\": Regular paragraph text\n        - \"TITLE\": Document title style\n        - \"SUBTITLE\": Document subtitle style\n        Note: This changes the entire paragraph(s) containing the affected range.\n        TIP: Can be combined with location=\"end\" to append text as a heading in one call.\n    alignment: Paragraph alignment. Valid values:\n        - \"START\": Left-aligned for left-to-right text\n        - \"CENTER\": Center-aligned\n        - \"END\": Right-aligned for left-to-right text\n        - \"JUSTIFIED\": Justified text (even margins on both sides)\n        Note: This changes the entire paragraph(s) containing the affected range.\n    indent_first_line: First line indentation in points (72 points = 1 inch).\n        Use positive values for standard first line indent.\n        Use with negative value and indent_start for hanging indent.\n        Example: indent_first_line=36 indents first line by 0.5 inch.\n    indent_start: Left margin indentation in points for LTR text (72 points = 1 inch).\n        This is the paragraph's left edge offset from the page margin.\n        Example: indent_start=72 indents the entire paragraph 1 inch from the left.\n    indent_end: Right margin indentation in points for LTR text (72 points = 1 inch).\n        This is the paragraph's right edge offset from the page margin.\n        Example: indent_end=72 indents the paragraph 1 inch from the right margin.\n    space_above: Extra space above the paragraph in points (72 points = 1 inch).\n        Common values: 0 (none), 6 (small), 12 (medium), 18 (large)\n        Example: space_above=12 adds about 1/6 inch space above the paragraph.\n    space_below: Extra space below the paragraph in points (72 points = 1 inch).\n        Common values: 0 (none), 6 (small), 12 (medium), 18 (large)\n        Example: space_below=12 adds about 1/6 inch space below the paragraph.\n\n    List conversion:\n    convert_to_list: Convert the affected text range to a bullet list.\n        Values: \"UNORDERED\" (bullet points) or \"ORDERED\" (numbered list)\n        Can be combined with text operations or used alone with range/search positioning.\n        Converts existing paragraphs within the range to list items.\n\n    Code block formatting:\n    code_block: Apply code block styling to text. When True, applies:\n        - Monospace font (Courier New)\n        - Light gray background (#f5f5f5)\n        Can be combined with text insertion or used alone for formatting existing text.\n        Individual font_family or background_color settings override code_block defaults.\n\n    Preview mode:\n    preview: If True, returns what would change without actually modifying the document.\n        Useful for validating operations before applying them. Default: False\n\n        Range inspection preview: When preview=True is used with positioning parameters\n        (range, search, heading, location, or start_index) but WITHOUT text or formatting,\n        the function returns information about what range would be selected without\n        requiring an operation. This is useful for:\n        - Verifying range/search queries before deciding what to do\n        - Debugging range-based selections\n        - Previewing section content without modification\n\n    Delete paragraph:\n    delete_paragraph: When True and deleting text (text=\"\"), also removes the trailing\n        newline to delete the entire paragraph/list item. This prevents orphaned bullet\n        markers or empty paragraphs after deletion. Only applies when text=\"\" (delete mode).\n        Default: False\n\n    Multi-tab document support:\n    tab_id: Optional tab ID for multi-tab documents. If not provided, operates on\n        the first tab (default behavior). Use list_doc_tabs() to discover tab IDs\n        in a multi-tab document.\n\nExamples:\n    # Append to document end (simplest - location-based):\n    modify_doc_text(document_id=\"...\", location=\"end\", text=\"\\n[New content]\")\n\n    # NOTE on newlines: Use single \\n for paragraph breaks, NOT \\n\\n\n    # Google Docs handles paragraph spacing automatically.\n    # GOOD: \"Line 1\\nLine 2\\nLine 3\"  -> 3 properly spaced paragraphs\n    # AVOID: \"Line 1\\n\\nLine 2\\n\\n\"  -> creates extra empty paragraphs\n    #\n    # LINE BREAK vs PARAGRAPH: Use \\v for soft line break (Shift+Enter equivalent)\n    # \"Address Line 1\\vCity, State ZIP\"  -> two lines, ONE paragraph (great for bullets)\n\n    # Insert at document beginning:\n    modify_doc_text(document_id=\"...\", location=\"start\", text=\"Prepended text\\n\")\n\n    # Insert at end of a specific section (heading-based):\n    modify_doc_text(document_id=\"...\", heading=\"The Problem\",\n                   section_position=\"end\", text=\"\\n[New content]\")\n\n    # Insert right after a heading:\n    modify_doc_text(document_id=\"...\", heading=\"Introduction\",\n                   section_position=\"start\", text=\"\\nUpdated intro text.\")\n\n    # Insert after specific text (search-based):\n    modify_doc_text(document_id=\"...\", search=\"Chapter 1\", position=\"after\",\n                   text=\" [Updated]\")\n\n    # Replace a SPECIFIC occurrence (first by default):\n    # Note: To replace ALL occurrences, use find_and_replace_doc instead\n    modify_doc_text(document_id=\"...\", search=\"old heading\", position=\"replace\",\n                   text=\"new heading\")\n\n    # Replace the SECOND occurrence specifically:\n    modify_doc_text(document_id=\"...\", search=\"TODO\", position=\"replace\",\n                   text=\"DONE\", occurrence=2)\n\n    # Replace the LAST occurrence:\n    modify_doc_text(document_id=\"...\", search=\"error\", position=\"replace\",\n                   text=\"fixed\", occurrence=-1)\n\n    # Traditional index-based (still supported):\n    modify_doc_text(document_id=\"...\", start_index=10, end_index=20,\n                   text=\"replacement\")\n\n    # Insert text WITH formatting (no end_index needed!):\n    modify_doc_text(document_id=\"...\", start_index=100, text=\"IMPORTANT:\",\n                   bold=True, italic=True)\n    # This inserts \"IMPORTANT:\" at position 100 and automatically formats it.\n    # The formatting range is calculated as [start_index, start_index + len(text)].\n\n    # Add a hyperlink to existing text:\n    modify_doc_text(document_id=\"...\", search=\"click here\", position=\"replace\",\n                   text=\"click here\", link=\"https://example.com\")\n\n    # Insert new linked text:\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"Visit our website\", link=\"https://example.com\")\n\n    # Remove a hyperlink from text (use empty string):\n    modify_doc_text(document_id=\"...\", search=\"linked text\", position=\"replace\",\n                   text=\"linked text\", link=\"\")\n\n    # Range-based: Replace everything between two search terms:\n    modify_doc_text(document_id=\"...\",\n                   range={\"start\": {\"search\": \"Introduction\"},\n                          \"end\": {\"search\": \"Conclusion\"}},\n                   text=\"[ENTIRE RANGE REPLACED]\")\n\n    # Range-based: Select and format entire paragraph containing keyword:\n    modify_doc_text(document_id=\"...\",\n                   range={\"search\": \"important keyword\", \"extend\": \"paragraph\"},\n                   bold=True)\n\n    # Range-based: Replace entire section under a heading:\n    modify_doc_text(document_id=\"...\",\n                   range={\"section\": \"The Velocity Trap\", \"include_heading\": False},\n                   text=\"New section content here.\")\n\n    # Range-based: Include surrounding context with offsets:\n    modify_doc_text(document_id=\"...\",\n                   range={\"search\": \"error\", \"before_chars\": 50, \"after_chars\": 100},\n                   italic=True)\n\n    # Preview mode - see what would change without modifying:\n    modify_doc_text(document_id=\"...\", search=\"old text\", position=\"replace\",\n                   text=\"new text\", preview=True)\n    # Returns preview info with current_content, new_content, context, etc.\n\n    # Range inspection preview - preview what range would be selected:\n    modify_doc_text(document_id=\"...\",\n                   range={\"section\": \"The Problem\", \"include_heading\": False},\n                   preview=True)\n    # Returns the content of the section without requiring text/formatting\n\n    # Search inspection - preview what a search finds:\n    modify_doc_text(document_id=\"...\", search=\"important keyword\", preview=True)\n    # Returns the found text and surrounding context\n\n    # Convert existing paragraphs to bullet list:\n    modify_doc_text(document_id=\"...\",\n                   range={\"search\": \"- Item one\", \"extend\": \"paragraph\"},\n                   convert_to_list=\"UNORDERED\")\n\n    # Convert range of text to numbered list:\n    modify_doc_text(document_id=\"...\", start_index=100, end_index=200,\n                   convert_to_list=\"ORDERED\")\n\n    # Insert new text AND convert it to a list:\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"Item 1\\nItem 2\\nItem 3\\n\",\n                   convert_to_list=\"UNORDERED\")\n\n    # NOTE: List prefix auto-stripping - when using convert_to_list, common list prefixes\n    # like \"- \", \"* \", \"\u2022 \", \"1. \" are automatically removed to prevent duplicates:\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"- First item\\n- Second item\\n* Third item\\n\",\n                   convert_to_list=\"UNORDERED\")\n    # Result: Clean bullet list without \"\u2022 - First item\" duplicates\n\n    # Set line spacing to double using decimal multiplier:\n    modify_doc_text(document_id=\"...\", start_index=100, end_index=200,\n                   line_spacing=2.0)  # Also accepts: 'double', 200\n\n    # Set line spacing to 1.5x using named string:\n    modify_doc_text(document_id=\"...\",\n                   range={\"section\": \"Introduction\", \"include_heading\": True},\n                   line_spacing='1.5x')  # Also accepts: 1.5, 150\n\n    # Insert new paragraph with single spacing:\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"\\nNew paragraph with single spacing.\\n\",\n                   line_spacing='single')  # Also accepts: 1.0, 100\n\n    # Change a paragraph to Heading 2:\n    modify_doc_text(document_id=\"...\", search=\"Section Title\",\n                   position=\"replace\", text=\"Section Title\",\n                   heading_style=\"HEADING_2\")\n\n    # Convert normal text to a title:\n    modify_doc_text(document_id=\"...\", start_index=1, end_index=50,\n                   heading_style=\"TITLE\")\n\n    # Change heading back to normal text:\n    modify_doc_text(document_id=\"...\",\n                   range={\"search\": \"Old Heading\", \"extend\": \"paragraph\"},\n                   heading_style=\"NORMAL_TEXT\")\n\n    # Center-align a paragraph:\n    modify_doc_text(document_id=\"...\", search=\"Title Text\",\n                   position=\"replace\", text=\"Title Text\",\n                   alignment=\"CENTER\")\n\n    # Right-align a range of text:\n    modify_doc_text(document_id=\"...\", start_index=100, end_index=200,\n                   alignment=\"END\")\n\n    # Justify a section:\n    modify_doc_text(document_id=\"...\",\n                   range={\"section\": \"Introduction\", \"include_heading\": False},\n                   alignment=\"JUSTIFIED\")\n\n    # Append text as a heading at end of document (location + heading_style combo):\n    # This works in a single call - no need for two passes!\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"\\nNew Section\\n\",\n                   heading_style=\"HEADING_2\")\n\n    # Append a formatted section with heading AND text styling:\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"\\nImportant Notice\\n\",\n                   heading_style=\"HEADING_1\",\n                   bold=True,\n                   foreground_color=\"red\")\n\n    # Combine alignment with heading style:\n    modify_doc_text(document_id=\"...\", search=\"Chapter 1\",\n                   position=\"replace\", text=\"Chapter 1\",\n                   heading_style=\"HEADING_1\", alignment=\"CENTER\")\n\n    # Apply first line indent (0.5 inch):\n    modify_doc_text(document_id=\"...\", start_index=100, end_index=200,\n                   indent_first_line=36)\n\n    # Create a block quote with left/right margins (1 inch each side):\n    modify_doc_text(document_id=\"...\",\n                   range={\"search\": \"Quote text\", \"extend\": \"paragraph\"},\n                   indent_start=72, indent_end=72)\n\n    # Add paragraph spacing (12pt above and below):\n    modify_doc_text(document_id=\"...\", start_index=100, end_index=200,\n                   space_above=12, space_below=12)\n\n    # Create hanging indent (for bibliographies/references):\n    modify_doc_text(document_id=\"...\",\n                   range={\"search\": \"Reference text\", \"extend\": \"paragraph\"},\n                   indent_start=36, indent_first_line=-36)\n\n    # Insert a code block (monospace font with gray background):\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"\\ndef hello():\\n    print('Hello, World!')\\n\",\n                   code_block=True)\n\n    # Apply code block formatting to existing text:\n    modify_doc_text(document_id=\"...\", search=\"console.log\", position=\"replace\",\n                   text=\"console.log\", code_block=True)\n\n    # Code block with custom background color:\n    modify_doc_text(document_id=\"...\", location=\"end\",\n                   text=\"const x = 42;\", code_block=True, background_color=\"#e0e0e0\")\n\nReturns:\n    str: JSON string with operation details including position shift information.\n\n    Response includes:\n    - success (bool): Whether the operation succeeded\n    - operation (str): Type of operation (\"insert\", \"replace\", \"delete\", \"format\")\n    - position_shift (int): How much subsequent positions shifted (+ve = right, -ve = left)\n    - affected_range (dict): {\"start\": x, \"end\": y} of the modified area\n    - message (str): Human-readable description\n    - link (str): URL to the document\n    - inserted_length (int, optional): Length of inserted text (for insert operations)\n    - original_length (int, optional): Original text length (for replace operations)\n    - new_length (int, optional): New text length (for replace operations)\n    - deleted_length (int, optional): Deleted text length (for delete operations)\n    - styles_applied (list, optional): List of styles applied (for format operations)\n    - resolved_range (dict, optional): For range-based operations, details about how range was resolved\n\n    Example response for insert:\n    {\n        \"success\": true,\n        \"operation\": \"insert\",\n        \"position_shift\": 13,\n        \"affected_range\": {\"start\": 100, \"end\": 113},\n        \"inserted_length\": 13,\n        \"message\": \"Inserted 13 characters at index 100\",\n        \"link\": \"https://docs.google.com/document/d/.../edit\"\n    }\n\n    Use position_shift for efficient follow-up edits:\n    ```python\n    result = modify_doc_text(doc_id, start_index=100, text=\"AAA\")\n    # result[\"position_shift\"] = 3\n    # For next edit originally at 200: use 200 + result[\"position_shift\"] = 203\n    ```\n\n    When preview=True, returns a preview response instead:\n    {\n        \"preview\": true,\n        \"would_modify\": true,\n        \"operation\": \"replace\",\n        \"affected_range\": {\"start\": 100, \"end\": 108},\n        \"position_shift\": -3,\n        \"current_content\": \"old text\",\n        \"new_content\": \"new text\",\n        \"context\": {\n            \"before\": \"...text before the affected range...\",\n            \"after\": \"...text after the affected range...\"\n        },\n        \"positioning_info\": {\"search_text\": \"old text\", ...},\n        \"message\": \"Would replace 8 characters with 8 characters at index 100\",\n        \"link\": \"https://docs.google.com/document/d/.../edit\"\n    }\n\n    When preview=True with positioning but no text/formatting (range inspection):\n    {\n        \"preview\": true,\n        \"would_modify\": false,\n        \"operation\": \"range_inspection\",\n        \"affected_range\": {\"start\": 100, \"end\": 250},\n        \"position_shift\": 0,\n        \"current_content\": \"The text content at the resolved range...\",\n        \"content_length\": 150,\n        \"context\": {\n            \"before\": \"...text before the range...\",\n            \"after\": \"...text after the range...\"\n        },\n        \"positioning_info\": {\"range\": {...}, \"resolved_start\": 100, ...},\n        \"message\": \"Range inspection: resolved to indices 100-250\",\n        \"link\": \"https://docs.google.com/document/d/.../edit\"\n    }",
+    "parameters": {
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "start_index": {
+          "default": null,
+          "type": "integer"
+        },
+        "end_index": {
+          "default": null,
+          "type": "integer"
+        },
+        "text": {
+          "default": null,
+          "type": "string"
+        },
+        "bold": {
+          "default": null,
+          "type": "boolean"
+        },
+        "italic": {
+          "default": null,
+          "type": "boolean"
+        },
+        "underline": {
+          "default": null,
+          "type": "boolean"
+        },
+        "strikethrough": {
+          "default": null,
+          "type": "boolean"
+        },
+        "small_caps": {
+          "default": null,
+          "type": "boolean"
+        },
+        "subscript": {
+          "default": null,
+          "type": "boolean"
+        },
+        "superscript": {
+          "default": null,
+          "type": "boolean"
+        },
+        "font_size": {
+          "default": null,
+          "type": "integer"
+        },
+        "font_family": {
+          "default": null,
+          "type": "string"
+        },
+        "link": {
+          "default": null,
+          "type": "string"
+        },
+        "foreground_color": {
+          "default": null,
+          "type": "string"
+        },
+        "background_color": {
+          "default": null,
+          "type": "string"
+        },
+        "line_spacing": {
+          "default": null,
+          "type": "number"
+        },
+        "heading_style": {
+          "default": null,
+          "type": "string"
+        },
+        "alignment": {
+          "default": null,
+          "type": "string"
+        },
+        "indent_first_line": {
+          "default": null,
+          "type": "number"
+        },
+        "indent_start": {
+          "default": null,
+          "type": "number"
+        },
+        "indent_end": {
+          "default": null,
+          "type": "number"
+        },
+        "space_above": {
+          "default": null,
+          "type": "number"
+        },
+        "space_below": {
+          "default": null,
+          "type": "number"
+        },
+        "search": {
+          "default": null,
+          "type": "string"
+        },
+        "position": {
+          "default": null,
+          "type": "string"
+        },
+        "occurrence": {
+          "default": 1,
+          "type": "integer"
+        },
+        "match_case": {
+          "default": null,
+          "type": "boolean"
+        },
+        "heading": {
+          "default": null,
+          "type": "string"
+        },
+        "section_position": {
+          "default": null,
+          "type": "string"
+        },
+        "range": {
+          "additionalProperties": true,
+          "default": null,
+          "type": "object"
+        },
+        "location": {
+          "default": null,
+          "type": "string"
+        },
+        "preview": {
+          "default": false,
+          "type": "boolean"
+        },
+        "convert_to_list": {
+          "default": null,
+          "type": "string"
+        },
+        "code_block": {
+          "default": null,
+          "type": "boolean"
+        },
+        "delete_paragraph": {
+          "default": false,
+          "type": "boolean"
+        },
+        "tab_id": {
+          "default": null,
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id"
+      ],
+      "type": "object"
+    }
+  }
+}

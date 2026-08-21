@@ -1,0 +1,7 @@
+{
+  "type": "streamable-http",
+  "url": "https://n8n.example.invalid/mcp-server/http",
+  "oauth": {
+    "server_url": "https://n8n.example.invalid"
+  }
+}

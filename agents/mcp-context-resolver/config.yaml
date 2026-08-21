@@ -1,0 +1,6 @@
+name: "MCP Context Resolver"
+base_model_id: "Claude Sonnet 5"
+description: "Analyzes user queries to determine which MCP tool servers should be enabled for the conversation"
+tools_mode: "all"  # Needs access to ALL tool servers to inspect and recommend
+tools_list: []
+hidden: true  # Hide this utility agent from the model list

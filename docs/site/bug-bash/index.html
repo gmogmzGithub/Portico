@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jupiter Bug Bash — Fix Fleet</title>
+<style>
+:root { --bg:#0f1420; --panel:#171e2e; --panel2:#1d2638; --text:#e6ecf7; --dim:#93a0b8; --line:#2a3550;
+ --major:#ff6b6b; --medium:#ffc14d; --minor:#6fd18c; --none:#93a0b8; --accent:#5aa2ff; }
+* { box-sizing:border-box; }
+body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
+.wrap { max-width:1080px; margin:0 auto; padding:32px 20px 80px; }
+h1 { font-size:26px; margin:0 0 4px; } .sub { color:var(--dim); margin-bottom:24px; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:28px; }
+.tile { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+.tile .n { font-size:26px; font-weight:700; } .tile .l { color:var(--dim); font-size:12px; }
+.tile .n.green { color:var(--minor); }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:24px; }
+.bar-row { display:flex; align-items:center; gap:10px; margin:6px 0; }
+.bar-label { width:200px; text-align:right; color:var(--dim); font-size:13px; }
+.bar-track { flex:1; background:var(--panel2); border-radius:4px; height:16px; }
+.bar { background:linear-gradient(90deg,var(--accent),#7cc0ff); height:16px; border-radius:4px; }
+.bar-n { width:24px; font-weight:600; }
+.controls { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.controls button { background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; }
+.controls button.active { background:var(--accent); border-color:var(--accent); color:#08101f; font-weight:600; }
+.controls input { background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 12px; flex:1; min-width:180px; }
+.cathdr { margin:22px 0 8px; font-size:15px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:8px 0; overflow:hidden; }
+.card summary { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; list-style:none; flex-wrap:wrap; }
+.card summary::-webkit-details-marker { display:none; }
+.card[open] summary { border-bottom:1px solid var(--line); }
+.chip { font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; flex-shrink:0; }
+.chip.major { background:rgba(255,107,107,.15); color:var(--major); border:1px solid var(--major); }
+.chip.medium { background:rgba(255,193,77,.15); color:var(--medium); border:1px solid var(--medium); }
+.chip.minor { background:rgba(111,209,140,.15); color:var(--minor); border:1px solid var(--minor); }
+.chip.none { background:rgba(150,160,180,.12); color:var(--dim); border:1px solid var(--dim); }
+.key { font-weight:700; color:var(--accent); flex-shrink:0; min-width:64px; }
+.title { flex:1; min-width:200px; } .status { font-size:11px; color:var(--dim); border:1px solid var(--line); padding:1px 7px; border-radius:10px; flex-shrink:0; }
+.links { flex-shrink:0; display:flex; gap:6px; }
+.lnk { font-size:12px; text-decoration:none; padding:2px 8px; border-radius:6px; }
+.lnk.jira { background:rgba(90,162,255,.12); color:var(--accent); }
+.lnk.mr { background:rgba(255,193,77,.1); color:var(--medium); }
+.lnk.slack { background:rgba(111,209,140,.1); color:var(--minor); }
+.lnk.none { color:var(--dim); }
+.body { padding:14px 16px; }
+.meta { color:var(--dim); font-size:13px; margin-bottom:8px; }
+.shot { background:rgba(255,193,77,.08); border:1px solid rgba(255,193,77,.35); border-radius:8px; padding:8px 12px; margin:8px 0; font-size:13px; }
+.note { background:rgba(90,162,255,.08); border:1px solid rgba(90,162,255,.3); border-radius:8px; padding:8px 12px; margin:0 0 10px; font-size:13px; }
+pre.report { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px 14px; white-space:pre-wrap; word-break:break-word; max-height:420px; overflow:auto; font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.linkrow { margin:10px 0 4px; font-size:13px; }
+.mrlist { margin:6px 0 0; padding-left:20px; color:var(--dim); font-size:13px; }
+.mrlist a { color:var(--medium); }
+.footer { margin-top:34px; color:var(--dim); font-size:12px; }
+a { color:var(--accent); }
+</style></head><body><div class="wrap">
+<h1>🪐 Jupiter Bug Bash — Surviving Fix Fleet</h1>
+<div class="sub">All bug reports from <b>#tmp-portico-jupiter-bug-bashing</b> with an open, reviewed fix MR targeting <code>pre-beta-tmp</code>. Snapshot generated 2026-07-06; priorities reflect JIRA at generation time and do not update live.</div>
+<div class="tiles">
+ <div class="tile"><div class="n">41</div><div class="l">Fix MRs (all rebased on pre-beta-tmp)</div></div>
+ <div class="tile"><div class="n">40</div><div class="l">JIRA tickets (epic PORTICO-108)</div></div>
+ <div class="tile"><div class="n" style="color:var(--major)">14</div><div class="l">Major priority</div></div>
+ <div class="tile"><div class="n" style="color:var(--medium)">24</div><div class="l">Medium priority</div></div>
+ <div class="tile"><div class="n green">41/41</div><div class="l">Pipelines green (full CI + unsigned DMG)</div></div>
+</div>
+<div class="panel"><b>Bugs by category</b><div class="bar-row"><span class="bar-label">Security & Isolation</span><div class="bar-track"><div class="bar" style="width:56%"></div></div><span class="bar-n">5</span></div><div class="bar-row"><span class="bar-label">Models & LLM Gateway</span><div class="bar-track"><div class="bar" style="width:67%"></div></div><span class="bar-n">6</span></div><div class="bar-row"><span class="bar-label">Integrations & OAuth</span><div class="bar-track"><div class="bar" style="width:67%"></div></div><span class="bar-n">6</span></div><div class="bar-row"><span class="bar-label">MCP Server Management</span><div class="bar-track"><div class="bar" style="width:100%"></div></div><span class="bar-n">9</span></div><div class="bar-row"><span class="bar-label">Agent VM</span><div class="bar-track"><div class="bar" style="width:33%"></div></div><span class="bar-n">3</span></div><div class="bar-row"><span class="bar-label">Artifacts</span><div class="bar-track"><div class="bar" style="width:33%"></div></div><span class="bar-n">3</span></div><div class="bar-row"><span class="bar-label">Scheduled Tasks</span><div class="bar-track"><div class="bar" style="width:33%"></div></div><span class="bar-n">3</span></div><div class="bar-row"><span class="bar-label">Chat & UX</span><div class="bar-track"><div class="bar" style="width:56%"></div></div><span class="bar-n">5</span></div><div class="bar-row"><span class="bar-label">Infra & CI</span><div class="bar-track"><div class="bar" style="width:11%"></div></div><span class="bar-n">1</span></div></div>
+<div class="controls">
+ <button id="byCat" class="active" onclick="setView('cat')">Group by category</button>
+ <button id="byPrio" onclick="setView('prio')">Sort by priority</button>
+ <input id="q" placeholder="Filter by key or title…" oninput="filter()">
+</div>
+<div id="list">
+<details class="card" data-prio="0" data-cat="Security &amp; Isolation" data-key="PORTICO-161" data-text="portico-161 sanitize caller-facing tool errors that leak host paths and infra internals">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-161</span>
+  <span class="title">Sanitize caller-facing tool errors that leak host paths and infra internals</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-161" target="_blank">PORTICO-161</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/83" target="_blank">!83</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 17:02 UTC</div>
+        
+        <pre class="report">:bug: _[Med / Info-disclosure — SYSTEMIC] Unsanitized host paths &amp;amp; infra internals leak in error payloads across multiple subsystems_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Cross-cutting error handling (consolidates a finding seen in ≥2 independent subsystems)
+
+_Summary:_ Multiple tools pass raw container/host runtime errors straight through to the caller (model + chat surface) without sanitization, exposing host filesystem layout, internal image registry coordinates, and infra details. This isn&#x27;t isolated to one tool — it&#x27;s a shared error-handling gap.
+
+_Instance 1 — `get_mcp_server_logs` (MCP orchestration):_ Requesting logs for a nonexistent server dumps:
+• Host absolute paths: `/Users/home/portico/portico-managed/...`
+• docker-compose script path
+• Harbor image ref: `harbor.example.invalid/portico/agent-vm:07032026-799db2c7`
+• Warning: `The &quot;ANTHROPIC_API_KEY&quot; variable is not set`
+_Instance 2 — Artifacts server:_ Failed-start errors surface container-runtime internals:
+• `chdir to cwd (&quot;/work/does-not-exist-dir&quot;) set in config.json failed` (OCI runtime exec detail)
+• `list_artifacts` exposes `snapshot_path: /app/artifact-snapshots/...` (internal host path)
+_Impact:_ Internal host layout, compose/script paths, and registry image coordinates leak to easily-triggered, low-privilege paths. Low direct exploitability, but this is recon-grade info that shouldn&#x27;t reach the chat/model surface — and the pattern likely repeats in other tools.
+
+_Suggested fix:_ Add a shared error-sanitization layer for all tool responses: strip absolute host paths, compose/script paths, image registry refs, and env-var warnings; return clean, generic messages (e.g. `server not found`, `working directory not found`) to callers while logging full detail server-side only.
+
+_Note:_ This report consolidates the earlier standalone `get_mcp_server_logs` leak report with the Artifacts finding, since they share one root cause and one fix. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-161" target="_blank">PORTICO-161</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/83" target="_blank">!83</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783184533100579" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783144697811089" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/83" target="_blank">!83</a> — PORTICO-161 sanitize caller-facing tool errors</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Security &amp; Isolation" data-key="PORTICO-166" data-text="portico-166 authorize_integration auth-state reporting and forced re-auth recovery are unreliable across oauth integrations">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-166</span>
+  <span class="title">authorize_integration auth-state reporting and forced re-auth recovery are unreliable across OAuth integrations</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-166" target="_blank">PORTICO-166</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/88" target="_blank">!88</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 17:12 UTC</div>
+        
+        <pre class="report">:bug: _[Med — SYSTEMIC] `authorize_integration` auth-state reporting &amp;amp; forced re-auth recovery are unreliable across OAuth integrations_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ MCP orchestration — OAuth authorize / readiness / recovery
+_Tested against:_ Slack, Glean, Datadog (OAuth) + Sourcegraph (token). All 3 OAuth tools verified genuinely live (each returned real data), so these are _reporting/recovery-layer_ bugs, not core auth failures.
+
+_Three related defects:_
+
+_1) `already_authorized` always reports `false` — even when demonstrably authorized._
+Slack, Glean, and Datadog all returned `already_authorized:false` despite all three being live-authorized in the same session (posted to Slack, searched Glean, queried Datadog monitors). This is the field a caller uses to decide whether to prompt the user, so it drives unnecessary re-auth prompts. Confirmed on 3/3 OAuth integrations → systemic.
+
+_2) `force_auth=true` is a no-op when a token already exists._
+Docs: `force_auth=true` should &quot;force a fresh OAuth flow instead of reusing cached readiness/tokens.&quot; Called on Datadog → returned in ~4.2s with `success/tool_ready/&quot;OAuth done&quot;`, _no modal, no user interaction, no fresh flow_ — identical to the non-forced call. This is the documented recovery path for expired/invalid tokens (the system prompt tells agents to use `force_auth=true` after 401s), so if it silently reuses a stale token the recovery path is broken.
+
+_3) `readiness_phase:&quot;tool_ready&quot;` doesn&#x27;t guarantee the tool works (original lead)._
+Earlier this session, Slack&#x27;s `authorize` reported `tool_ready`/`success`/&quot;OAuth done&quot; while the actual Slack tool still 401&#x27;d until manual OAuth completion. The readiness claim is optimistic — based on token presence / process health, not an authenticated round-trip.
+
+_Combined failure mode:_ tool 401s → agent calls `force_auth=true` (per docs) → gets &quot;tool_ready!&quot; (Bug 2) → tool 401s again → loop. Bugs 1 &amp;amp; 2 are the mechanics; Bug 3 is the user-impacting symptom.
+
+_Suggested fixes:_
+• Make `already_authorized` reflect actual prior token state.
+• Make `force_auth=true` actually invalidate cached tokens/readiness and force a fresh flow.
+• Back `tool_ready` with a lightweight authenticated probe, or clearly separate &quot;process ready&quot; from &quot;auth verified.&quot;
+_Verified correct:_ token vs OAuth guardrail works — `authorize(sourcegraph)` correctly refused with `NOT_OAUTH_SERVER` and routed to guided setup. Core auth is functional; only the reporting/recovery layer is unreliable. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-166" target="_blank">PORTICO-166</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/88" target="_blank">!88</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783185132662399" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/88" target="_blank">!88</a> — PORTICO-166: Require fresh tokens for forced OAuth reauth</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Security &amp; Isolation" data-key="PORTICO-167" data-text="portico-167 subagents can read and write parent workspace, including sensitive workspace data">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-167</span>
+  <span class="title">Subagents can read and write parent workspace, including sensitive workspace data</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-167" target="_blank">PORTICO-167</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/91" target="_blank">!91</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 17:40 UTC</div>
+        
+        <pre class="report">:red_circle: _[UNCONFIRMED — needs controlled verification] Possible `parent_chat_id` trust-boundary / cross-tenant workspace access in `run_subagent`_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Subagent delegation — workspace binding trust boundary
+_Status:_ HYPOTHESIS, not reproduced. Flagging for the team to verify safely.
+
+_Observation:_ `run_subagent`&#x27;s `parent_chat_id` is documented as host-injected (&quot;the assistant should omit this field; the host uses it to bind sub-agent workspaces to the root parent chat workspace&quot;). However, I was able to pass `parent_chat_id` _explicitly_ from the caller, and the subagent bound to that workspace (my own chat&#x27;s `/work`).
+
+_The concern:_ If the host trusts a caller-supplied `parent_chat_id` rather than enforcing/overriding it server-side, then a caller could set it to a _different_ chat&#x27;s ID and bind a subagent to _another chat&#x27;s (or another user&#x27;s) workspace_ — combined with Bug G (subagents get full read/write to the bound `/work`, including `.sensitive/`), that would be a cross-tenant data-access + tampering vector.
+
+_Why I did NOT test it:_ Probing with a foreign chat_id would risk reading/writing data that isn&#x27;t mine, so I stopped at the boundary. This needs a controlled test with two chats owned by the same tester.
+
+_Requested verification:_
+1. From chat A, call `run_subagent` with `parent_chat_id` = chat B&#x27;s ID (both owned by the tester).
+2. Have the subagent `ls -la /work` and check whether it sees chat B&#x27;s workspace contents.
+3. If yes → the binding trusts caller input and must be enforced host-side (ignore/override any caller-supplied `parent_chat_id`, verify ownership).
+Posting here since this channel is small + private. Happy to run the controlled two-chat test if someone provisions a second chat ID for me to use. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-167" target="_blank">PORTICO-167</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/91" target="_blank">!91</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783186820477709" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783186795308289" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/91" target="_blank">!91</a> — PORTICO-167 isolate subagent Agent VM workspace scope</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Security &amp; Isolation" data-key="PORTICO-168" data-text="portico-168 run_subagent may trust caller-supplied parent_chat_id for workspace binding">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-168</span>
+  <span class="title">run_subagent may trust caller-supplied parent_chat_id for workspace binding</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-168" target="_blank">PORTICO-168</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/93" target="_blank">!93</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 17:40 UTC</div>
+        
+        <pre class="report">:red_circle: _[UNCONFIRMED — needs controlled verification] Possible `parent_chat_id` trust-boundary / cross-tenant workspace access in `run_subagent`_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Subagent delegation — workspace binding trust boundary
+_Status:_ HYPOTHESIS, not reproduced. Flagging for the team to verify safely.
+
+_Observation:_ `run_subagent`&#x27;s `parent_chat_id` is documented as host-injected (&quot;the assistant should omit this field; the host uses it to bind sub-agent workspaces to the root parent chat workspace&quot;). However, I was able to pass `parent_chat_id` _explicitly_ from the caller, and the subagent bound to that workspace (my own chat&#x27;s `/work`).
+
+_The concern:_ If the host trusts a caller-supplied `parent_chat_id` rather than enforcing/overriding it server-side, then a caller could set it to a _different_ chat&#x27;s ID and bind a subagent to _another chat&#x27;s (or another user&#x27;s) workspace_ — combined with Bug G (subagents get full read/write to the bound `/work`, including `.sensitive/`), that would be a cross-tenant data-access + tampering vector.
+
+_Why I did NOT test it:_ Probing with a foreign chat_id would risk reading/writing data that isn&#x27;t mine, so I stopped at the boundary. This needs a controlled test with two chats owned by the same tester.
+
+_Requested verification:_
+1. From chat A, call `run_subagent` with `parent_chat_id` = chat B&#x27;s ID (both owned by the tester).
+2. Have the subagent `ls -la /work` and check whether it sees chat B&#x27;s workspace contents.
+3. If yes → the binding trusts caller input and must be enforced host-side (ignore/override any caller-supplied `parent_chat_id`, verify ownership).
+Posting here since this channel is small + private. Happy to run the controlled two-chat test if someone provisions a second chat ID for me to use. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-168" target="_blank">PORTICO-168</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/93" target="_blank">!93</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783186820477709" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/93" target="_blank">!93</a> — PORTICO-168: Bind subagent parent chats from runtime context</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Security &amp; Isolation" data-key="PORTICO-170" data-text="portico-170 agent vm lacks disk quota and pid cap">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-170</span>
+  <span class="title">Agent VM lacks disk quota and PID cap</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-170" target="_blank">PORTICO-170</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/94" target="_blank">!94</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:03 UTC</div>
+        
+        <pre class="report">:bug: _[Med] Agent VM resource isolation gaps: no per-VM disk quota + unbounded PIDs (memory/CPU are fine)_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Agent VM cgroup / resource limits
+
+_What&#x27;s enforced correctly (verified):_
+• Memory: `memory.max`=1 GiB + `swap.max`=1 GiB → process OOM-killed at ~2 GiB (exit 137, `oom_kill` counter incremented). :white_check_mark:
+• CPU: `cpu.max`=200000/100000 → capped at 2 cores. :white_check_mark:
+_Gaps found:_
+
+_1) No per-VM `/work` disk quota (higher severity)._ `/work` is the shared host virtiofs mount (461 G, already _86% full_). A VM wrote a 200 MB file instantly at ~900 MB/s with no cap; nothing limits total usage. Blast radius is shared — a runaway loop or long session can fill the host disk and impact EVERY chat plus the host itself.
+- _Compounding:_ MCP overflow files auto-accumulate in `/work/.mcp-overflow/` (observed repeatedly this session — Glean/Sourcegraph results spilled 8–15 KB files, and a 12 MB `read_file` spilled a 13 MB file). They persist in the user&#x27;s workspace and count against the same uncapped host disk.
+
+_2) `pids.max = max` (unbounded)._ No cgroup PID cap — safely spawned 400 processes with no limit hit (`pids.current` reached 404). Only backstop against a fork bomb is the memory cap. Cheap to add a ceiling for defense-in-depth.
+
+_3) Minor: `nproc` reports 10 but CPU is capped at 2 cores._ Libraries/tools that size thread/worker pools off `nproc` will over-subscribe 5×.
+
+_Suggested fixes:_
+• Add a per-VM/per-chat disk quota (or a dedicated volume) so `/work` writes can&#x27;t exhaust the shared host disk; garbage-collect `.mcp-overflow/` on VM teardown and/or store spill outside the user mount.
+• Set a reasonable `pids.max` ceiling.
+• Constrain `nproc`/cpuset visibility to match the 2-core `cpu.max`. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-170" target="_blank">PORTICO-170</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/94" target="_blank">!94</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783191838708559" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/94" target="_blank">!94</a> — PORTICO-170: Harden Agent VM resource isolation</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Models &amp; LLM Gateway" data-key="PORTICO-153" data-text="portico-153 gpt 4.1 model family errors on prompt">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-153</span>
+  <span class="title">GPT 4.1 Model Family Errors on Prompt</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-153" target="_blank">PORTICO-153</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/90" target="_blank">!90</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:24 UTC</div>
+        
+        <pre class="report">:thread: _Addendum to the model-catalog drift findings (2 related items)_
+
+_Build:_ `07032026-799db2c7`
+_Relates to:_ the earlier &quot;GPT base models advertised but unrunnable&quot; report (they fail with `no keys found that support model`) and the injected-`&amp;lt;models&amp;gt;`-stale report above.
+
+_O-2) Registry `disabled`/`is_active` flags are WRONG for the GPT-4.1 family (registry-vs-reality, deeper than injected context)._
+`subagents_list_agents` reports `GPT-4.1`, `GPT-4.1 mini`, `GPT-4.1 nano` as `disabled: false` / `is_active: true` — but all three fail at runtime with `no keys found that support model` (re-confirmed this session). So even the authoritative model registry misrepresents usability. Contrast: `GPT-5.4 pro` is correctly flagged `disabled: true` with a reason (&quot;Temporarily disabled due to high costs&quot;) and rejected cleanly. _Fix:_ the registry&#x27;s active/disabled state should reflect gateway key availability — flag the GPT-4.1 family disabled-with-reason like GPT-5.4 pro, instead of advertising them as active. This is the root of the earlier &quot;advertised but unrunnable&quot; report.
+
+_P) Injected `&amp;lt;agent_vm&amp;gt;` ID is a static snapshot that goes stale after VM recovery._
+The injected context hardcodes a specific `&amp;lt;agent_vm id=&quot;...&quot;&amp;gt;`. It&#x27;s correct at steady state, but earlier this session the VM I was actively using was silently swapped to a replacement (surfaced only via the `vm_id_changed` field in tool responses). The injected block was NOT updated to reflect the in-flight swap, so an agent trusting the injected ID blindly during that window would call a dead VM. The context does warn &quot;automatic recovery may return a replacement vm_id,&quot; but the injected ID itself isn&#x27;t refreshed. _Fix:_ refresh the injected VM ID on recovery, or explicitly state that `vm_id_changed` in tool responses is authoritative over the injected block. (Low severity — relates to the earlier silent-VM-swap note.)
+
+_Theme:_ Across this audit, the tool-server / skills / integration-state dimensions of the injected context are accurate and live-consistent. The weak spot is the model dimension — the injected snapshot, the docs, AND the registry&#x27;s own flags all disagree with runtime reality in different ways. Net: the model catalog is not currently a reliable source of truth for what an agent can actually run. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-153" target="_blank">PORTICO-153</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/90" target="_blank">!90</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783193086446449" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783186805939459" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/90" target="_blank">!90</a> — PORTICO-153: Hide unprovisioned GPT subagent models</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Models &amp; LLM Gateway" data-key="PORTICO-156" data-text="portico-156 jupiter: image attachments rejected, multimodal content not supported in current mvp">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-156</span>
+  <span class="title">Jupiter: image attachments rejected, multimodal content not supported in current MVP</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-156" target="_blank">PORTICO-156</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/76" target="_blank">!76</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 18:25 UTC</div>
+        
+        <pre class="report">:bug: _[Med] `agent_vm_request_images` accepts non-image bytes by extension — attaches invalid payloads as `image/png`_
+
+*Area:* Agent VM MCP — image content validation (pixel-attach path)
+
+*Symptom:* `agent_vm_request_images` gates &quot;is this an image?&quot; on the *filename extension only*. Any non-image file renamed `*.png` (including a 0-byte file or a plain-text blob) is accepted and packaged as a valid `image/png` model input, with no content/magic-byte validation.
+
+*Steps to reproduce:*
+1. `echo &quot;not an image&quot; &amp;gt; /work/x/fake_image.png`
+2. `: &amp;gt; /work/x/empty.png` (0 bytes)
+3. `agent_vm_request_images(file_paths=[&quot;/work/x/fake_image.png&quot;])`
+4. `agent_vm_request_images(file_paths=[&quot;/work/x/empty.png&quot;])`
+
+*Expected:* Both rejected via content validation, consistent with the tool already rejecting `.txt`, missing files, directories, and oversized (&amp;gt;5 MB) files.
+
+*Actual:* Both return `success: true`, `is_image: true`, `mime_type: &quot;image/png&quot;`, and emit a `model_image_url` for the next model request.
+
+*Evidence:* :white_check_mark: correctly rejects `notes.txt`, missing path, directory, and a 13.85 MB PNG (&quot;&amp;gt;5242880 bytes&quot;). :x: wrongly accepts a 42-byte ASCII file and a 0-byte file, both as `image/png`. Content sniff confirms neither has PNG/JPEG magic bytes. Size limits are read from disk and enforced; content is not. `agent_vm_get_workspace_file_link` shows the same extension-only `is_image` classification (likely a shared helper).
+
+*Impact:* The next model request carries a corrupt/empty payload labeled `image/png` → multimodal API hard-rejects or silently mis-processes, with no actionable error surfaced to the agent. Same failure class as PORTICO-64, but on the `agent_vm_request_images` MCP tool path (currently zero coverage).
+
+*Dedup:* Not PORTICO-64 (chat-UI upload / invalid base64 / GPT), PORTICO-156 (Jupiter routing blocks all multimodal), or PORTICO-21 (chat-UI attach). None cover this MCP tool.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-156" target="_blank">PORTICO-156</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/76" target="_blank">!76</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783275935771389" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783033763032969" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/76" target="_blank">!76</a> — PORTICO-156: clear notice when the LLM gateway rejects image attachments</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Models &amp; LLM Gateway" data-key="PORTICO-178" data-text="portico-178 jupiter: injected model context omits live gpt-5 family">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-178</span>
+  <span class="title">Jupiter: Injected model context omits live GPT-5 family</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-178" target="_blank">PORTICO-178</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/102" target="_blank">!102</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:24 UTC</div>
+        
+        <pre class="report">:thread: _Addendum to the model-catalog drift findings (2 related items)_
+
+_Build:_ `07032026-799db2c7`
+_Relates to:_ the earlier &quot;GPT base models advertised but unrunnable&quot; report (they fail with `no keys found that support model`) and the injected-`&amp;lt;models&amp;gt;`-stale report above.
+
+_O-2) Registry `disabled`/`is_active` flags are WRONG for the GPT-4.1 family (registry-vs-reality, deeper than injected context)._
+`subagents_list_agents` reports `GPT-4.1`, `GPT-4.1 mini`, `GPT-4.1 nano` as `disabled: false` / `is_active: true` — but all three fail at runtime with `no keys found that support model` (re-confirmed this session). So even the authoritative model registry misrepresents usability. Contrast: `GPT-5.4 pro` is correctly flagged `disabled: true` with a reason (&quot;Temporarily disabled due to high costs&quot;) and rejected cleanly. _Fix:_ the registry&#x27;s active/disabled state should reflect gateway key availability — flag the GPT-4.1 family disabled-with-reason like GPT-5.4 pro, instead of advertising them as active. This is the root of the earlier &quot;advertised but unrunnable&quot; report.
+
+_P) Injected `&amp;lt;agent_vm&amp;gt;` ID is a static snapshot that goes stale after VM recovery._
+The injected context hardcodes a specific `&amp;lt;agent_vm id=&quot;...&quot;&amp;gt;`. It&#x27;s correct at steady state, but earlier this session the VM I was actively using was silently swapped to a replacement (surfaced only via the `vm_id_changed` field in tool responses). The injected block was NOT updated to reflect the in-flight swap, so an agent trusting the injected ID blindly during that window would call a dead VM. The context does warn &quot;automatic recovery may return a replacement vm_id,&quot; but the injected ID itself isn&#x27;t refreshed. _Fix:_ refresh the injected VM ID on recovery, or explicitly state that `vm_id_changed` in tool responses is authoritative over the injected block. (Low severity — relates to the earlier silent-VM-swap note.)
+
+_Theme:_ Across this audit, the tool-server / skills / integration-state dimensions of the injected context are accurate and live-consistent. The weak spot is the model dimension — the injected snapshot, the docs, AND the registry&#x27;s own flags all disagree with runtime reality in different ways. Net: the model catalog is not currently a reliable source of truth for what an agent can actually run. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-178" target="_blank">PORTICO-178</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/102" target="_blank">!102</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783193086446449" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783193064520859" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/102" target="_blank">!102</a> — PORTICO-178 Fix stale model context truncation</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Models &amp; LLM Gateway" data-key="PORTICO-145" data-text="portico-145 jira mcp error &quot;get jira project issue types&quot;">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-145</span>
+  <span class="title">Jira MCP error &quot;Get jira project issue types&quot;</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-145" target="_blank">PORTICO-145</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/69" target="_blank">!69</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>Tommy Omen</b> · 2026-07-01 16:30 UTC</div>
+        <div class="shot">📸 This report includes screenshot(s) — <a href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782923445688119" target="_blank">open the Slack thread</a> to view them (Slack auth required).</div>
+        <pre class="report">Here is my first bug/issue. I can raise it via the mechanism in the doc. Jira MCP is failing with
+
+&amp;gt; Error in Bedrock handling: ValidationException: 1 validation error detected: Value &#x27;mcp-atlassian_mcp_atlassian_Get_JIRA_Project_Issue_Types_Metadata&#x27; at &#x27;toolConfig.tools.44.member.toolSpec.name&#x27; failed to satisfy constraint: Member must have length less than or equal to 64</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-145" target="_blank">PORTICO-145</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/69" target="_blank">!69</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782923445688119" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782922926461399" target="_blank">Slack thread 📸</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/69" target="_blank">!69</a> — Fix Bedrock tool name aliasing</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Models &amp; LLM Gateway" data-key="PORTICO-169" data-text="portico-169 [jupiter] reasoning-tag parser hides visible answer body">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-169</span>
+  <span class="title">[Jupiter] Reasoning-tag parser hides visible answer body</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-169" target="_blank">PORTICO-169</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/92" target="_blank">!92</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 18:26 UTC</div>
+        
+        <pre class="report">:bug: _[High] Reasoning-tag parser mis-classifies answer text as &quot;thinking,&quot; silently dropping the visible response body_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Reasoning/think-tag parsing — `patches/backend/open_webui/utils/middleware.py` + `custom_callbacks.py`
+_Status:_ Root cause CONFIRMED via code trace + empirical repro (not a hypothesis).
+
+_Symptom:_ A turn displays &quot;Thought for N seconds&quot; and an empty or truncated response body, even though a full answer was generated. Adjacent turns leak literal closing-think-tag fragments into the visible message text.
+
+_Confirmed root cause (code-traced in `portico/portico`):_
+There are TWO independent, naive string-matching reasoning parsers:
+• _Display side_ — `middleware.py` `tag_content_handler` (~L2225) + `DEFAULT_REASONING_TAGS` (~L128, includes `&amp;lt;think&amp;gt;`, `&amp;lt;thinking&amp;gt;`, `&amp;lt;reason&amp;gt;`, `&amp;lt;thought&amp;gt;`, …). It scans _streamed answer text_ for these tags. A stray/model-emitted opening think-tag in the answer opens a phantom &quot;reasoning&quot; block; everything after it is rendered inside the collapsible &quot;Thinking…/Thought for N seconds&quot; panel and disappears from the answer body. Duration (the &quot;Thought for Ns&quot; label) is finalized ~L2317–2342.
+• _Request-shaping side_ — `custom_callbacks.py` `extract_reasoning_from_text` (L138) uses `re.sub(r&#x27;&amp;lt;think&amp;gt;.*?&amp;lt;/think&amp;gt;\s*&#x27;, &#x27;&#x27;, text, DOTALL)` (L147). A stray tag pair in the answer excises the content between them (non-greedy + DOTALL).
+_Empirical repro:_ Ran both regexes against answer text that contains literal think tokens (e.g. a bug report that discusses think tags). Result: content between/after the tags is stripped or moved into the reasoning block, leaving an empty/truncated visible answer.
+
+_Trigger:_ Any assistant answer whose text contains reasoning-tag-like strings (think/thinking/reason/thought tags) — e.g. answers discussing LLM reasoning, pasted model output, or code containing those tokens.
+
+_Meta note / live repro:_ This fired earlier in THIS session — when I was drafting bug reports that literally contained think tags, the UI showed &quot;Thought for 24s&quot; with no body, and stray closing-tag fragments leaked into nearby messages. The bug is self-triggering whenever the assistant writes about reasoning tags.
+
+_Impact:_ Silent, total loss of the visible answer with no error indicator — appears as a normal completed turn. Deterministically triggerable. High severity (data loss + no recovery signal).
+
+_Suggested fix:_ Only collapse reasoning that the model actually emitted via reasoning stream fields (`reasoning_content`/`reasoning`/`thinking`, already handled ~L2675) — NOT literal tags appearing in normal answer `content`. Neutralize/escape reasoning-tag-like substrings in answer text before rendering, and require a matched, model-originated open/close pair rather than any inline occurrence. Consolidate the two divergent parsers onto one hardened implementation. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-169" target="_blank">PORTICO-169</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/92" target="_blank">!92</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783189581117399" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/92" target="_blank">!92</a> — PORTICO-169: Preserve literal reasoning tag text</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Models &amp; LLM Gateway" data-key="PORTICO-191" data-text="portico-191 tool-call validation misreports empty required strings as truncated calls">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-191</span>
+  <span class="title">Tool-call validation misreports empty required strings as truncated calls</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-191" target="_blank">PORTICO-191</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/113" target="_blank">!113</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:51 UTC</div>
+        
+        <pre class="report">:bug: _[Med] Empty/whitespace required string args are misreported as &quot;truncated tool call,&quot; with self-contradictory argument lists (cross-server)_
+
+*Area:* Tool-call argument validation layer (framework-level, not tool-specific)
+
+*Symptom:* When a required _string_ argument is supplied but empty (`&quot;&quot;` or whitespace), the tool-call handler returns an error that (a) claims the call &quot;may have been truncated… ended after N completion tokens,&quot; and (b) lists the same field in BOTH `missing_required_arguments` and `provided_arguments`. The prompt/query was present-but-empty, not truncated — so the diagnostic misdirects toward an LLM-generation problem instead of &quot;this field must be non-empty.&quot;
+
+*Reproduced on 3 different servers (none VM-related):*
+• `web_tools_web_search` with `query: &quot;&quot;`
+• `subagents_run_subagent` with `prompt: &quot;&quot;`
+• `agent_vm_request_sensitive_information` with `prompt: &quot;&quot;`
+Each returned `raw_arguments_preview` showing the field WAS provided (empty), yet reported it as missing/truncated.
+
+*Steps to reproduce:*
+1. Call any of the above tools with the required string arg set to `&quot;&quot;` (all other required args present).
+2. Observe: error blames truncation (&quot;ended after N completion tokens&quot;), and `provided_arguments` contains the field that `missing_required_arguments` also lists.
+
+*Expected:* A clean validation error, e.g. `&quot;query is required / must not be empty&quot;` (like `skills_ask_user_question`, which correctly returns `&quot;...question is required&quot;`). The same field should never appear in both provided and missing lists.
+
+*Actual:* Empty-but-present required strings are misclassified as truncated tool calls, with contradictory argument metadata.
+
+*Impact:* Medium. Misleading diagnostics send debugging down the wrong path (model truncation vs. empty input), and the contradictory `provided`/`missing` lists undermine any automated retry logic that reads those fields.
+
+*Dedup:* Distinct from the known Agent VM `vm_id` arg-handling report (which is about _missing_ `vm_id` and a `chat_id`→canonical-VM auto-recovery fix). This is the _empty-string_ case and reproduces on web-tools and subagents, which have no VM/canonical fallback — so it&#x27;s a generic validation/diagnostic defect, not VM-specific.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-191" target="_blank">PORTICO-191</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/113" target="_blank">!113</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783281062959869" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/113" target="_blank">!113</a> — PORTICO-191 Fix blank required tool arg diagnostics</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Integrations &amp; OAuth" data-key="PORTICO-154" data-text="portico-154 productkit authenticate button does not launch auth flow in jupiter">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-154</span>
+  <span class="title">ProductKit Authenticate button does not launch auth flow in Jupiter</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-154" target="_blank">PORTICO-154</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/74" target="_blank">!74</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-02 06:36 UTC</div>
+        <div class="shot">📸 This report includes screenshot(s) — <a href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782974166359609" target="_blank">open the Slack thread</a> to view them (Slack auth required).</div>
+        <pre class="report">Caught a bug where it seems like the ProductKit authenticate button is non-responsive (but the neighboring TrustKit Configure button works fine).</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-154" target="_blank">PORTICO-154</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/74" target="_blank">!74</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782974166359609" target="_blank">Slack thread 📸</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/74" target="_blank">!74</a> — PORTICO-154: Honor backend OAuth readiness</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Integrations &amp; OAuth" data-key="PORTICO-157" data-text="portico-157 google workspace oauth callback to 127.0.0.1:8080 is refused">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-157</span>
+  <span class="title">Google Workspace OAuth callback to 127.0.0.1:8080 is refused</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-157" target="_blank">PORTICO-157</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/80" target="_blank">!80</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 20:02 UTC</div>
+        <div class="shot">📸 This report includes screenshot(s) — <a href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783195371220339" target="_blank">open the Slack thread</a> to view them (Slack auth required).</div>
+        <pre class="report">:bug: _Bug: Google Workspace OAuth 2.1 — `authorize_integration` reports success but tools see no authenticated user_ _Reported by:_ &lt;mailto:dappelbaum@example.invalid|dappelbaum@example.invalid&gt; (via Portico)_Area:_ Google Workspace MCP (OAuth 2.1 mode) + integration authorizer_Type:_ Auth / session-binding | _Severity:_ High (blocks all Google Workspace tools) _Symptom:_ Every Google Workspace tool call fails with: ```OAuth 2.1 mode requires an authenticated user for &amp;lt;tool&amp;gt;, but none was found.
+``` …even though `mcp_assistant_authorize_integration` returns `success: true`, `readiness_phase: &quot;tool_ready&quot;`, `&quot;OAuth done, tool_ready, auto-activated&quot;` — consistently in ~4.5s with `already_authorized: false`. _Server log confirms root cause_ (`google_workspace_mcp/auth/service_decorator.py`): ```:595 _extract_oauth21_user_email(authenticated_user, func.__name__)
+:356 raise Exception(&quot;OAuth 2.1 mode requires an authenticated user ... none was found&quot;)
+``` → The credential/token is being stored, but _not bound to the tool-call session identity_ the decorator reads. The authorizer&#x27;s &quot;success&quot; is decoupled from what the tool session actually sees. _Reproduction (all attempted, all failed to bind):_ 1. `authorize_integration` ×3 (incl. `force_auth=true`) — returns success, tools still fail.
+2. `start_google_auth` explicit flow — generated URL uses redirect `http://127.0.0.1:8080/oauth2callback`, which is _internal to the MCP container_ → user hits `ERR_CONNECTION_REFUSED` in browser.
+3. User completed OAuth via in-app modal (auth steps happened in a browser tab) — no binding.
+4. User re-authed via Control Plane → Integrations — no binding.
+5. Full `restart_mcp_server google_workspace` + wait — no binding. _Secondary issue:_ `authorize_integration` returning `tool_ready`/`success` while the credential is not actually usable is misleading — it should verify a real authenticated session before reporting success. _Impact:_ Google Workspace (Docs/Drive/Sheets/Gmail/Calendar) is fully unusable in the chat despite &quot;successful&quot; auth. Blocked live testing for the MD→Doc bug above. _Suggested investigation:_ Check how the OAuth21 authenticated-user context is propagated from the authorizer/credential store to the FastMCP tool-call session in this deployment (session/user-id keying mismatch is the likely culprit).</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-157" target="_blank">PORTICO-157</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/80" target="_blank">!80</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783195371220339" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783142843689699" target="_blank">Slack thread 📸</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/80" target="_blank">!80</a> — PORTICO-157 Fix Google Workspace OAuth bearer handling</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Integrations &amp; OAuth" data-key="PORTICO-158" data-text="portico-158 gitlab mcp aggregator drops several available server tools">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-158</span>
+  <span class="title">GitLab MCP aggregator drops several available server tools</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-158" target="_blank">PORTICO-158</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/81" target="_blank">!81</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>Fabian Hans</b> · 2026-07-04 16:35 UTC</div>
+        
+        <pre class="report">Not sure if this is a Jupiter issue, but while updating the Gitlab mcp server integration in portico-mcp, I noticed that the aggregator drops a few tools from the mcp server:
+```create_group, delete_branch, get_branch, get_file_blame, list_branches, update_issue_description_patch```
+Disregard if intentional, flagging if not :slightly_smiling_face:</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-158" target="_blank">PORTICO-158</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/81" target="_blank">!81</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783182903139049" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/81" target="_blank">!81</a> — PORTICO-158 expose updated GitLab MCP tools</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Integrations &amp; OAuth" data-key="PORTICO-179" data-text="portico-179 google workspace docs: native markdown import tool hinted but not exposed">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-179</span>
+  <span class="title">Google Workspace Docs: native markdown import tool hinted but not exposed</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-179" target="_blank">PORTICO-179</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/103" target="_blank">!103</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 20:02 UTC</div>
+        
+        <pre class="report">:bug: _Bug: Programmatic Markdown → Google Doc conversion is slow &amp;amp; error-prone (native import path not exposed)_ _Reported by:_ &lt;mailto:dappelbaum@example.invalid|dappelbaum@example.invalid&gt; (via Portico investigation)_Area:_ `markdown-to-gdoc` skill + Google Workspace MCP (Docs)_Type:_ Design + missing-capability | _Severity:_ Medium _Symptom (user-reported):_ Native &quot;paste as markdown&quot; in Google Docs is fast &amp;amp; accurate. Programmatic MD→Doc conversion via the assistant is slow and mangles formatting. _Root causes (confirmed from skill source + tool metadata):_ 1. _Element-by-element rebuild._ The `markdown-to-gdoc` skill creates a blank doc then issues ~30–40 _sequential_ MCP calls for a 51-line doc (one `modify_doc_text`/`format_all_occurrences` per heading, per inline bold/italic/code/link span, per list, etc.). Native import would be 1–2 calls. → slow + large partial-failure surface.
+2. _Search-positioned inline formatting collides._ Formatting is applied via `search=&quot;text&quot;` + `position=&quot;replace&quot;`. Repeated substrings (e.g. &quot;important&quot; twice, two `**bold**` spans on one line) format the wrong occurrence. The skill&#x27;s own `batch-strategy.md` admits this risk. → silent formatting errors.
+3. _Native importer documented but not exposed._ The deployed Google Workspace MCP&#x27;s own `get_tool_hints(category=&quot;docs&quot;)` documents an `insert_markdown` tool (&quot;Google&#x27;s native markdown import&quot;, &quot;tables need blank lines before them (auto-fixed)&quot;, &quot;test with files in `tests/example_docs/`&quot;) — but `google_workspace_insert_markdown` _is not present in the tool surface_ exposed to the assistant, and the skill never uses it. So the fast native path is advertised but unusable → forces the slow manual path. (`insert_markdown` exists in the `google-workspace-mcp-advanced` fork upstream.)
+4. _Import/export asymmetry._ `export_doc_as_markdown` uses Google&#x27;s _native_ export, but there&#x27;s no native _import_ counterpart wired through. _Context (Google docs):_ Drive converts on upload when metadata MIME = `application/vnd.google-apps.document`, but raw `text/markdown` is not a documented first-class import type — the reliable native pattern is MD→HTML→upload-with-conversion (which is likely how &quot;paste as markdown&quot; works internally). _Suggested fixes:_• Expose/register a native markdown import tool (`insert_markdown` or equivalent) in this deployment; verify tool-tier registration since the hints reference it.• Update `markdown-to-gdoc` skill to prefer native import (MD→HTML→Drive convert), keep element-by-element only as fallback.• Add a round-trip fidelity test using `export_doc_as_markdown` on the imported doc. _:warning: Confidence caveat:_ Findings 1–4 confirmed from skill source, tool metadata &amp;amp; Google docs. _Live wall-clock speed &amp;amp; formatting-fidelity measurement was NOT completed_ — it was blocked by a Google Workspace OAuth session-binding failure (filing separately). Happy to run the live A/B (native import vs. skill path) once auth is unblocked.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-179" target="_blank">PORTICO-179</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/103" target="_blank">!103</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783195354286109" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/103" target="_blank">!103</a> — PORTICO-179 expose Google Docs markdown import</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Integrations &amp; OAuth" data-key="PORTICO-184" data-text="portico-184 slack mcp: slack_read_canvas is not exposed for safe canvas edits">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-184</span>
+  <span class="title">Slack MCP: slack_read_canvas is not exposed for safe canvas edits</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-184" target="_blank">PORTICO-184</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/107" target="_blank">!107</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 15:28 UTC</div>
+        
+        <pre class="report">:bug: _[Low-Med] `slack_read_canvas` is missing from the exposed tool surface, forcing destructive full-replace canvas edits_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Slack MCP — canvas tooling / documentation-vs-reality drift
+_Status:_ CONFIRMED — reproduced live this session
+
+_Finding:_ The Slack MCP server exposes `create_canvas` and `update_canvas` (both verified working this session), but `read_canvas` is NOT available in the tool surface — even though both sibling tools explicitly document it as the prerequisite for safe edits.
+
+_Evidence:_
+• Calling `slack_read_canvas` returned: &quot;Tool ... is not available in the current chat yet.&quot; — while `create_canvas`, `update_canvas`, `send_message`, and `conversations_history` from the SAME server all worked (I created and later updated a canvas this session). So this is not a server-down / still-starting issue.
+• `create_canvas`&#x27;s own description says: &quot;Use slack_read_canvas to read existing canvases.&quot;
+• `update_canvas`&#x27;s description repeatedly instructs calling `slack_read_canvas` FIRST to obtain `section_id`s, and marks targeted `replace` as &quot;STRONGLY RECOMMENDED ... to avoid overwriting the entire canvas.&quot; The only documented way to get those section IDs (read_canvas) isn&#x27;t available.
+_Why it matters (real capability + safety gap, not cosmetic):_
+• There is no read path for an existing canvas at all.
+• Edit is not fully blocked — `update_canvas` works and returns a `section_id_mapping` — BUT only if you still hold section IDs from a prior create/update in context. For any canvas you didn&#x27;t just touch (or after context is lost), you have no way to fetch section IDs, so you&#x27;re forced into a full-replace edit, which the tool&#x27;s own docs warn &quot;will completely overwrite the ENTIRE canvas content&quot; and &quot;destroys existing comment marks.&quot;
+• Live repro: updating the bug-bash roll-up canvas to add 7 findings required a destructive full-replace; it only succeeded safely because I still had the original content cached in context. That was the ONLY available path.
+_Severity rationale:_ Low-Med — there&#x27;s a workaround (retain section IDs from create/update responses) and edit isn&#x27;t fully blocked, but the destructive-full-replace-by-default consequence lifts it above pure Low.
+
+_Scoping caveat (honest):_ I can&#x27;t enumerate the raw tool registry, so &quot;not exposed&quot; is inferred from (a) the failed call and (b) its absence from the tool specs while siblings are present. Strong evidence, but the root cause (never registered at this tier vs. intentionally withheld vs. a registration bug) should be confirmed by the owning team.
+
+_Suggested fix:_
+1. Expose/register `slack_read_canvas` at this tool tier so agents can fetch existing canvas content + `section_id`s before editing.
+2. Until then, update `create_canvas`/`update_canvas` docs to stop instructing agents to call a tool that isn&#x27;t available, and document the &quot;retain section_id_mapping from the update response&quot; workaround.
+_Theme:_ Same doc-vs-reality drift family as the `get_tool_hints` phantom-tool-names and `insert_markdown` findings — tools/docs reference capabilities that aren&#x27;t in the exposed surface. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-184" target="_blank">PORTICO-184</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/107" target="_blank">!107</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783265306741729" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/107" target="_blank">!107</a> — PORTICO-184 guard missing Slack canvas reader docs</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Integrations &amp; OAuth" data-key="PORTICO-190" data-text="portico-190 web search: reject mutually exclusive allowed_domains and blocked_domains">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-190</span>
+  <span class="title">Web Search: reject mutually exclusive allowed_domains and blocked_domains</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-190" target="_blank">PORTICO-190</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/112" target="_blank">!112</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:24 UTC</div>
+        
+        <pre class="report">:bug: _[Med] Web Search: `allowed_domains` + `blocked_domains` mutual-exclusion not enforced — `blocked_domains` silently dropped_
+
+*Area:* Web Tools — `web_tools_web_search` parameter validation
+
+*Symptom:* The tool docs state `allowed_domains` and `blocked_domains` &quot;cannot be used with&quot; each other. When both are supplied in one call, the tool does not error — it silently accepts the call, applies `allowed_domains`, and ignores `blocked_domains`. No warning is surfaced to the caller.
+
+*Steps to reproduce:*
+1. Call `web_tools_web_search` with query + `allowed_domains: [&quot;http://wikipedia.org - wikipedia.org,&quot;]` + `blocked_domains: [&quot;http://reddit.com - reddit.com,&quot;]`.
+2. Call succeeds; search runs restricted to http://wikipedia.org - wikipedia.org, (allow-list applied, block-list dropped). Response even states it is &quot;required to use only Wikipedia-based search results.&quot;
+3. Stronger repro — put the SAME domain in both: `allowed_domains: [&quot;http://wikipedia.org - wikipedia.org,&quot;]` + `blocked_domains: [&quot;http://wikipedia.org - wikipedia.org,&quot;]` → search returns results _from_ http://wikipedia.org - wikipedia.org,, i.e. the blocked domain is served with no error.
+
+*Expected:* Supplying both parameters is rejected with a clear validation error (consistent with the documented &quot;cannot be used with&quot; constraint).
+
+*Actual:* Both accepted; `blocked_domains` silently ignored in favor of `allowed_domains`, including the contradictory same-domain case.
+
+*Impact:* Medium. Callers relying on `blocked_domains` for safety/quality exclusions get no protection and no signal that the filter was dropped — searches can silently return results from domains the caller explicitly tried to block.
+
+*Dedup:* Distinct from https://portico.atlassian.net/browse/PORTICO-147 - PORTICO-147, (Web Search &quot;does not work&quot; / proxy RuntimeError — base search now returns results in my testing). This is a parameter-validation defect, not a total-failure issue.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-190" target="_blank">PORTICO-190</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/112" target="_blank">!112</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783279457626159" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/112" target="_blank">!112</a> — PORTICO-190 Reject conflicting web search domain filters</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-159" data-text="portico-159 activate_integration waits 30s and reports starting for unknown server ids">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-159</span>
+  <span class="title">activate_integration waits 30s and reports starting for unknown server IDs</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-159" target="_blank">PORTICO-159</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/82" target="_blank">!82</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 05:58 UTC</div>
+        
+        <pre class="report">:bug: _[Med-High] `activate_integration` hangs 30s + falsely reports &quot;actively starting&quot; for unknown server IDs_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ MCP orchestration / tool activation
+
+_Repro:_
+1. Call `mcp_assistant_activate_integration` with a well-formed but nonexistent ID, e.g. `[&quot;server:zzz-fake-99&quot;]`
+_Expected:_ Fast failure — `not_found` / `service_not_found`.
+_Actual:_ Blocks for a full _30 seconds_, then returns `success:false` with `server_visible:true`, `actively_starting:true`, `readiness_phase:&quot;starting&quot;`, and guidance to &quot;tell the user it is still starting and retry later&quot; — for a container that was never created and never will be.
+
+_Root cause (identified):_ Validation only checks the `server:` _prefix_, not membership in the known-server registry. Any prefix-correct ID enters the readiness-wait loop. Contrast: an ID _without_ the prefix (`not-a-server-prefix`) fails instantly with a clean format error.
+
+_Corroboration:_ `get_mcp_server_logs` for the same ID returns `No such container` — the two subsystems disagree about whether the server exists.
+
+_Suggested fix:_ Add registry-membership check before entering the wait loop; fail fast on unknown IDs.
+_Impact:_ Typo&#x27;d/stale IDs stall the agent 30s and produce misleading &quot;retry later&quot; guidance. Reproduced 2×, deterministic. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-159" target="_blank">PORTICO-159</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/82" target="_blank">!82</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783144680791399" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/82" target="_blank">!82</a> — PORTICO-159: Fail fast for unknown MCP activation IDs</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-160" data-text="portico-160 activate_integration mixed batch drops valid servers when one id is invalid">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-160</span>
+  <span class="title">activate_integration mixed batch drops valid servers when one ID is invalid</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-160" target="_blank">PORTICO-160</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/85" target="_blank">!85</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 05:58 UTC</div>
+        
+        <pre class="report">:bug: _[Med] Mixed `activate_integration` batch fails entirely when one ID is invalid (drops valid servers)_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ MCP orchestration / tool activation
+
+_Repro:_
+1. Call `mcp_assistant_activate_integration([&quot;server:datadog&quot;, &quot;server:does-not-exist-abc&quot;])`
+_Expected:_ Partial success — `datadog` activates, the bad ID is reported separately (the `create_files` tool already uses this partial-success model elsewhere in the build).
+_Actual:_ `success:false`, `newly_added:[]` — the valid `datadog` is _not_ activated because one sibling ID was bad. Also incurs the 30s wait from Bug #1.
+
+_Suggested fix:_ Partial-succeed on valid servers; return failed IDs in a separate list. Align contract with `create_files`.
+_Impact:_ A single bad/stale ID in a batch silently blocks legitimate integrations. Deterministic. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-160" target="_blank">PORTICO-160</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/85" target="_blank">!85</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783144689246849" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/85" target="_blank">!85</a> — PORTICO-160 Allow partial integration activation</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-162" data-text="portico-162 fix skill deactivation mcp server detach">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-162</span>
+  <span class="title">Fix skill deactivation MCP server detach</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-162" target="_blank">PORTICO-162</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/86" target="_blank">!86</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 05:58 UTC</div>
+        
+        <pre class="report">:bug: _[Low-Med] Skill deactivation never detaches the MCP servers it enabled (one-way coupling)_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Skills :left_right_arrow: MCP server lifecycle
+
+_Repro:_
+1. `activate_skill(&quot;code-execution&quot;)` → attaches `server:agent-vm`
+2. `deactivate_skill(&quot;code-execution&quot;)`
+3. `get_chat_tools` → `server:agent-vm` is _still attached_
+(Same with `company-knowledge` → `server:glean`.)
+_Expected:_ Servers with no remaining owning skill (and no manual activation) are detached.
+_Actual:_ Activation enables servers, but deactivation never disables them. Orphaned servers persist for the full 7-day TTL, so `activated_skills` drifts out of sync with `enabled_tools`.
+
+_Suggested fix:_ Reference-count servers against active skills + manual activations; detach on last release. Or document as intentional &quot;sticky&quot; behavior.
+_Impact:_ Accumulating orphaned servers; state drift. Reproduced 3×, deterministic. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-162" target="_blank">PORTICO-162</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/86" target="_blank">!86</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783144705285239" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/86" target="_blank">!86</a> — PORTICO-162 detach orphaned skill MCP servers</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-163" data-text="portico-163 concurrent skill activation responses can include another call&#x27;s state snapshot">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-163</span>
+  <span class="title">Concurrent skill activation responses can include another call&#x27;s state snapshot</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-163" target="_blank">PORTICO-163</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/84" target="_blank">!84</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 05:58 UTC</div>
+        
+        <pre class="report">:bug: _[Low / Intermittent] Concurrent skill-activation calls return inconsistent state snapshots_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Skills activation / response consistency
+
+_Repro (intermittent):_
+1. Fire `activate_skill(&quot;web-search&quot;)` and `activate_skill(&quot;company-knowledge&quot;)` concurrently in one batch
+_Expected:_ Each response reflects only its own call&#x27;s delta (or clearly documents it&#x27;s global state).
+_Actual:_ Non-deterministic. In one run, the `web-search` response already listed `company-knowledge` in `activated_skills` and `server:glean` in `enabled_mcp_servers` (a _concurrent_ call&#x27;s mutation). In a repeat run, snapshots were clean/ordered. _Two runs, two outcomes → real race._
+
+_Note:_ The persisted store converges correctly; only the per-call _response snapshots_ race. Fields like `newly_enabled_mcp_servers` can&#x27;t be reliably attributed to the specific call.
+_Suggested fix:_ Snapshot state per-call under a lock, or document these fields as &quot;global state at completion, not this call&#x27;s delta.&quot;
+_Impact:_ Low — callers relying on the delta fields under parallel activation get unreliable data. Flagged as _intermittent_ (won&#x27;t repro every time). *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-163" target="_blank">PORTICO-163</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/84" target="_blank">!84</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783144714077219" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/84" target="_blank">!84</a> — PORTICO-163 Clarify skill activation response deltas</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-175" data-text="portico-175 jupiter: orphaned user mcp server with system-colliding id cannot be managed">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-175</span>
+  <span class="title">Jupiter: Orphaned user MCP server with system-colliding ID cannot be managed</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-175" target="_blank">PORTICO-175</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/98" target="_blank">!98</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:20 UTC</div>
+        
+        <pre class="report">:bug: _[Low] MCP inventory hygiene: inflated server counts + undetected duplicate installs_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ MCP server listing / install dedup
+
+_1) `list_mcp_servers` summary count is inflated by the ID collision._
+The summary reported `{core: 7, system: 23, user: 7, total: 30}`, but the colliding `teamworks-mcp` (see the orphaned-server bug) is double-counted — once as system, once as user. The totals don&#x27;t reflect unique servers, so at-a-glance inventory is off by the number of collisions.
+
+_2) Duplicate Lucid installs with no dedup/warning._
+Two distinct user servers exist with identical `display_name: &quot;Lucid&quot;` and identical descriptions but different IDs: `lucid` and `lucid-mcp`. Not an ID collision (IDs differ), but almost certainly the same integration installed twice. Nothing warned about the near-duplicate at install time, and both now sit in the inventory indistinguishable by name.
+
+_Suggested fixes:_
+• Count unique server IDs in the summary (and/or flag collisions explicitly).
+• Warn on install when a new user server&#x27;s display_name/description/URL closely matches an existing one. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-175" target="_blank">PORTICO-175</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/98" target="_blank">!98</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192804947379" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192778030989" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/98" target="_blank">!98</a> — PORTICO-175 Clean up legacy MCP server ID collisions</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-176" data-text="portico-176 jupiter: delete_user_mcp_server blocked by stale create mutation lock">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-176</span>
+  <span class="title">Jupiter: delete_user_mcp_server blocked by stale create mutation lock</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-176" target="_blank">PORTICO-176</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/101" target="_blank">!101</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:19 UTC</div>
+        
+        <pre class="report">:bug: _[Low-Med] `delete_user_mcp_server` blocked for ~90s after create by a stale &quot;MCP mutation already active&quot; lock; raw error, no guidance_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ MCP server CRUD — mutation locking / concurrency
+
+_Repro:_
+1. `create_user_mcp_server(...)` → returns `success: true` (`readiness_phase: &quot;starting&quot;`)
+2. Immediately `delete_user_mcp_server(...)` → fails: `&quot;Failed to delete... MCP mutation &amp;lt;uuid&amp;gt; is already active&quot;`
+3. Retry at ~20s → same failure, same mutation UUID
+4. Retry at ~90s → succeeds
+_Problems:_
+• The create mutation&#x27;s lock persists well beyond the create&#x27;s reported completion (`success: true` came back immediately, but the lock blocked deletes for ~90s).
+• The error is a raw internal message (`MCP mutation &amp;lt;uuid&amp;gt; is already active`) with no guidance — no &quot;operation in progress, retry in N seconds,&quot; no indication of expected duration.
+_Impact:_ A user (or agent) that creates a server and then wants to remove/reconfigure it hits an opaque failure and may assume delete is broken. Tight retry loops also won&#x27;t help since the lock outlives them.
+
+_Suggested fix:_
+• Release the mutation lock when the create actually settles (not tied to the full readiness cycle), or
+• Return an actionable, user-friendly message with a suggested retry delay while a mutation is genuinely in flight. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-176" target="_blank">PORTICO-176</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/101" target="_blank">!101</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192794171789" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/101" target="_blank">!101</a> — PORTICO-176: Retry user MCP delete while MCP mutation is active</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-177" data-text="portico-177 jupiter: mcp inventory double-counts id collisions and misses duplicate lucid installs">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-177</span>
+  <span class="title">Jupiter: MCP inventory double-counts ID collisions and misses duplicate Lucid installs</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-177" target="_blank">PORTICO-177</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/100" target="_blank">!100</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:20 UTC</div>
+        
+        <pre class="report">:bug: _[Low] MCP inventory hygiene: inflated server counts + undetected duplicate installs_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ MCP server listing / install dedup
+
+_1) `list_mcp_servers` summary count is inflated by the ID collision._
+The summary reported `{core: 7, system: 23, user: 7, total: 30}`, but the colliding `teamworks-mcp` (see the orphaned-server bug) is double-counted — once as system, once as user. The totals don&#x27;t reflect unique servers, so at-a-glance inventory is off by the number of collisions.
+
+_2) Duplicate Lucid installs with no dedup/warning._
+Two distinct user servers exist with identical `display_name: &quot;Lucid&quot;` and identical descriptions but different IDs: `lucid` and `lucid-mcp`. Not an ID collision (IDs differ), but almost certainly the same integration installed twice. Nothing warned about the near-duplicate at install time, and both now sit in the inventory indistinguishable by name.
+
+_Suggested fixes:_
+• Count unique server IDs in the summary (and/or flag collisions explicitly).
+• Warn on install when a new user server&#x27;s display_name/description/URL closely matches an existing one. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-177" target="_blank">PORTICO-177</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/100" target="_blank">!100</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192804947379" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/100" target="_blank">!100</a> — PORTICO-177 Flag duplicate MCP server inventory</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-180" data-text="portico-180 mcp overflow files use inconsistent result/response envelopes causing silent jq nulls">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-180</span>
+  <span class="title">MCP overflow files use inconsistent result/response envelopes causing silent jq nulls</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-180" target="_blank">PORTICO-180</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/104" target="_blank">!104</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 21:27 UTC</div>
+        
+        <pre class="report">:bug: _Bug: MCP overflow files have no canonical schema — documented `jq -r &#x27;.result&#x27;` pattern fails silently_ _Reported by:_ &lt;mailto:dappelbaum@example.invalid|dappelbaum@example.invalid&gt; (via Portico investigation)_Area:_ MCP overflow-file handling + `google-workspace` skill parsing guidance_Type:_ Reliability / doc-vs-reality | _Severity:_ Medium-High (silent data loss)_Status:_ CONFIRMED — reproduced live in Agent VM this session _What happens:_ Large tool results get written to `/work/.mcp-overflow/*.json`, and agents are told to parse them with jq. The `google-workspace` skill hard-codes the pattern `jq -r &#x27;.result&#x27;`. But different tools write _different top-level schemas_, so that pattern returns a _silent `null`_ for some tools (looks like &quot;no data&quot;, not an error). _Evidence (two overflow files, two incompatible schemas):_• `web_tools_web_search` overflow keys → `[&quot;citations&quot;,&quot;model&quot;,&quot;query&quot;,&quot;response&quot;,&quot;success&quot;,&quot;usage&quot;]` — payload is under _`.response`_, there is _no `.result` key_• `google_workspace_start_google_auth` overflow keys → `[&quot;result&quot;]` — payload under _`.result`_ _Test matrix (reproduced):_ ``` web_search file google_auth file
+jq -r &#x27;.result&#x27; null (silent!) ✅ payload
+jq -r &#x27;.response&#x27; ✅ payload null (silent!)
+``` _Why it&#x27;s nasty:_• The two shapes are _mutually incompatible_ under a single documented pattern.• Neither JSON _body_ contains `tool_name` — tool identity lives _only in the filename_, so a parser reading the JSON has no in-file signal to choose the right key.• Failure mode is a silent `null`, so an agent may wrongly conclude &quot;no results&quot; and corrupt downstream reasoning. (I hit this exact trap earlier this session and had to correct mid-task.) _Suggested fixes (1+2 preferred):_ 1. _Normalize the envelope_ — overflow-writer wraps every tool payload under a consistent key (e.g. always `.result`).
+2. _Embed schema metadata in the body_ — include `tool_name` + `payload_key` inside the JSON, not just the filename, so parsers self-configure.
+3. _Interim:_ update skill docs to a key-agnostic extractor: `jq -r &#x27;(.result // .response // (to_entries|map(select(.value|type==&quot;string&quot;))|max_by(.value|length).value))&#x27;`</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-180" target="_blank">PORTICO-180</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/104" target="_blank">!104</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783200433785089" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/104" target="_blank">!104</a> — PORTICO-180: Normalize MCP overflow envelopes</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="MCP Server Management" data-key="PORTICO-182" data-text="portico-182 restart_mcp_infrastructure says healthy when health_check_passed is false">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-182</span>
+  <span class="title">restart_mcp_infrastructure says healthy when health_check_passed is false</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-182" target="_blank">PORTICO-182</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/105" target="_blank">!105</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 22:18 UTC</div>
+        
+        <pre class="report">:bug: _Bug: `restart_mcp_infrastructure` summary says &quot;healthy&quot; while `health_check_passed:false` (optimistic-success pattern)_ _Reported by:_ &lt;mailto:dappelbaum@example.invalid|dappelbaum@example.invalid&gt; (via Portico investigation)_Area:_ MCP orchestration status reporting_Type:_ Misleading status / optimistic-success | _Severity:_ Low-Medium_Status:_ CONFIRMED — single observation this session (see honest scoping below) _Finding — self-contradictory payload from full restart:_ ```{ &quot;health_check_passed&quot;: false,
+ &quot;success&quot;: true,
+ &quot;summary&quot;: &quot;All services have been restarted and are healthy&quot; }
+``` `health_check_passed:false` directly contradicts a summary asserting everything is &quot;healthy.&quot; _Contrast — the SAME situation reported correctly by the sibling tool_ (`restart_mcp_server`, earlier this session): ```{ &quot;healthy&quot;: false,
+ &quot;success&quot;: true,
+ &quot;summary&quot;: &quot;Restart complete but still starting.&quot;,
+ &quot;next_steps&quot;: [&quot;Server still starting; wait for tool_ready ...&quot;] }
+``` So honest reporting is clearly achievable — the single-server tool does it; the full-restart tool emits an optimistic static summary. _Why it matters (this is a CLASS, not a one-off):_ Same family as the already-filed Google Workspace auth bug, where `authorize_integration` returns `success/&quot;OAuth done, tool_ready&quot;` while tools find no authenticated user. Tools claiming readiness that reality contradicts cause agents to proceed prematurely and fail confusingly later. (Observed corollary: Slack returned &quot;channels cache is not ready&quot; for ~5 min _after_ a restart that summarized as &quot;healthy.&quot;) _Honest scoping (not overclaiming):_• Single observation; I did _not_ re-run a full infra restart to reconfirm (it&#x27;s disruptive — 2-3 min, all servers).• Likely root cause: `summary` is a static optimistic string not gated on `health_check_passed`. Small, safe fix.• _Not_ re-filing the `authorize_integration` case — already in the auth-bug thread; only cross-referencing it as the same class. _Suggested fix:_ 1. Gate `summary` on `health_check_passed` + per-service readiness, mirroring `restart_mcp_server`&#x27;s honest `healthy:false` + &quot;still starting&quot; + next_steps.
+2. Broader: audit orchestration tools so `success:true` is never paired with a summary claiming a readiness state a sibling field contradicts.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-182" target="_blank">PORTICO-182</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/105" target="_blank">!105</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783203481433749" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/105" target="_blank">!105</a> — PORTICO-182 Fix full restart health summary</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Agent VM" data-key="PORTICO-183" data-text="portico-183 agent vm: create spawns extra containers instead of reusing canonical vm">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-183</span>
+  <span class="title">Agent VM: create spawns extra containers instead of reusing canonical VM</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-183" target="_blank">PORTICO-183</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/106" target="_blank">!106</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 22:22 UTC</div>
+        
+        <pre class="report">:bug: _Bug: `agent_vm_create` is non-idempotent — spawns extra containers despite an existing canonical VM_ _Reported by:_ &lt;mailto:dappelbaum@example.invalid|dappelbaum@example.invalid&gt; (via Portico investigation)_Area:_ Agent VM lifecycle_Type:_ Lifecycle / resource management | _Severity:_ Low-Medium (mitigated — no data loss)_Status:_ CONFIRMED — empirically reproduced this session _Finding:_ `agent_vm_create` ignores the chat&#x27;s already-provisioned canonical VM and creates a NEW container each call, always reporting &quot;created successfully.&quot; The system prompt explicitly declared a canonical VM and said _&quot;Do NOT call create - already done automatically&quot;_ — but calling create still spawned divergent VMs. _Evidence — IDs observed for ONE chat, ONE session:_ ```Event vm_id container
+system-prompt canonical b1b6a65a… (declared)
+1st create call 2a203774… 214f809276e9
+auto-recovery (after app restart) b4c6a5d5… 565b6c550726
+2nd create call b1b6a65a… ee1d2b1d862f
+``` Three distinct containers for one chat; `create` never returned the existing canonical VM. _IMPORTANT mitigation (keeps severity low):_ `/work` is a _shared host mount_ across all these containers. Verified the newest container sees all 6 workspace files with a matching checksum (`test_sample.md` md5 `c38883…` identical across containers). So _no data loss, no workspace fragmentation_; stale vm_ids also auto-recover. This is why I&#x27;m rating it Low-Med, not High. _Why still worth fixing:_• Contradicts the explicit system-prompt contract (&quot;already created; do NOT call create&quot;).• &quot;created successfully&quot; per call is misleading — same optimistic-reporting family as the restart/auth findings; should say &quot;reusing existing canonical VM.&quot;• Possible orphaned-container accumulation per chat. _NOT confirmed (honest scope):_ Whether extra containers are promptly reaped — I can&#x27;t inspect the Docker host from inside the VM, so I can&#x27;t assert a true leak, only that multiple containers were created. Owner should check the container cleanup policy. _Suggested fix:_ 1. Make `create` idempotent per chat — return the existing canonical VM if present.
+2. If a new container is genuinely made, reap prior orphaned ones (or document the policy).
+3. Align the response message with reality (&quot;reused&quot; vs &quot;created&quot;).</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-183" target="_blank">PORTICO-183</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/106" target="_blank">!106</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783203736083379" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/106" target="_blank">!106</a> — PORTICO-183 Make Agent VM create idempotent per chat</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Agent VM" data-key="PORTICO-185" data-text="portico-185 agent vm request_images accepts invalid image bytes by extension only">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-185</span>
+  <span class="title">Agent VM request_images accepts invalid image bytes by extension only</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-185" target="_blank">PORTICO-185</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/108" target="_blank">!108</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 18:41 UTC</div>
+        
+        <pre class="report">:bug: _[Med] `agent_vm_request_images` accepted-format allowlist is broader than the model API accepts_
+
+*Area:* Agent VM MCP — `agent_vm_request_images` format allowlist
+
+*Symptom:* The tool accepts image extensions the downstream multimodal model API generally does not support. It emits `mime_type` values `image/svg+xml`, `image/heic`, `image/avif`, and `image/x-icon`. Most model APIs accept only `png`/`jpeg`/`gif`/`webp`, so even a genuine SVG/HEIC/AVIF/ICO passes the tool gate and then fails or is silently dropped at the model request.
+
+*Steps to reproduce:*
+1. Place a real `pic.svg` in `/work`.
+2. `agent_vm_request_images(file_paths=[&quot;/work/pic.svg&quot;])`
+3. Observe `success: true`, `mime_type: &quot;image/svg+xml&quot;`, `model_image_url` emitted.
+4. Same result for `.heic`, `.avif`, `.ico` extensions.
+
+*Expected:* The tool&#x27;s accepted-extension set matches what the model API can actually ingest; unsupported formats are rejected up front with a clear message (or transcoded).
+
+*Actual:* Unsupported formats are accepted and forwarded, deferring the failure to the model call with no actionable error.
+
+*Impact:* Agents can attach SVG/HEIC/AVIF/ICO that the model can&#x27;t read → downstream rejection or silent drop, wasted round-trips.
+
+*Note:* Distinct from the extension-vs-content bug posted above — this is about the _allowed format set_ itself, and affects even valid files.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-185" target="_blank">PORTICO-185</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/108" target="_blank">!108</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783276871366079" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783275935771389" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/108" target="_blank">!108</a> — PORTICO-185: Validate Agent VM image bytes</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Agent VM" data-key="PORTICO-186" data-text="portico-186 agent vm file/image batches drop valid files when one path is invalid">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-186</span>
+  <span class="title">Agent VM file/image batches drop valid files when one path is invalid</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-186" target="_blank">PORTICO-186</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/109" target="_blank">!109</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 18:41 UTC</div>
+        
+        <pre class="report">:bug: _[Low-Med] Image/file batch is all-or-nothing — one bad path drops all valid files (`request_images` + `display_files`)_
+
+*Area:* Agent VM MCP — `agent_vm_request_images` and `agent_vm_display_files` batch semantics
+
+*Symptom:* If any single path in `file_paths` is invalid (missing / non-image / directory), the entire call fails and returns zero results. No partial success, no per-file status.
+
+*Steps to reproduce:*
+1. Create a valid `good.png` in `/work`.
+2. `agent_vm_request_images(file_paths=[&quot;/work/good.png&quot;, &quot;/work/missing.png&quot;])` → error only, `good.png` not returned.
+3. `agent_vm_display_files(file_paths=[&quot;/work/good.png&quot;, &quot;/work/missing.png&quot;])` → same all-or-nothing failure.
+
+*Expected:* Valid files are processed and returned; invalid ones reported per-file (partial success), so one typo/stale path doesn&#x27;t discard a 20-image batch.
+
+*Actual:* A single bad path aborts the whole batch for both tools.
+
+*Impact:* With up to 20 images per call, one stale/typo&#x27;d path wastes the entire call and forces the agent to resubmit.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-186" target="_blank">PORTICO-186</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/109" target="_blank">!109</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783276871100399" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/109" target="_blank">!109</a> — PORTICO-186 Preserve valid Agent VM file batches</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Artifacts" data-key="PORTICO-164" data-text="portico-164 opening one artifact preview can stop another running artifact server">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-164</span>
+  <span class="title">Opening one artifact preview can stop another running artifact server</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-164" target="_blank">PORTICO-164</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/87" target="_blank">!87</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:57 UTC</div>
+        
+        <pre class="report">:bug: _[Low] Artifacts: `create_artifact_version` `version_note` exceeds documented maxLength (50) — silently truncated instead of rejected_
+
+*Area:* Artifacts — `create_artifact_version` input validation
+
+*Symptom:* `version_note` is documented as maxLength 50, but a 117-character note is accepted and silently truncated to 50 chars rather than rejected with a validation error. Invalid _version numbers_ (e.g. 999, 0) are correctly rejected, so validation is inconsistent across the tool&#x27;s inputs.
+
+*Steps to reproduce:*
+1. `create_artifact_version(artifact_id, version_note=&quot;&amp;lt;117-char string&amp;gt;&quot;)`.
+2. Response succeeds; stored `version_note` is truncated to 50 chars (&quot;This version note is intentionally longer than ...&quot;).
+
+*Expected:* Either reject with a clear &quot;version_note must be ≤ 50 characters&quot; error, or document that it is truncated. Silent truncation with no signal is surprising.
+
+*Actual:* Over-length note accepted and silently truncated; caller gets no indication their note was altered.
+
+*Impact:* Low. Cosmetic/metadata correctness — version notes can be silently shortened, losing intended context. Flagged mainly because it&#x27;s an inconsistent, undocumented validation behavior.
+
+*Dedup:* Distinct from https://portico.atlassian.net/browse/PORTICO-22 - PORTICO-22, (duplicate version numbers), https://portico.atlassian.net/browse/PORTICO-164 - PORTICO-164, (server lifecycle vs panel), and https://portico.atlassian.net/browse/PORTICO-165 - PORTICO-165, (failed-start status). None cover version_note length validation.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-164" target="_blank">PORTICO-164</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/87" target="_blank">!87</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783281462043439" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783184414647979" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/87" target="_blank">!87</a> — PORTICO-164 Preserve artifact runtime state on recovery</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="0" data-cat="Artifacts" data-key="PORTICO-165" data-text="portico-165 artifacts: failed-start status is inconsistent and bad-workdir errors are not persisted">
+ <summary>
+  <span class="chip major">Major</span>
+  <span class="key">PORTICO-165</span>
+  <span class="title">Artifacts: Failed-start status is inconsistent and bad-workdir errors are not persisted</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-165" target="_blank">PORTICO-165</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/89" target="_blank">!89</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:57 UTC</div>
+        
+        <pre class="report">:bug: _[Low] Artifacts: `create_artifact_version` `version_note` exceeds documented maxLength (50) — silently truncated instead of rejected_
+
+*Area:* Artifacts — `create_artifact_version` input validation
+
+*Symptom:* `version_note` is documented as maxLength 50, but a 117-character note is accepted and silently truncated to 50 chars rather than rejected with a validation error. Invalid _version numbers_ (e.g. 999, 0) are correctly rejected, so validation is inconsistent across the tool&#x27;s inputs.
+
+*Steps to reproduce:*
+1. `create_artifact_version(artifact_id, version_note=&quot;&amp;lt;117-char string&amp;gt;&quot;)`.
+2. Response succeeds; stored `version_note` is truncated to 50 chars (&quot;This version note is intentionally longer than ...&quot;).
+
+*Expected:* Either reject with a clear &quot;version_note must be ≤ 50 characters&quot; error, or document that it is truncated. Silent truncation with no signal is surprising.
+
+*Actual:* Over-length note accepted and silently truncated; caller gets no indication their note was altered.
+
+*Impact:* Low. Cosmetic/metadata correctness — version notes can be silently shortened, losing intended context. Flagged mainly because it&#x27;s an inconsistent, undocumented validation behavior.
+
+*Dedup:* Distinct from https://portico.atlassian.net/browse/PORTICO-22 - PORTICO-22, (duplicate version numbers), https://portico.atlassian.net/browse/PORTICO-164 - PORTICO-164, (server lifecycle vs panel), and https://portico.atlassian.net/browse/PORTICO-165 - PORTICO-165, (failed-start status). None cover version_note length validation.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-165" target="_blank">PORTICO-165</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/89" target="_blank">!89</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783281462043439" target="_blank">Slack thread</a> <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783184518614279" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/89" target="_blank">!89</a> — PORTICO-165: Persist artifact failed-start errors</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Artifacts" data-key="PORTICO-192" data-text="portico-192 artifacts: create_artifact_version silently truncates over-length version_note">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-192</span>
+  <span class="title">Artifacts: create_artifact_version silently truncates over-length version_note</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-192" target="_blank">PORTICO-192</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/114" target="_blank">!114</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:57 UTC</div>
+        
+        <pre class="report">:bug: _[Low] Artifacts: `create_artifact_version` `version_note` exceeds documented maxLength (50) — silently truncated instead of rejected_
+
+*Area:* Artifacts — `create_artifact_version` input validation
+
+*Symptom:* `version_note` is documented as maxLength 50, but a 117-character note is accepted and silently truncated to 50 chars rather than rejected with a validation error. Invalid _version numbers_ (e.g. 999, 0) are correctly rejected, so validation is inconsistent across the tool&#x27;s inputs.
+
+*Steps to reproduce:*
+1. `create_artifact_version(artifact_id, version_note=&quot;&amp;lt;117-char string&amp;gt;&quot;)`.
+2. Response succeeds; stored `version_note` is truncated to 50 chars (&quot;This version note is intentionally longer than ...&quot;).
+
+*Expected:* Either reject with a clear &quot;version_note must be ≤ 50 characters&quot; error, or document that it is truncated. Silent truncation with no signal is surprising.
+
+*Actual:* Over-length note accepted and silently truncated; caller gets no indication their note was altered.
+
+*Impact:* Low. Cosmetic/metadata correctness — version notes can be silently shortened, losing intended context. Flagged mainly because it&#x27;s an inconsistent, undocumented validation behavior.
+
+*Dedup:* Distinct from https://portico.atlassian.net/browse/PORTICO-22 - PORTICO-22, (duplicate version numbers), https://portico.atlassian.net/browse/PORTICO-164 - PORTICO-164, (server lifecycle vs panel), and https://portico.atlassian.net/browse/PORTICO-165 - PORTICO-165, (failed-start status). None cover version_note length validation.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-192" target="_blank">PORTICO-192</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/114" target="_blank">!114</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783281462043439" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/114" target="_blank">!114</a> — PORTICO-192 Validate artifact version notes</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Scheduled Tasks" data-key="PORTICO-172" data-text="portico-172 jupiter: scheduled runs fail at hard 1500s timeout without progress context">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-172</span>
+  <span class="title">Jupiter: Scheduled runs fail at hard 1500s timeout without progress context</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-172" target="_blank">PORTICO-172</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/99" target="_blank">!99</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:12 UTC</div>
+        
+        <pre class="report">:bug: _[Med] Scheduled runs silently fail at a hard ~1500s (25-min) timeout; long agentic tasks can&#x27;t reliably complete_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Scheduling daemon — run execution timeout
+
+_Evidence (production data, not synthetic):_ The daily GitLab agent-sync task (`scheduled-task-8afe...`, model Claude Sonnet 4.6) failed its 2026-07-04 run with `last_run_error: &quot;Chat did not complete within 1500s&quot;` and flipped to `needs_attention: run_failed`. The _previous_ day&#x27;s run of the identical task succeeded in ~24 minutes. So the task sits right at the 1500s ceiling and now fails nondeterministically.
+
+_Impact:_ Long-running agentic scheduled tasks (multi-commit repo syncs, large report generators) can exceed 1500s and fail. The failure is opaque — no partial-progress info, no indication of how far it got, just a bare timeout. A task that worked yesterday breaks today with no config change.
+
+_Suggested fix:_
+• Make the per-run timeout configurable (or higher) for scheduled tasks that are known to be long-running.
+• Checkpoint / stream partial progress so a timeout doesn&#x27;t discard all work.
+• Consider surfacing &quot;timed out after N s, last activity: &amp;lt;tool&amp;gt;&quot; instead of a bare message.
+_Related:_ This is the kind of task that would benefit from the daemon owning completion polling independent of the 1500s chat cap. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-172" target="_blank">PORTICO-172</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/99" target="_blank">!99</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192334999519" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/99" target="_blank">!99</a> — PORTICO-172 Extend scheduled task run timeout</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Scheduled Tasks" data-key="PORTICO-173" data-text="portico-173 jupiter: scheduled model-resolution failures are non-actionable and do not need attention">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-173</span>
+  <span class="title">Jupiter: scheduled model-resolution failures are non-actionable and do not need attention</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-173" target="_blank">PORTICO-173</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/97" target="_blank">!97</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:12 UTC</div>
+        
+        <pre class="report">:bug: _[Low-Med] Scheduled run failures with `failed GET /api/models?` are non-actionable AND don&#x27;t set `needs_attention`_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Scheduling daemon — run failure classification + model resolution
+
+_Evidence (production data):_ Two `slack-faq-builder` scheduled tasks failed at run time on 2026-05-18 with `last_run_error: &quot;failed GET /api/models?&quot;` — a bare model-resolution / gateway error with no detail about which model or why.
+
+_Two problems:_
+1. _Non-actionable error_ — &quot;failed GET /api/models?&quot; gives the user nothing to act on. (Likely related to the earlier finding that some advertised models can&#x27;t be served — e.g. GPT-4.1 family returning &quot;no keys found that support model&quot;.)
+2. _No `needs_attention` flag_ — both tasks show `last_run_status: &quot;failed&quot;` but `needs_attention: false`. A silently-broken recurring schedule never gets surfaced for attention, so it just keeps failing unnoticed. (Contrast: the 1500s-timeout task DID correctly set `needs_attention: run_failed`, so classification is inconsistent across failure types.)
+_Suggested fix:_
+• Route model-resolution/gateway run failures to `needs_attention: true` like other run failures.
+• Replace the bare `failed GET /api/models?` with an actionable message (which model, why it couldn&#x27;t be resolved, whether it&#x27;s provisioned). *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-173" target="_blank">PORTICO-173</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/97" target="_blank">!97</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192350941829" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/97" target="_blank">!97</a> — PORTICO-173 Mark scheduled failures attention-needed</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Scheduled Tasks" data-key="PORTICO-174" data-text="portico-174 jupiter: scheduling accepts past one-off run_at and under-documents disabled run-now behavior">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-174</span>
+  <span class="title">Jupiter: scheduling accepts past one-off run_at and under-documents disabled run-now behavior</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-174" target="_blank">PORTICO-174</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/96" target="_blank">!96</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-04 19:12 UTC</div>
+        
+        <pre class="report">:bug: _[Low] Scheduling validation &amp;amp; doc-drift notes (3 minor items)_
+
+_Build:_ `07032026-799db2c7`
+_Area:_ Scheduling — input validation + skill doc accuracy
+
+_1) Past-dated one-off `run_at` accepted without validation._
+`create_task` accepted `run_at: &quot;2020-01-01T00:00:00Z&quot;` (6 years in the past). Enabling it set `next_run_at` to that past timestamp. :white_check_mark: _Mitigated:_ the daemon has a proper safety net — it marked the run `missed` with a clear error (&quot;Skipped because the scheduler was offline. Scheduled: 2019-12-31... Scheduler restarted: 2026-07-03&quot;), auto-disabled the one-off task, and did NOT execute the stale task. So this is a minor validation gap, not dangerous. _Suggested:_ reject or warn on past `run_at` at creation. (Cron validation and IANA timezone validation, by contrast, are robust — out-of-range fields, wrong field count, and bogus timezones are all cleanly rejected.)
+
+_2) Confirmation chip for &quot;destructive&quot; scheduling tools does NOT fire (doc-vs-reality drift)._
+The `scheduled-tasks` skill doc explicitly claims `create/update/delete/run_task_now` surface a main-chat confirmation chip (&quot;Round 4 / Issue 3c&quot;). Across ~8 scheduling mutations while testing (creates, an update, deletes, run-now), no chip ever appeared — every call executed immediately. This corroborates the earlier systemic finding that there is no code-enforced destructive-action consent gate in this build, and adds a documentation-accuracy problem: the skill documents a gate that isn&#x27;t active.
+
+_3) `run_task_now` ignores the `enabled` flag._
+A task created with `enabled: false` (and `next_run_at: null`) was still fully executed via `run_task_now`. Reasonable as a manual override, but worth documenting — &quot;disabled&quot; does not mean &quot;cannot be run.&quot;
+
+_Verified-correct (for the record):_ run-now is non-blocking (immediate handle, no embedded response); idempotency works (concurrent second `run_task_now` returns the same `run_id` with `already_running`); the missed-run safety net is graceful; and the stale-auth happy path works (a scheduled subagent used an already-valid org OAuth token for Atlassian). The stale-auth _failure_ path (documented `auth_required` abort + &quot;subagents can&#x27;t initiate OAuth&quot;) could not be tested without revoking a real token. *Sent using* @U0B8HGV43RS</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-174" target="_blank">PORTICO-174</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/96" target="_blank">!96</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783192365617989" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/96" target="_blank">!96</a> — PORTICO-174 Reject stale one-off scheduled tasks</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Chat &amp; UX" data-key="PORTICO-188" data-text="portico-188 reject reserved ask_user_question option labels">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-188</span>
+  <span class="title">Reject reserved ask_user_question option labels</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-188" target="_blank">PORTICO-188</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/110" target="_blank">!110</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:13 UTC</div>
+        
+        <pre class="report">:bug: _[Low-Med] `ask_user_question`: caller option *labels* &quot;Something else&quot; / &quot;None of the above&quot; are not rejected (only the reserved id is)_
+
+*Area:* Question modal / `skills_ask_user_question` (option validation)
+
+*Symptom:* The tool blocks the reserved option _id_ `none_of_the_above`, but does not block caller-supplied options whose _labels_ are &quot;Something else&quot; or &quot;None of the above&quot; — which the tool&#x27;s own docs say callers must not provide. The modal auto-appends its own &quot;Something else,&quot; so a caller label of the same text renders a confusing *duplicate* &quot;Something else&quot; in the modal.
+
+*Steps to reproduce:*
+1. Call `ask_user_question` with a caller option `{id: &quot;opt_x&quot;, label: &quot;Something else&quot;}` plus other real options.
+2. Validation passes; modal renders.
+3. Observe two &quot;Something else&quot; choices (caller&#x27;s + auto-appended).
+
+*Expected:* Caller labels that duplicate the reserved fallback (&quot;Something else&quot;, &quot;Other&quot;, &quot;None of the above&quot;) are rejected at validation, consistent with how the reserved _id_ is already rejected.
+
+*Actual:* Only the reserved id is validated; the labels are accepted, producing a duplicate fallback option.
+
+*Impact:* Low-Med on its own (confusing UI), but it compounds the selection-hijack bug above by making it ambiguous which &quot;Something else&quot; is which.
+
+*Dedup:* Not https://portico.atlassian.net/browse/PORTICO-95 - PORTICO-95, or https://portico.atlassian.net/browse/PORTICO-100 - PORTICO-100,; no existing coverage of option-label validation.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-188" target="_blank">PORTICO-188</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/110" target="_blank">!110</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783278839942379" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/110" target="_blank">!110</a> — PORTICO-188 Reject reserved ask_user_question option labels</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Chat &amp; UX" data-key="PORTICO-189" data-text="portico-189 question modal: notes field overwrites selected ask_user_question option with something else">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-189</span>
+  <span class="title">Question modal: notes field overwrites selected ask_user_question option with Something else</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-189" target="_blank">PORTICO-189</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/111" target="_blank">!111</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>David Appelbaum</b> · 2026-07-05 19:14 UTC</div>
+        
+        <pre class="report">:bug: _[High] `ask_user_question`: typing in the freeform notes box hijacks the selection onto the auto-appended &quot;Something else&quot;_
+
+*Area:* Question modal / `skills_ask_user_question` (freeform notes :left_right_arrow: option selection)
+
+*Symptom:* When a user selects a real option and then types in the freeform notes box, the modal force-selects the auto-appended &quot;Something else&quot; (reserved id `none_of_the_above`), overriding the user&#x27;s actual choice. Re-clicking the intended option re-selects it, but typing more text forces &quot;Something else&quot; again — it&#x27;s a repeating race between the notes field and the selected radio option.
+
+*Steps to reproduce:*
+1. Agent calls `ask_user_question` with a normal single-choice question (e.g. 3 distinct options), no label collisions.
+2. In the modal, click a real option (e.g. &quot;Option 1&quot;).
+3. Type any text in the &quot;additional context / notes&quot; box.
+4. Submit.
+
+*Expected:* The submitted answer keeps the user&#x27;s selected option (Option 1); freeform text is attached as notes.
+
+*Actual:* The returned answer is `selected_option_id: &quot;none_of_the_above&quot;` (&quot;Something else&quot;) — the user&#x27;s real choice is discarded. Verified via the tool&#x27;s returned payload, not just the UI.
+
+*Impact:* High. This modal is the agent&#x27;s approval/decision gate. A user who types clarifying context alongside their choice has their selection silently overridden to &quot;Something else,&quot; so the agent receives the wrong answer and can misroute or abort the intended action. Typing notes with a selection is a common, natural interaction.
+
+*Dedup:* Not https://portico.atlassian.net/browse/PORTICO-95 - PORTICO-95, (feature req: modal-vs-inline preference) or https://portico.atlassian.net/browse/PORTICO-100 - PORTICO-100, (multi-question Next/Submit button confusion). No Slack report of this behavior.</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-189" target="_blank">PORTICO-189</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/111" target="_blank">!111</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783278840223289" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/111" target="_blank">!111</a> — PORTICO-189 Preserve selected question option with notes</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="2" data-cat="Chat &amp; UX" data-key="PORTICO-152" data-text="portico-152 default integrations expose publish to ai marketplace">
+ <summary>
+  <span class="chip minor">Minor</span>
+  <span class="key">PORTICO-152</span>
+  <span class="title">Default integrations expose Publish to AI Marketplace</span>
+  <span class="status">Closed</span>
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-152" target="_blank">PORTICO-152</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/73" target="_blank">!73</a></span>
+ </summary>
+ <div class="body">
+  <div class="note">ℹ️ Bug already fixed on pre-beta-tmp by 428c92d1 (Cole); ticket Closed. MR survives as a regression guard.</div>
+  <div class="meta">Reported by <b>Fabian Hans</b> · 2026-07-02 00:55 UTC</div>
+        <div class="shot">📸 This report includes screenshot(s) — <a href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782953752322399" target="_blank">open the Slack thread</a> to view them (Slack auth required).</div>
+        <pre class="report">What marketplace is meant here? And I guess defualt mcps shouldn&#x27;t carry that should tey? Either way, I published a slack mcp server to it :smile:</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-152" target="_blank">PORTICO-152</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/73" target="_blank">!73</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782953752322399" target="_blank">Slack thread 📸</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/73" target="_blank">!73</a> — PORTICO-152: Guard MCP marketplace publish action</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="2" data-cat="Chat &amp; UX" data-key="PORTICO-155" data-text="portico-155 pulsing prompt placeholder is too bright in dark mode">
+ <summary>
+  <span class="chip minor">Minor</span>
+  <span class="key">PORTICO-155</span>
+  <span class="title">Pulsing prompt placeholder is too bright in dark mode</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-155" target="_blank">PORTICO-155</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/75" target="_blank">!75</a></span>
+ </summary>
+ <div class="body">
+  
+  <div class="meta">Reported by <b>Fabian Hans</b> · 2026-07-02 22:54 UTC</div>
+        
+        <pre class="report">The pulsing prompt placeholder looks aswesome in light mode, but is way too bright in dark mode</pre>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-155" target="_blank">PORTICO-155</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/75" target="_blank">!75</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1783032885073589" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/75" target="_blank">!75</a> — PORTICO-155: Mute dark-mode chat placeholder shimmer</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="3" data-cat="Chat &amp; UX" data-key="zz" data-text=" fix main chat workspace picker focus">
+ <summary>
+  <span class="chip none">—</span>
+  <span class="key">—</span>
+  <span class="title">Fix main chat workspace picker focus</span>
+  <span class="status">no ticket</span>
+  <span class="links"><span class="lnk none">no ticket</span> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/65" target="_blank">!65</a></span>
+ </summary>
+ <div class="body">
+  <div class="note">ℹ️ Pre-bash fix by dsantiago; no JIRA ticket or Slack report. Rebased and validated with the fleet.</div>
+  <div class="meta">No direct Slack report for this item.</div>
+  <div class="linkrow">
+   <b>Links:</b> <span class="lnk none">no ticket</span> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/65" target="_blank">!65</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/65" target="_blank">!65</a> — Fix main chat workspace picker focus</li></ul>
+ </div>
+</details>
+<details class="card" data-prio="1" data-cat="Infra &amp; CI" data-key="PORTICO-194" data-text="portico-194 health-check runner hangs on unbounded docker wait">
+ <summary>
+  <span class="chip medium">Medium</span>
+  <span class="key">PORTICO-194</span>
+  <span class="title">Health-check runner hangs on unbounded docker wait</span>
+  
+  <span class="links"><a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-194" target="_blank">PORTICO-194</a> <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/68" target="_blank">!68</a></span>
+ </summary>
+ <div class="body">
+  <div class="note">ℹ️ Split out of PORTICO-145 during bug-bash review (health-check hang bundled with the Bedrock tool-name report).</div>
+  <div class="meta">No direct Slack report for this item.</div>
+  <div class="linkrow">
+   <b>Links:</b> <a class="lnk jira" href="https://portico.atlassian.net/browse/PORTICO-194" target="_blank">PORTICO-194</a> · <a class="lnk mr" href="https://example.invalid/portico/portico/-/merge_requests/68" target="_blank">!68</a> · <a class="lnk slack" href="https://portico-pte.slack.com/archives/C0BELNYHDPW/p1782923445688119" target="_blank">Slack thread</a>
+  </div>
+  <ul class="mrlist"><li><a href="https://example.invalid/portico/portico/-/merge_requests/68" target="_blank">!68</a> — Avoid docker wait hangs in health check runner</li></ul>
+ </div>
+</details></div>
+<div class="footer">Generated by the automated bug-bash review pass (Amp agent, run by dsantiago). Screenshots live in the linked Slack threads (Slack file URLs require auth and cannot be embedded here). Source data: JIRA project PORTICO · GitLab portico/portico · Slack #tmp-portico-jupiter-bug-bashing.</div>
+</div>
+<script>
+const list = document.getElementById('list');
+const cards = Array.from(list.querySelectorAll('.card'));
+const cats = [...new Set(cards.map(c => c.dataset.cat))];
+function setView(mode) {
+  document.getElementById('byCat').classList.toggle('active', mode==='cat');
+  document.getElementById('byPrio').classList.toggle('active', mode==='prio');
+  const open = new Set(cards.filter(c => c.open).map(c => c.dataset.key));
+  list.innerHTML = '';
+  if (mode === 'cat') {
+    for (const cat of cats) {
+      const hdr = document.createElement('div'); hdr.className = 'cathdr'; hdr.textContent = cat; list.appendChild(hdr);
+      cards.filter(c => c.dataset.cat === cat).sort((a,b) => a.dataset.prio - b.dataset.prio || a.dataset.key.localeCompare(b.dataset.key)).forEach(c => list.appendChild(c));
+    }
+  } else {
+    cards.slice().sort((a,b) => a.dataset.prio - b.dataset.prio || a.dataset.key.localeCompare(b.dataset.key)).forEach(c => list.appendChild(c));
+  }
+  filter();
+}
+function filter() {
+  const q = document.getElementById('q').value.toLowerCase();
+  cards.forEach(c => c.style.display = c.dataset.text.includes(q) ? '' : 'none');
+  document.querySelectorAll('.cathdr').forEach(h => {
+    let el = h.nextElementSibling, any = false;
+    while (el && !el.classList.contains('cathdr')) { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+    h.style.display = any ? '' : 'none';
+  });
+}
+setView('cat');
+</script></body></html>

@@ -1,0 +1,694 @@
+{
+  "version": 1,
+  "_comment": "Source-of-truth for which MCP tools require an explicit per-action user confirmation before dispatch. Human-readable companion: docs/security-tool-confirmation.md. Threat-model cross-ref: N-012 in docs/security-hardening-overview.md.",
+  "rules": [
+    {
+      "tool_name_glob": "slack_conversations_add_message",
+      "mcp": "slack",
+      "summary_template": "Send Slack message to {{channel_id}}: {{payload|truncate:160}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "gmail_send_*",
+      "mcp": "google_workspace",
+      "summary_template": "Send email to {{to|join:', '}} (subject: {{subject}}): {{body|chars}} chars",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gmail_compose_*",
+      "mcp": "google_workspace",
+      "summary_template": "Compose / send email to {{to|join:', '}}: {{subject}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gmail_drafts_send",
+      "mcp": "google_workspace",
+      "summary_template": "Send Gmail draft {{id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gmail_messages_send",
+      "mcp": "google_workspace",
+      "summary_template": "Send email to {{to|join:', '}}: {{subject}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gmail_labels_create",
+      "mcp": "google_workspace",
+      "summary_template": "Create Gmail label '{{name}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gmail_labels_update",
+      "mcp": "google_workspace",
+      "summary_template": "Update Gmail label '{{id}}' -> '{{name}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gmail_labels_delete",
+      "mcp": "google_workspace",
+      "summary_template": "Delete Gmail label '{{id}}'",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "drive_files_create",
+      "mcp": "google_workspace",
+      "summary_template": "Create Drive file '{{name}}' (mime {{mimeType}})",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_files_update",
+      "mcp": "google_workspace",
+      "summary_template": "Update Drive file {{fileId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_files_delete",
+      "mcp": "google_workspace",
+      "summary_template": "Delete Drive file {{fileId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_files_copy",
+      "mcp": "google_workspace",
+      "summary_template": "Copy Drive file {{fileId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_files_move",
+      "mcp": "google_workspace",
+      "summary_template": "Move Drive file {{fileId}} to folder {{addParents}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_permissions_create",
+      "mcp": "google_workspace",
+      "summary_template": "Grant Drive permission on {{fileId}} to {{emailAddress}} ({{role}})",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_permissions_update",
+      "mcp": "google_workspace",
+      "summary_template": "Update Drive permission {{permissionId}} on {{fileId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "drive_permissions_delete",
+      "mcp": "google_workspace",
+      "summary_template": "Revoke Drive permission {{permissionId}} on {{fileId}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "docs_documents_create",
+      "mcp": "google_workspace",
+      "summary_template": "Create Google Doc '{{title}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "docs_documents_batchUpdate",
+      "mcp": "google_workspace",
+      "summary_template": "Mutate Google Doc {{documentId}} ({{requests|chars}} chars of request body)",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "sheets_spreadsheets_create",
+      "mcp": "google_workspace",
+      "summary_template": "Create Google Sheet '{{properties.title}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "sheets_values_update",
+      "mcp": "google_workspace",
+      "summary_template": "Update Sheets range {{range}} on {{spreadsheetId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "sheets_values_append",
+      "mcp": "google_workspace",
+      "summary_template": "Append to Sheets range {{range}} on {{spreadsheetId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "sheets_values_clear",
+      "mcp": "google_workspace",
+      "summary_template": "Clear Sheets range {{range}} on {{spreadsheetId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "sheets_spreadsheets_batchUpdate",
+      "mcp": "google_workspace",
+      "summary_template": "Mutate Sheets {{spreadsheetId}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "slides_presentations_create",
+      "mcp": "google_workspace",
+      "summary_template": "Create Slides presentation '{{title}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "slides_presentations_batchUpdate",
+      "mcp": "google_workspace",
+      "summary_template": "Mutate Slides {{presentationId}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "calendar_events_insert",
+      "mcp": "google_workspace",
+      "summary_template": "Create calendar event '{{summary}}' on {{calendarId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_events_update",
+      "mcp": "google_workspace",
+      "summary_template": "Update calendar event {{eventId}} on {{calendarId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_events_patch",
+      "mcp": "google_workspace",
+      "summary_template": "Patch calendar event {{eventId}} on {{calendarId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_events_delete",
+      "mcp": "google_workspace",
+      "summary_template": "Delete calendar event {{eventId}} on {{calendarId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_events_move",
+      "mcp": "google_workspace",
+      "summary_template": "Move calendar event {{eventId}} from {{calendarId}} to {{destination}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_calendars_insert",
+      "mcp": "google_workspace",
+      "summary_template": "Create calendar '{{summary}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_calendars_update",
+      "mcp": "google_workspace",
+      "summary_template": "Update calendar {{calendarId}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "calendar_calendars_delete",
+      "mcp": "google_workspace",
+      "summary_template": "Delete calendar {{calendarId}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "gitlab_create_or_update_file",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Write file {{file_path}} on {{project_id}}@{{branch}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_create_branch",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Create branch {{branch}} on {{project_id}} from {{ref}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_push_files",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Push {{files|chars}} chars of changes to {{project_id}}@{{branch}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_create_merge_request",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Open MR on {{project_id}}: '{{title}}' ({{source_branch}} -> {{target_branch}})",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_update_merge_request",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Update MR !{{merge_request_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_merge_merge_request",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Merge MR !{{merge_request_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_close_merge_request",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Close MR !{{merge_request_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_reopen_merge_request",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Reopen MR !{{merge_request_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_create_issue",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Open issue on {{project_id}}: '{{title}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_update_issue",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Update issue #{{issue_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_close_issue",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Close issue #{{issue_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_reopen_issue",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Reopen issue #{{issue_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_delete_issue",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Delete issue #{{issue_iid}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_create_note",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Comment on {{noteable_type}} {{noteable_iid}} in {{project_id}}: {{body|truncate:160}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_update_note",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Update note {{note_id}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_delete_note",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Delete note {{note_id}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_create_label",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Create label '{{name}}' on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_update_label",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Update label {{label_id}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_delete_label",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Delete label {{label_id}} on {{project_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_create_pipeline",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Trigger pipeline on {{project_id}}@{{ref}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "gitlab_fork_repository",
+      "mcp": "gitlab-mcp",
+      "summary_template": "Fork repository {{project_id}} into {{namespace}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "data_plat_query_execute",
+      "mcp": "data-plat-mcp",
+      "summary_template": "Execute query on data platform: {{sql|truncate:160}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "data_plat_workspace_write",
+      "mcp": "data-plat-mcp",
+      "summary_template": "Write to data-platform workspace {{workspace_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "data_plat_idash_workspace_write",
+      "mcp": "data-plat-mcp",
+      "summary_template": "Write to idash workspace {{workspace_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "data_plat_query_generate",
+      "mcp": "data-plat-mcp",
+      "summary_template": "Generate SQL (no execution)",
+      "side_effect": "read"
+    },
+
+    {
+      "tool_name_glob": "create_workflow_from_code",
+      "mcp": "mcp-n8n",
+      "summary_template": "Create an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "update_workflow",
+      "mcp": "mcp-n8n",
+      "summary_template": "Update an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "archive_workflow",
+      "mcp": "mcp-n8n",
+      "summary_template": "Archive an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "restore_workflow_version",
+      "mcp": "mcp-n8n",
+      "summary_template": "Restore an n8n workflow version",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "publish_workflow",
+      "mcp": "mcp-n8n",
+      "summary_template": "Publish an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "unpublish_workflow",
+      "mcp": "mcp-n8n",
+      "summary_template": "Unpublish an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "execute_workflow",
+      "mcp": "mcp-n8n",
+      "summary_template": "Execute an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "test_workflow",
+      "mcp": "mcp-n8n",
+      "summary_template": "Test an n8n workflow",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "prepare_test_pin_data",
+      "mcp": "mcp-n8n",
+      "summary_template": "Prepare n8n workflow test pin data",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "create_data_table",
+      "mcp": "mcp-n8n",
+      "summary_template": "Create an n8n data table",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "rename_data_table",
+      "mcp": "mcp-n8n",
+      "summary_template": "Rename an n8n data table",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "add_data_table_column",
+      "mcp": "mcp-n8n",
+      "summary_template": "Add an n8n data table column",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "delete_data_table_column",
+      "mcp": "mcp-n8n",
+      "summary_template": "Delete an n8n data table column",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "rename_data_table_column",
+      "mcp": "mcp-n8n",
+      "summary_template": "Rename an n8n data table column",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "add_data_table_rows",
+      "mcp": "mcp-n8n",
+      "summary_template": "Add rows to an n8n data table",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_create_*",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Create an n8n workflow (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_update_*",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Update an n8n workflow (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_delete_workflow",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Delete an n8n workflow (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_delete_*",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Delete an n8n resource (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_trigger_*",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Trigger an n8n webhook workflow (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_autofix_workflow",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Apply automated fixes to an n8n workflow (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_test_workflow",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Test-execute an n8n workflow (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_deploy_template",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Deploy an n8n workflow template (community fork)",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "n8n_community_mcp_n8n_credential_*",
+      "mcp": "n8n-community-mcp",
+      "summary_template": "Mutate an n8n credential (community fork)",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "jira_create_issue",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Open Jira issue in {{project_key}}: '{{summary}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_update_issue",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Update Jira {{issue_key}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_delete_issue",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Delete Jira {{issue_key}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_transition_issue",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Transition Jira {{issue_key}} -> {{transition.name}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_assign_issue",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Assign Jira {{issue_key}} to {{assignee}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_add_comment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Comment on Jira {{issue_key}}: {{body|truncate:160}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_update_comment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Update Jira comment {{comment_id}} on {{issue_key}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_delete_comment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Delete Jira comment {{comment_id}} on {{issue_key}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_create_link",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Link Jira {{inward_issue}} to {{outward_issue}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "jira_delete_link",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Remove Jira link {{link_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_create_page",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Create Confluence page in {{space_key}}: '{{title}}'",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_update_page",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Update Confluence page {{page_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_delete_page",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Delete Confluence page {{page_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_move_page",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Move Confluence page {{page_id}} -> {{target_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_add_comment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Comment on Confluence page {{page_id}}: {{body|truncate:160}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_update_comment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Update Confluence comment {{comment_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_delete_comment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Delete Confluence comment {{comment_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_create_attachment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Attach file to Confluence page {{page_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "confluence_delete_attachment",
+      "mcp": "mcp-atlassian",
+      "summary_template": "Delete Confluence attachment {{attachment_id}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "notifications_send_*",
+      "mcp": "notifications-mcp-server",
+      "summary_template": "Send external notification via {{channel}}: {{message|truncate:160}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "notifications_publish_*",
+      "mcp": "notifications-mcp-server",
+      "summary_template": "Publish external notification via {{channel}}",
+      "side_effect": "external-write"
+    },
+
+    {
+      "_comment": "Round 4 / Issue 3c — scheduled-task lifecycle tools. Creating, updating, running-now, or deleting a scheduled task fires off a chain of unattended writes against whatever integrations the task references, so we surface a chip in the MAIN chat at the moment the model proposes the change. This pulls confirmation forward from sub-agent time (where it was being asked over and over per call) to task-creation / mutation time (where the user has full context).",
+      "tool_name_glob": "scheduling_create_task",
+      "mcp": "scheduling",
+      "summary_template": "Create scheduled task: {{prompt|truncate:140}} (schedule: {{schedule.kind}})",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "scheduling_finalize_run",
+      "mcp": "scheduling",
+      "summary_template": "Record internal scheduled-run completion verdict for {{task_id}}",
+      "side_effect": "read"
+    },
+    {
+      "tool_name_glob": "scheduling_update_task",
+      "mcp": "scheduling",
+      "summary_template": "Update scheduled task {{task_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "scheduling_delete_task",
+      "mcp": "scheduling",
+      "summary_template": "Delete scheduled task {{task_id}}",
+      "side_effect": "external-write"
+    },
+    {
+      "tool_name_glob": "scheduling_run_task_now",
+      "mcp": "scheduling",
+      "summary_template": "Run scheduled task {{task_id}} now",
+      "side_effect": "external-write"
+    },
+
+    {
+      "tool_name_glob": "mcp_assistant_trigger_guided_setup",
+      "mcp": "mcp-assistant",
+      "summary_template": "Open guided setup for {{server_id}}",
+      "side_effect": "read"
+    },
+    {
+      "tool_name_glob": "mcp_assistant_toggle_integration",
+      "mcp": "mcp-assistant",
+      "summary_template": "Toggle integration {{server_id}}",
+      "side_effect": "read"
+    },
+    {
+      "tool_name_glob": "mcp_assistant_authorize_integration",
+      "mcp": "mcp-assistant",
+      "summary_template": "Authorize integration {{server_id}}",
+      "side_effect": "read"
+    },
+    {
+      "tool_name_glob": "mcp_assistant_activate_integration",
+      "mcp": "mcp-assistant",
+      "summary_template": "Activate integration {{server_id}} for chat",
+      "side_effect": "read"
+    }
+  ],
+  "default_glob_fallback": "(?i)(?:^|_)(?:send|post|publish|create|update|delete|archive|remove|modify|move|set|invite|kick|grant|revoke|assign|merge|close|reopen|fork|push|execute|run|trigger|activate|deactivate)(?:_|$)"
+}

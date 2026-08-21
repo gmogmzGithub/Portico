@@ -1,0 +1,354 @@
+include:
+  - project: pipeline/gitlab-pipeline
+    ref: 3a7433770258c30e707c28b39db9c422aa1c4f8c
+    file: /templates/container-images.yml
+
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "pipeline"'
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "schedule" && $portico_CLEANUP_ONLY == "true"'
+    - when: never
+
+stages:
+  - validate
+  - host-binaries
+  - runtime-images
+  - stage
+  - verify
+  - package
+  - publish
+  - cleanup
+
+variables:
+  portico_EXPECTED_SOURCE_PROJECT_PATH: portico/portico
+  portico_RELEASE_TOOLING_REF: beta
+  portico_RUNTIME_IMAGE_REGISTRY: harbor.example.invalid/portico
+  HARBOR_REGISTRY: harbor.example.invalid
+  VAULT_AUTH_ROLE: portico--release-broker
+  portico_BROKER_VAULT_PATH: gitlab-ci/release-secrets
+  portico_BROKER_VAULT_MOUNT: portico/secret-units
+
+default:
+  interruptible: true
+
+.mr-only:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "pipeline" && $CI_COMMIT_BRANCH == "main"'
+
+.orka-macos:
+  tags:
+    - map-macos-vm
+  image: tahoe-26-4-1-xcode-26-5
+  before_script:
+    - source ~/.bash_profile
+    - export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+.orka-rust:
+  extends: .orka-macos
+  before_script:
+    - source ~/.bash_profile
+    - export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    - |
+      if ! command -v rustup >/dev/null 2>&1; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+          | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none
+      fi
+      [ ! -f "$HOME/.cargo/env" ] || source "$HOME/.cargo/env"
+      export PATH="$HOME/.cargo/bin:$PATH"
+
+.vault-token:
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: vault.example.invalid
+
+validate-request:
+  extends: .mr-only
+  stage: validate
+  tags:
+    - shared-pure
+  image: harbor.example.invalid/dockerhub-proxy/library/alpine:3.23
+  before_script:
+    - apk add --no-cache bash curl jq
+  script:
+    - bash scripts/validate-mr-request.sh
+    - |
+      set -eu
+      printf '%s' "$portico_RELEASE_TIMESTAMP" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{3})?Z$'
+      printf '%s' "$portico_UPSTREAM_PIPELINE_ID" | grep -Eq '^[1-9][0-9]*$'
+      short_sha="$(printf '%s' "$portico_SOURCE_SHA" | cut -c1-8)"
+      month="$(printf '%s' "$portico_RELEASE_TIMESTAMP" | cut -c6-7)"
+      day="$(printf '%s' "$portico_RELEASE_TIMESTAMP" | cut -c9-10)"
+      year="$(printf '%s' "$portico_RELEASE_TIMESTAMP" | cut -c1-4)"
+      {
+        printf 'portico_CHANNEL=mr-%s\n' "$portico_MR_IID"
+        printf 'portico_CHANNEL_PACKAGE=portico_mr-%s\n' "$portico_MR_IID"
+        printf 'portico_BUILD_NUMBER=%s%s%s-%s\n' "$month" "$day" "$year" "$short_sha"
+        printf 'portico_RUNTIME_IMAGE_TAG=mr-%s-%s\n' "$portico_MR_IID" "$portico_SOURCE_SHA"
+      } > broker.env
+  artifacts:
+    reports:
+      dotenv: broker.env
+    paths:
+      - broker.env
+    expire_in: 1 day
+
+container-source:
+  extends: .mr-only
+  stage: host-binaries
+  tags:
+    - shared-pure
+  image: harbor.example.invalid/dockerhub-proxy/library/alpine:3.23
+  needs:
+    - job: validate-request
+      artifacts: true
+  before_script:
+    - apk add --no-cache bash git
+  script:
+    - bash scripts/checkout-application.sh --project-path "$portico_SOURCE_PROJECT_PATH" --revision "$portico_SOURCE_SHA" --output source --require-sha
+    - rm -rf source/.git
+  artifacts:
+    paths: [source/]
+    expire_in: 1 day
+
+host-linux:
+  extends: .mr-only
+  stage: host-binaries
+  image: harbor.example.invalid/dockerhub-proxy/library/rust:1.88-slim-trixie
+  tags:
+    - $HOST_ARCH
+  parallel:
+    matrix:
+      - HOST_ARCH: [amd64, arm64]
+  needs:
+    - job: validate-request
+      artifacts: true
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends ca-certificates cmake file git libssl-dev perl pkg-config
+    - bash scripts/checkout-application.sh --project-path "$portico_SOURCE_PROJECT_PATH" --revision "$portico_SOURCE_SHA" --output source --require-sha
+  script:
+    - env -u HARBOR_USER -u HARBOR_TOKEN HOST_MCP_ARTIFACTS_ROOT="$CI_PROJECT_DIR/host-mcp-binaries" HOST_MCP_EXPECTED_SOURCE_REVISION="$portico_SOURCE_SHA" bash source/src/scripts/build-host-mcp-binaries.sh --host-only
+  artifacts:
+    paths: [host-mcp-binaries/]
+    expire_in: 1 day
+
+host-darwin:
+  extends:
+    - .orka-rust
+    - .mr-only
+  stage: host-binaries
+  needs:
+    - job: validate-request
+      artifacts: true
+    - job: host-linux
+      artifacts: true
+  script:
+    - bash scripts/checkout-application.sh --project-path "$portico_SOURCE_PROJECT_PATH" --revision "$portico_SOURCE_SHA" --output source --require-sha
+    - env -u HARBOR_USER -u HARBOR_TOKEN HOST_MCP_ARTIFACTS_ROOT="$CI_PROJECT_DIR/host-mcp-binaries" HOST_MCP_EXPECTED_SOURCE_REVISION="$portico_SOURCE_SHA" bash source/src/scripts/build-host-mcp-binaries.sh --darwin-only
+  artifacts:
+    paths: [host-mcp-binaries/]
+    expire_in: 1 day
+
+runtime-images:
+  extends: .mr-only
+  stage: runtime-images
+  needs:
+    - job: validate-request
+      artifacts: true
+    - job: container-source
+      artifacts: true
+  parallel:
+    matrix:
+      - IMAGE_NAME: mcpo-control-plane-rust
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.mcpo-control-plane-rust
+        BASE_IMAGE: debian
+        BASE_IMAGE_TAG: trixie-slim
+      - IMAGE_NAME: mcp-orc-rust
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.mcp-orc-rust
+        BASE_IMAGE: python
+        BASE_IMAGE_TAG: 3.11-slim-trixie
+      - IMAGE_NAME: bifrost-bridge
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.bifrost-bridge
+        BASE_IMAGE: maximhq/bifrost
+        BASE_IMAGE_TAG: v1.4.23
+      - IMAGE_NAME: open-webui-patched
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.open-webui-patched
+        BASE_IMAGE: python
+        BASE_IMAGE_TAG: 3.11-slim-bookworm
+      - IMAGE_NAME: health-check
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.health-check
+        BASE_IMAGE: debian
+        BASE_IMAGE_TAG: trixie-slim
+      - IMAGE_NAME: chat-state-api
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.chat-state-api
+        BASE_IMAGE: python
+        BASE_IMAGE_TAG: 3.11-slim
+      - IMAGE_NAME: agent-vm
+        portico_RUNTIME_DOCKERFILE: source/Dockerfile.agent-vm
+        BASE_IMAGE: python
+        BASE_IMAGE_TAG: 3.12-slim
+  variables:
+    IMAGE_BUILD_TOOL: kaniko
+    PUSH: "true"
+    ARCHITECTURES: "amd64 arm64"
+    BUILD_NEEDS_JOB: container-source
+    PARENT_PIPELINE_ID: "$CI_PIPELINE_ID"
+    portico_RUNTIME_BUILD_CONTEXT: "source"
+    DESTINATION: "$portico_RUNTIME_IMAGE_REGISTRY/$IMAGE_NAME"
+    CANONICAL_TAG: "$portico_RUNTIME_IMAGE_TAG"
+    portico_RUNTIME_IMAGE_LABELS: "org.opencontainers.image.revision=$portico_SOURCE_SHA org.opencontainers.image.version=$portico_RUNTIME_IMAGE_TAG"
+    TAGS: ""
+  trigger:
+    include:
+      - local: runtime-image-child.yml
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true
+
+stage-mr:
+  extends:
+    - .orka-macos
+    - .mr-only
+  stage: stage
+  needs:
+    - job: validate-request
+      artifacts: true
+    - job: host-darwin
+      artifacts: true
+  script:
+    - bash scripts/checkout-application.sh --project-path "$portico_SOURCE_PROJECT_PATH" --revision "$portico_SOURCE_SHA" --output source --require-sha
+    - |
+      env -u HARBOR_USER -u HARBOR_TOKEN \
+        -u APPLE_CODESIGN_P12_BASE64 -u APPLE_CODESIGN_P12_PASSWORD \
+        -u APPLE_ID -u APPLE_APP_SPECIFIC_PASSWORD -u APPLE_TEAM_ID \
+        -u CLOUDSMITH_API_KEY \
+        -u CLOUDSMITH_ENTITLEMENT_TOKEN \
+        bash source/run_dev_release.sh stage-mr "$portico_BUILD_NUMBER" \
+          --channel "$portico_CHANNEL" \
+          --source-revision "$portico_SOURCE_SHA" \
+          --release-timestamp "$portico_RELEASE_TIMESTAMP" \
+          --host-mcp-binaries-dir "$CI_PROJECT_DIR/host-mcp-binaries" \
+          --stage-output-dir "$CI_PROJECT_DIR/ci-artifacts/mr-stage" \
+          --mr-project-id "$portico_SOURCE_PROJECT_ID" \
+          --mr-project-path "$portico_SOURCE_PROJECT_PATH" \
+          --mr-iid "$portico_MR_IID" \
+          --mr-target-branch "$portico_TARGET_BRANCH"
+  artifacts:
+    paths: [ci-artifacts/mr-stage/]
+    expire_in: 1 day
+
+verify-runtime-images:
+  extends:
+    - .krane
+    - .mr-only
+  stage: verify
+  needs:
+    - job: validate-request
+      artifacts: true
+    - job: runtime-images
+  script:
+    - bash scripts/create-runtime-image-attestation.sh --source-revision "$portico_SOURCE_SHA" --tag "$portico_RUNTIME_IMAGE_TAG" --output "$CI_PROJECT_DIR/ci-artifacts/runtime-image-attestation.json"
+  artifacts:
+    paths: [ci-artifacts/runtime-image-attestation.json]
+    expire_in: 7 days
+
+signed-package:
+  extends:
+    - .orka-macos
+    - .mr-only
+    - .vault-token
+  stage: package
+  secrets:
+    APPLE_CODESIGN_P12_BASE64:
+      vault: $portico_BROKER_VAULT_PATH/APPLE_CODESIGN_P12_BASE64/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    APPLE_CODESIGN_P12_PASSWORD:
+      vault: $portico_BROKER_VAULT_PATH/APPLE_CODESIGN_P12_PASSWORD/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    APPLE_ID:
+      vault: $portico_BROKER_VAULT_PATH/APPLE_ID/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    APPLE_APP_SPECIFIC_PASSWORD:
+      vault: $portico_BROKER_VAULT_PATH/APPLE_APP_SPECIFIC_PASSWORD/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    APPLE_TEAM_ID:
+      vault: $portico_BROKER_VAULT_PATH/APPLE_TEAM_ID/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    CLOUDSMITH_API_KEY:
+      vault: $portico_BROKER_VAULT_PATH/CLOUDSMITH_API_KEY/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    CLOUDSMITH_ENTITLEMENT_TOKEN:
+      vault: $portico_BROKER_VAULT_PATH/CLOUDSMITH_ENTITLEMENT_TOKEN/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+  needs:
+    - job: validate-request
+      artifacts: true
+    - job: stage-mr
+      artifacts: true
+    - job: verify-runtime-images
+      artifacts: true
+  script:
+    - bash scripts/checkout-application.sh --project-path "$portico_SOURCE_PROJECT_PATH" --revision "$portico_RELEASE_TOOLING_REF" --output trusted-tooling
+    - bash scripts/with-apple-signing-key.sh bash scripts/finalize-mr-release.sh --input "$CI_PROJECT_DIR/ci-artifacts/mr-stage" --attestation "$CI_PROJECT_DIR/ci-artifacts/runtime-image-attestation.json" --trusted-tooling "$CI_PROJECT_DIR/trusted-tooling" --output "$CI_PROJECT_DIR/release/${portico_CHANNEL_PACKAGE}-${portico_BUILD_NUMBER}.zip"
+  artifacts:
+    paths: [release/portico_mr-*.zip]
+    expire_in: 7 days
+
+publish-cloudsmith:
+  extends:
+    - .orka-macos
+    - .mr-only
+    - .vault-token
+  stage: publish
+  resource_group: "mr-release-$portico_MR_IID"
+  secrets:
+    CLOUDSMITH_API_KEY:
+      vault: $portico_BROKER_VAULT_PATH/CLOUDSMITH_API_KEY/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+    CLOUDSMITH_ENTITLEMENT_TOKEN:
+      vault: $portico_BROKER_VAULT_PATH/CLOUDSMITH_ENTITLEMENT_TOKEN/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+  needs:
+    - job: validate-request
+      artifacts: true
+    - job: signed-package
+      artifacts: true
+  before_script:
+    - export PATH="$(python3 -m site --user-base)/bin:$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    - command -v cloudsmith >/dev/null 2>&1 || python3 -m pip install --user --quiet cloudsmith-cli
+  script:
+    - bash scripts/validate-mr-request.sh
+    - bash scripts/checkout-application.sh --project-path "$portico_EXPECTED_SOURCE_PROJECT_PATH" --revision "$portico_RELEASE_TOOLING_REF" --output trusted-tooling
+    - bash scripts/publish-cloudsmith.sh --payload "$CI_PROJECT_DIR/release/${portico_CHANNEL_PACKAGE}-${portico_BUILD_NUMBER}.zip" --channel "$portico_CHANNEL" --build-number "$portico_BUILD_NUMBER" --release-script "$CI_PROJECT_DIR/trusted-tooling/release_build.sh"
+  environment:
+    name: "mr/$portico_MR_IID"
+
+cleanup-mr-releases:
+  extends:
+    - .common_docker_config
+    - .vault-token
+  stage: cleanup
+  interruptible: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $portico_CLEANUP_ONLY == "true"'
+  secrets:
+    CLOUDSMITH_API_KEY:
+      vault: $portico_BROKER_VAULT_PATH/CLOUDSMITH_API_KEY/data@$portico_BROKER_VAULT_MOUNT
+      token: $VAULT_ID_TOKEN
+      file: false
+  script:
+    - command -v cloudsmith >/dev/null 2>&1 || python3 -m pip install --user --quiet cloudsmith-cli
+    - export PATH="$HOME/.local/bin:$PATH"
+    - python3 scripts/cleanup-mr-releases.py --retention-days 7

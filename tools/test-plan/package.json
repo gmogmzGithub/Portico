@@ -1,0 +1,16 @@
+{
+  "name": "@portico/test-plan-tools",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tooling that records test execution status into docs/testing/status.json and re-renders the docs/testing/ markdown tree. No external dependencies; uses only Node.js built-ins.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "render": "node render.mjs",
+    "render:check": "node render.mjs --check",
+    "record": "node record.mjs",
+    "run-auto": "node run-auto.mjs"
+  }
+}

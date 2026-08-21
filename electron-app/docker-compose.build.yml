@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  electron-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.electron-build
+      args:
+        CACHEBUST: ${CACHEBUST:-1}
+    container_name: portico-ai-electron-builder
+    volumes:
+      - ./dist:/app/dist
+      - /app/node_modules
+      - ~/.cache/electron:/root/.cache/electron
+      - ~/.cache/electron-builder:/root/.cache/electron-builder
+    environment:
+      - ELECTRON_CACHE=/root/.cache/electron
+      - ELECTRON_BUILDER_CACHE=/root/.cache/electron-builder
+      - NODE_ENV=production
+      - NPM_CONFIG_GLOBALCONFIG=/app/.npmrc
+      - NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+    command: sh -c "npm install && npm run build || true"

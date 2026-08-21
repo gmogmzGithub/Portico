@@ -1,0 +1,59 @@
+# Multi-stage build for Electron app
+FROM node:18 AS builder
+
+# Copy npm configuration with Portico registry auth
+COPY .npmrc /etc/npmrc
+
+# Configure npm and nvm to point to Cloudsmith
+ENV NPM_CONFIG_GLOBALCONFIG=/etc/npmrc
+ENV NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+
+# Install required build dependencies for electron-builder
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    git \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies with npm (not ci, to ensure all deps are resolved)
+RUN npm install
+
+# Install electron-builder globally as well for safety
+RUN npm install -g electron-builder
+
+# Copy application source
+COPY . .
+
+# Create required directories
+RUN mkdir -p assets dist
+
+# Build for the target platform
+ARG TARGET_PLATFORM=mac
+RUN if [ "$TARGET_PLATFORM" = "mac" ]; then \
+        npm run build:mac; \
+    elif [ "$TARGET_PLATFORM" = "win" ]; then \
+        npm run build:win; \
+    elif [ "$TARGET_PLATFORM" = "linux" ]; then \
+        npm run build:linux; \
+    else \
+        npm run build:all; \
+    fi
+
+# Stage 2: Extract built artifacts
+FROM alpine:latest
+RUN apk add --no-cache bash
+WORKDIR /output
+COPY --from=builder /app/dist/ ./
+CMD ["sh", "-c", "echo 'Build complete. Files are in the dist directory.'"]
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true" \
+      com.portico.ai-chat.image-role="electron-app-dist-build"

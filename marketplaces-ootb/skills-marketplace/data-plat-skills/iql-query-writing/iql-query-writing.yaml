@@ -1,0 +1,9 @@
+skill_name: iql-query-writing
+domain: data-platform
+topic: iql
+description: Reference for writing IQL queries against Portico's Datalake with Data Platform MCP tools
+owner: data-platform
+is_public: true
+required_scopes:
+  - workforce.data_platform.data_asset_metadata.read
+  - workforce.data_platform.query.execute

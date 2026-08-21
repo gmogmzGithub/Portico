@@ -1,0 +1,113 @@
+# Stage 1: Reuse the upstream Node runtime instead of installing Debian's large
+# nodejs/npm package set in the final image.
+FROM node:20-bookworm-slim AS node-runtime
+
+# Stage 2: Build the seeded Open WebUI checkout plus the prebuilt Python venv.
+FROM python:3.11-slim AS seed-builder
+
+ARG OPENWEBUI_VERSION=v0.6.43
+
+ENV OPENWEBUI_VERSION=${OPENWEBUI_VERSION} \
+    PIP_NO_CACHE_DIR=1
+
+# Copy the Node runtime from the official image.
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Install only build-time tools needed to seed the Open WebUI checkout.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Seed a full Open WebUI checkout with frontend dependencies already installed.
+# The runtime entrypoint copies this into the writable Docker volume on first boot.
+RUN set -eux; \
+    archive_url="https://codeload.github.com/open-webui/open-webui/tar.gz/refs/tags/${OPENWEBUI_VERSION}"; \
+    mkdir -p /opt/open-webui-seed; \
+    for attempt in 1 2 3 4 5; do \
+        if curl --fail --location --retry 5 --retry-all-errors --connect-timeout 20 --max-time 300 "$archive_url" \
+            | tar -xz -C /opt/open-webui-seed --strip-components=1; then \
+            break; \
+        fi; \
+        if [ "$attempt" -eq 5 ]; then \
+            echo "Failed to download Open WebUI source archive from $archive_url" >&2; \
+            exit 1; \
+        fi; \
+        rm -rf /opt/open-webui-seed/* /opt/open-webui-seed/.[!.]* 2>/dev/null || true; \
+        sleep $((attempt * 3)); \
+    done; \
+    echo "${OPENWEBUI_VERSION}" > /opt/open-webui-seed/.openwebui-version; \
+    cd /opt/open-webui-seed; \
+    npm ci --legacy-peer-deps; \
+    npm install --no-save --legacy-peer-deps y-protocols js-yaml; \
+    python -m compileall -q -j 0 /opt/open-webui-seed/backend; \
+    npm cache clean --force; \
+    rm -rf /root/.npm
+
+# Prebuild the Open WebUI backend virtualenv so cold starts do not spend
+# several minutes inside pip before the app can even begin booting.
+RUN set -eux; \
+    python -m venv /opt/open-webui-venv; \
+    /opt/open-webui-venv/bin/pip install --upgrade pip; \
+    cd /opt/open-webui-seed/backend; \
+    /opt/open-webui-venv/bin/pip install -r requirements.txt -U
+
+RUN set -eux; \
+    /opt/open-webui-venv/bin/python -m compileall -q -j 0 /opt/open-webui-seed/backend
+
+RUN /opt/open-webui-venv/bin/python - <<'PY'
+import pathlib
+import py_compile
+
+root = pathlib.Path("/opt/open-webui-venv")
+skipped = 0
+
+for path in root.rglob("*.py"):
+    if path.name == "olefile2.py":
+        skipped += 1
+        continue
+    try:
+        py_compile.compile(str(path), doraise=True)
+    except py_compile.PyCompileError:
+        skipped += 1
+
+if skipped:
+    print(f"Skipped {skipped} non-runtime Python source file(s) while precompiling the venv")
+PY
+
+RUN rm -rf /tmp/*
+
+# Stage 3: Final runtime image.
+FROM python:3.11-slim
+
+ARG OPENWEBUI_VERSION=v0.6.43
+
+ENV OPENWEBUI_VERSION=${OPENWEBUI_VERSION} \
+    PIP_NO_CACHE_DIR=1
+
+# Install only the tiny runtime package we still need for file watching.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    inotify-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the Node runtime and prebuilt assets into the final image.
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=seed-builder /opt/open-webui-seed /opt/open-webui-seed
+COPY --from=seed-builder /opt/open-webui-venv /opt/open-webui-venv
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Set working directory
+WORKDIR /app/source
+
+# Default command (overridden by entrypoint in docker-compose)
+CMD ["/bin/bash"]
+
+# PORTICO-205: ownership labels so cleanup tooling can select PORTICO-built images.
+LABEL com.portico.ai-chat.artifact="true" \
+      com.portico.ai-chat.image-role="open-webui-dev"

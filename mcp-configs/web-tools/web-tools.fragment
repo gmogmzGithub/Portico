@@ -1,0 +1,9 @@
+{
+  "command": "uv",
+  "args": [
+    "run",
+    "--directory",
+    "/app/internal-mcp/web-tools",
+    "web-tools-server"
+  ]
+}

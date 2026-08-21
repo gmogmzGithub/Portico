@@ -1,0 +1,53 @@
+name: Datadog MCP Server
+id: datadog
+display_name: Datadog
+deployment_type: docker
+description:
+  Datadog observability platform integration - query monitors, dashboards,
+  metrics, incidents, and more via OAuth authentication
+guided_setup_description: Query monitors, dashboards, metrics, and incidents
+user_installed: false
+is_core: false
+required_env_vars: []
+
+oauth:
+  type: "dcr"
+  provider: "datadog"
+  requires_user_authorization: true
+
+use_cases:
+  - Query Datadog monitors and alerts
+  - Search dashboards and metrics
+  - Investigate incidents
+  - Access observability data
+tool_rename_mapping:
+  aggregate_events: "Aggregate Events"
+  aggregate_rum_events: "Aggregate RUM Events"
+  aggregate_spans: "Aggregate Spans"
+  analyze_datadog_logs: "Analyze Datadog Logs"
+  create_datadog_notebook: "Create Datadog Notebook"
+  edit_datadog_notebook: "Edit Datadog Notebook"
+  get_change_stories: "Get Change Stories"
+  get_datadog_dashboard: "Get Datadog Dashboard"
+  get_datadog_incident: "Get Datadog Incident"
+  get_datadog_metric: "Get Datadog Metric"
+  get_datadog_metric_context: "Get Datadog Metric Context"
+  get_datadog_notebook: "Get Datadog Notebook"
+  get_datadog_trace: "Get Datadog Trace"
+  get_widget_reference: "Get Widget Reference"
+  list_datadog_skills: "List Datadog Skills"
+  load_datadog_skill: "Load Datadog Skill"
+  search_datadog_dashboards: "Search Datadog Dashboards"
+  search_datadog_events: "Search Datadog Events"
+  search_datadog_hosts: "Search Datadog Hosts"
+  search_datadog_incidents: "Search Datadog Incidents"
+  search_datadog_logs: "Search Datadog Logs"
+  search_datadog_metrics: "Search Datadog Metrics"
+  search_datadog_monitors: "Search Datadog Monitors"
+  search_datadog_notebooks: "Search Datadog Notebooks"
+  search_datadog_rum_events: "Search Datadog RUM Events"
+  search_datadog_service_dependencies: "Search Service Dependencies"
+  search_datadog_services: "Search Datadog Services"
+  search_datadog_spans: "Search Datadog Spans"
+  submit_mcp_feedback: "Submit MCP Feedback"
+  upsert_datadog_dashboard: "Upsert Datadog Dashboard"

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <base href="../.." />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; connect-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; object-src 'none';"
+    />
+    <title>Subagent</title>
+    <script>
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var theme = params.get('theme') || localStorage.getItem('theme') || 'dark';
+        if (params.get('theme')) {
+          localStorage.setItem('theme', theme);
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="renderer/components/model-logo-badge.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <div class="tab-content active" id="conversation-window-tab">
+        <div
+          class="conversation-window-titlebar-fill"
+          id="conversation-window-titlebar-fill"
+        >
+          <div class="conversation-window-title-text" id="conversation-window-title-text"></div>
+          <button
+            class="conversation-window-action-btn"
+            id="conversation-return-to-tab-btn"
+            type="button"
+            title="Return to Tab"
+            aria-label="Return to Tab"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M8 7L3 12L8 17"></path>
+              <path d="M3 12H16"></path>
+              <path d="M13 7H19A2 2 0 0 1 21 9V15A2 2 0 0 1 19 17H13"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="conversation-session-loading-overlay visible" id="conversation-session-loading-overlay" aria-live="polite">
+          <div class="conversation-session-loading-card">
+            <div class="conversation-session-loading-spinner" aria-hidden="true"></div>
+            <div class="conversation-session-loading-title">Preparing new session...</div>
+          </div>
+        </div>
+        <div class="chat-container" id="conversation-chat-container">
+          <div
+            id="conversation-webview"
+            class="chat-webview"
+          ></div>
+        </div>
+      </div>
+    </div>
+    <div id="oauth-wizard-container"></div>
+    <div id="sensitive-info-container"></div>
+    <div id="chat-workspace-consent-container"></div>
+    <div id="ai-marketplace-publish-container"></div>
+
+    <div id="mcp-config-modal" class="modal-overlay">
+      <div class="modal-content mcp-config-modal">
+        <div class="mcp-config-container">
+          <div class="mcp-config-main">
+            <div class="modal-header">
+              <div class="mcp-config-header-left">
+                <div class="mcp-config-server-icon"></div>
+                <div class="mcp-config-header-text">
+                  <h2 class="mcp-config-title">Configure Server</h2>
+                  <span class="mcp-config-subtitle">Set up required configuration</span>
+                </div>
+              </div>
+              <div class="modal-header-actions">
+                <button class="modal-close" id="mcp-config-close-btn">
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <div class="modal-body mcp-config-body">
+              <div id="mcp-config-content">
+                <!-- Configuration form rendered here -->
+              </div>
+            </div>
+
+            <div class="modal-footer mcp-config-footer">
+              <button class="btn-secondary" id="mcp-config-cancel-btn">
+                Cancel
+              </button>
+              <button class="btn-primary" id="mcp-config-save-btn">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Save & Test
+              </button>
+            </div>
+          </div>
+
+          <div class="mcp-config-divider" id="mcp-config-divider"></div>
+          <div class="mcp-config-testing-pane">
+            <div class="mcp-config-testing-header">
+              <h3>Testing Configuration</h3>
+              <button
+                class="mcp-config-testing-close"
+                id="mcp-config-testing-close-btn"
+              >
+                &times;
+              </button>
+            </div>
+            <div
+              class="mcp-config-testing-body"
+              id="mcp-config-testing-content"
+            >
+              <!-- Testing status and results -->
+            </div>
+            <div class="mcp-config-testing-footer">
+              <div
+                class="mcp-config-finalizing"
+                id="mcp-config-finalizing"
+                style="display: none"
+              >
+                <div class="mcp-config-finalizing-spinner"></div>
+                <span class="mcp-config-finalizing-text">Wrapping up...</span>
+              </div>
+              <button
+                class="btn-secondary"
+                id="mcp-config-retry-btn"
+                style="display: none"
+              >
+                Retry Test
+              </button>
+              <button
+                class="btn-primary"
+                id="mcp-config-promote-btn"
+                style="display: none"
+              >
+                Enable Server
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="renderer/components/owui-host.js"></script>
+    <script src="renderer/theme.js"></script>
+    <script src="renderer/components/find-bar.js"></script>
+    <script src="renderer/state.js"></script>
+    <script src="services/guided-setup/server-requirements.js"></script>
+    <script src="renderer/components/oauth-wizard-modal.js"></script>
+    <script src="renderer/components/model-logo-badge.js"></script>
+    <script src="renderer/dist/sensitive-info-markdown-renderer.bundle.js"></script>
+    <script src="renderer/components/sensitive-info-modal.js"></script>
+    <script src="renderer/components/chat-workspace-consent-modal.js"></script>
+    <script src="renderer/components/skill-card-renderer.js"></script>
+    <script src="renderer/components/ai-marketplace-publish-modal.js"></script>
+    <script src="renderer/components/accordion-visibility.js"></script>
+    <script src="renderer/components/configuration-guidance.js"></script>
+    <script src="renderer/components/mcp-config-guidance.js"></script>
+    <script src="renderer/components/mcp-config-markdown-parser.js"></script>
+    <script src="renderer/components/mcp-config-modal.js"></script>
+    <script src="renderer/views/conversation-window.js"></script>
+    <script src="renderer/components/backend-modal-listeners.js"></script>
+    <script>
+      window.setupBackendModalListeners?.({ label: "Conversation Window" });
+    </script>
+  </body>
+</html>

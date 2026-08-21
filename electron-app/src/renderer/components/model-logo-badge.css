@@ -1,0 +1,712 @@
+/*
+ * model-logo-badge.css — animated model-logo motion styles for native Electron
+ * input modals. PORTED VERBATIM from the OWUI webview bundle
+ * (src/patches/frontend/src/app.css, the .assistant-model-logo-motion block).
+ * The Electron renderer is a separate document from the OWUI webview and cannot
+ * import that CSS, so it is duplicated here. Keep in sync with app.css.
+ * Rendered by model-logo-badge.js (renderModelLogoBadge).
+ */
+.assistant-model-logo-motion {
+	position: relative;
+	display: inline-flex;
+	flex: 0 0 2rem;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	isolation: isolate;
+	border-radius: 9999px;
+	transform-origin: center;
+}
+
+.assistant-model-logo-rotor,
+.assistant-model-logo-badge {
+	position: relative;
+	display: inline-flex;
+	border-radius: inherit;
+}
+
+.assistant-model-logo-rotor {
+	z-index: 1;
+	flex: 0 0 2rem;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	transform-origin: center;
+}
+
+.assistant-model-logo-motion::before,
+.assistant-model-logo-motion::after {
+	position: absolute;
+	z-index: 0;
+	pointer-events: none;
+	content: '';
+	opacity: 0;
+	border-radius: 9999px;
+}
+
+.assistant-model-logo-motion.is-streaming {
+	will-change: transform, filter;
+	animation-duration: var(--model-logo-breathe-duration, 4.2s);
+	animation-delay: var(--model-logo-breathe-delay, 0s);
+	animation-timing-function: ease-in-out;
+	animation-iteration-count: infinite;
+}
+
+.assistant-model-logo-motion.is-streaming .assistant-model-logo-rotor {
+	will-change: transform;
+	animation-duration: var(--model-logo-spin-duration, 14s);
+	animation-delay: var(--model-logo-spin-delay, 0s);
+	animation-timing-function: cubic-bezier(0.45, 0.05, 0.2, 1);
+	animation-iteration-count: infinite;
+}
+
+.assistant-model-logo-motion.is-streaming::before,
+.assistant-model-logo-motion.is-streaming::after {
+	will-change: transform, opacity;
+	animation-duration: var(--model-logo-glow-duration, 3.4s);
+	animation-delay: var(--model-logo-glow-delay, 0s);
+	animation-timing-function: ease-in-out;
+	animation-iteration-count: infinite;
+}
+
+/* Claude: preserve the sparse brand silhouette while one small, irregular
+   cluster of rays extends and settles at a time. Every tier turns slowly;
+   Opus occasionally adds a quick Discord-style full turn. */
+.assistant-model-logo-motion--claude.is-streaming {
+	animation-name: assistant-logo-claude-breathe;
+}
+
+.assistant-model-logo-motion--claude.is-streaming[data-claude-motion-tier='haiku'] .assistant-model-logo-rotor,
+.assistant-model-logo-motion--claude.is-streaming[data-claude-motion-tier='sonnet'] .assistant-model-logo-rotor {
+	animation-name: assistant-logo-claude-slow-spin;
+	animation-timing-function: linear;
+}
+
+.assistant-model-logo-motion--claude.is-streaming[data-claude-motion-tier='haiku'] .assistant-model-logo-rotor {
+	animation-duration: 32s;
+}
+
+.assistant-model-logo-motion--claude.is-streaming[data-claude-motion-tier='sonnet'] .assistant-model-logo-rotor {
+	animation-duration: 24s;
+}
+
+.assistant-model-logo-motion--claude.is-streaming[data-claude-motion-tier='opus'] .assistant-model-logo-rotor {
+	animation-name: assistant-logo-claude-opus-spin;
+	animation-duration: 28s;
+	animation-delay: var(--model-logo-claude-cycle-delay, 0s);
+	animation-timing-function: linear;
+}
+
+.assistant-model-logo-motion--claude::before {
+	inset: -4px;
+	background: radial-gradient(circle, rgb(220 107 64 / 0.22), rgb(220 107 64 / 0) 68%);
+}
+
+.assistant-model-logo-motion--claude.is-streaming::before {
+	animation-name: assistant-logo-halo-breathe;
+}
+
+.animated-claude-mark {
+	display: block;
+	overflow: visible;
+	color: #d97757;
+}
+
+.animated-claude-mark .claude-ray {
+	transform-box: view-box;
+	transform-origin: center;
+}
+
+/* Claude's actual protrusion is deliberately quick and silky. The tier changes
+   only the quiet time between bursts and how many rays join each burst. */
+.assistant-model-logo-motion--claude.is-streaming .animated-claude-mark--haiku .claude-ray {
+	animation: assistant-logo-claude-ray-pulse-haiku 48s cubic-bezier(0.2, 0.72, 0.22, 1) infinite;
+}
+
+.assistant-model-logo-motion--claude.is-streaming .animated-claude-mark--sonnet .claude-ray {
+	animation: assistant-logo-claude-ray-pulse-sonnet 20s cubic-bezier(0.2, 0.72, 0.22, 1) infinite;
+}
+
+.assistant-model-logo-motion--claude.is-streaming .animated-claude-mark--opus .claude-ray {
+	animation: assistant-logo-claude-ray-pulse-opus 14s cubic-bezier(0.2, 0.72, 0.22, 1) infinite;
+}
+
+.animated-claude-mark .claude-ray-direction--out {
+	--model-logo-claude-ray-target: var(--model-logo-claude-ray-peak, 1.16);
+}
+
+.animated-claude-mark--haiku .claude-ray-direction--in {
+	--model-logo-claude-ray-target: 0.9;
+}
+
+.animated-claude-mark--sonnet .claude-ray-direction--in {
+	--model-logo-claude-ray-target: 0.84;
+}
+
+.animated-claude-mark--opus .claude-ray-direction--in {
+	--model-logo-claude-ray-target: 0.76;
+}
+
+/* Haiku: twelve single-ray bursts, one every four seconds. */
+.animated-claude-mark--haiku .claude-haiku-group--1 { animation-delay: var(--model-logo-claude-cycle-delay, 0s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--2 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 4s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--3 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 8s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--4 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 12s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--5 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 16s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--6 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 20s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--7 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 24s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--8 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 28s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--9 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 32s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--10 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 36s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--11 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 40s) !important; }
+.animated-claude-mark--haiku .claude-haiku-group--12 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 44s) !important; }
+
+/* Sonnet: irregular clusters of two or three rays, one every four seconds. */
+.animated-claude-mark--sonnet .claude-sonnet-group--1 { animation-delay: var(--model-logo-claude-cycle-delay, 0s) !important; }
+.animated-claude-mark--sonnet .claude-sonnet-group--2 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 4s) !important; }
+.animated-claude-mark--sonnet .claude-sonnet-group--3 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 8s) !important; }
+.animated-claude-mark--sonnet .claude-sonnet-group--4 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 12s) !important; }
+.animated-claude-mark--sonnet .claude-sonnet-group--5 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 16s) !important; }
+
+/* Opus: clusters of three or four rays every 3.5 seconds. Group one lines up
+   with the occasional Discord-style quick turn for a combined flourish. */
+.animated-claude-mark--opus .claude-opus-group--1 { animation-delay: var(--model-logo-claude-cycle-delay, 0s) !important; }
+.animated-claude-mark--opus .claude-opus-group--2 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 3.5s) !important; }
+.animated-claude-mark--opus .claude-opus-group--3 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 7s) !important; }
+.animated-claude-mark--opus .claude-opus-group--4 { animation-delay: calc(var(--model-logo-claude-cycle-delay, 0s) - 10.5s) !important; }
+
+.assistant-model-logo-motion--claude.is-streaming .animated-claude-mark .claude-core {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: assistant-logo-claude-core-pulse 16s ease-in-out infinite;
+}
+
+/* Sol: preserve the original layered solar language while keeping every peak
+   to roughly seventy percent of the checked-in treatment. */
+.assistant-model-logo-motion--sol.is-streaming {
+	animation-name: assistant-logo-sol-breathe;
+}
+
+.assistant-model-logo-motion--sol.is-streaming .assistant-model-logo-rotor {
+	animation-name: assistant-logo-sol-spin;
+}
+
+.assistant-model-logo-motion--sol::before {
+	inset: -11px;
+	background: radial-gradient(
+		circle,
+		rgb(255 239 137 / 0.54) 0%,
+		rgb(255 183 45 / 0.36) 28%,
+		rgb(255 112 17 / 0.16) 52%,
+		rgb(255 183 45 / 0) 74%
+	);
+	filter: blur(1px) drop-shadow(0 0 6px rgb(255 135 24 / 0.4));
+}
+
+.assistant-model-logo-motion--sol::after {
+	inset: -14px;
+	background:
+		repeating-conic-gradient(
+			from 8deg,
+			rgb(255 229 112 / 0.58) 0deg 1.4deg,
+			rgb(255 142 25 / 0.13) 2.3deg 3.8deg,
+			transparent 4.8deg 22deg
+		),
+		radial-gradient(circle, transparent 0 43%, rgb(255 166 38 / 0.2) 50%, transparent 68%);
+	-webkit-mask: radial-gradient(circle, transparent 0 41%, #000 48% 100%);
+	mask: radial-gradient(circle, transparent 0 41%, #000 48% 100%);
+	filter: blur(0.55px) drop-shadow(0 0 5px rgb(255 133 22 / 0.42));
+}
+
+.assistant-model-logo-motion--sol.is-streaming::before {
+	animation-name: assistant-logo-solar-corona;
+}
+
+.assistant-model-logo-motion--sol.is-streaming::after {
+	animation-name: assistant-logo-solar-ray;
+	animation-direction: alternate-reverse;
+}
+
+/* Terra: the map pans behind fixed ocean shading and limb light, which reads
+   as axial globe rotation instead of a flat image spinning like a coin. */
+.assistant-model-logo-motion--terra.is-streaming {
+	animation-name: assistant-logo-terra-float;
+}
+
+.assistant-model-logo-motion--terra::before {
+	inset: -7px;
+	background: radial-gradient(
+		circle,
+		rgb(126 226 255 / 0.28) 0%,
+		rgb(49 173 229 / 0.16) 42%,
+		rgb(14 116 173 / 0.06) 61%,
+		transparent 76%
+	);
+	filter: blur(2.2px) drop-shadow(0 0 3px rgb(79 195 247 / 0.22));
+}
+
+.assistant-model-logo-motion--terra.is-streaming::before {
+	animation-name: assistant-logo-terra-aura;
+}
+
+.animated-terra-mark {
+	display: block;
+	overflow: visible;
+	filter: drop-shadow(0 1.5px 2.5px rgb(8 47 73 / 0.3));
+}
+
+.animated-terra-ocean { fill: #087dbb; }
+.animated-terra-ocean-depth { fill: rgb(3 75 121 / 0.28); }
+.animated-terra-surface-strip { transform: translateX(0); }
+.animated-terra-land {
+	fill: #4eae72;
+	stroke: rgb(239 190 83 / 0.76);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 0.78;
+}
+.animated-terra-land--warm { fill: #67b66c; }
+.animated-terra-land--ice { fill: #d7f4f4; stroke: rgb(152 218 231 / 0.82); }
+.animated-terra-island {
+	fill: #e2b85b;
+	stroke: rgb(250 211 116 / 0.74);
+	stroke-linejoin: round;
+	stroke-width: 0.58;
+}
+.animated-terra-daylight { fill: rgb(155 227 255 / 0.18); }
+.animated-terra-night-shade { fill: rgb(2 24 54 / 0.3); }
+.animated-terra-limb-shadow { fill: rgb(1 17 39 / 0.28); }
+.animated-terra-atmosphere { fill: none; stroke: rgb(115 213 255 / 0.9); stroke-width: 3; }
+.animated-terra-atmosphere-shine { fill: none; stroke: rgb(221 250 255 / 0.82); stroke-linecap: round; stroke-width: 2.2; }
+.animated-terra-water-glints { opacity: 0.9; }
+.animated-terra-sparkle {
+	fill: rgb(231 253 255 / 0.98);
+	opacity: 0.16;
+	transform: scale(0.72);
+	transform-box: fill-box;
+	transform-origin: center;
+}
+
+.assistant-model-logo-motion--terra.is-streaming .animated-terra-surface-strip {
+	will-change: transform;
+	animation: assistant-logo-terra-surface-pan var(--model-logo-terra-flourish-duration, 46.34s) var(--model-logo-terra-flourish-delay, 0s) infinite;
+}
+
+.assistant-model-logo-motion--terra.is-streaming .animated-terra-sparkle {
+	will-change: opacity, transform;
+	animation-duration: var(--terra-sparkle-duration, 3.8s);
+	animation-delay: var(--terra-sparkle-delay, 0s);
+	animation-timing-function: ease-in-out;
+	animation-iteration-count: infinite;
+}
+
+.assistant-model-logo-motion--terra.is-streaming .animated-terra-sparkle--a { animation-name: assistant-logo-terra-sparkle-a; }
+.assistant-model-logo-motion--terra.is-streaming .animated-terra-sparkle--b { animation-name: assistant-logo-terra-sparkle-b; }
+.assistant-model-logo-motion--terra.is-streaming .animated-terra-sparkle--c { animation-name: assistant-logo-terra-sparkle-c; }
+.assistant-model-logo-motion--terra.is-streaming .animated-terra-sparkle--d { animation-name: assistant-logo-terra-sparkle-d; }
+
+/* Luna: retain the checked-in PNG, halo, orbital drift, uneven tumble, and
+   full-disc terminator sweep without reinterpretation. */
+.assistant-model-logo-motion--luna.is-streaming {
+	animation-name: assistant-logo-luna-orbit;
+}
+
+.assistant-model-logo-motion--luna.is-streaming .assistant-model-logo-rotor {
+	animation-name: assistant-logo-luna-tumble;
+}
+
+.assistant-model-logo-motion--luna::before {
+	inset: -6px;
+	background: radial-gradient(circle at 35% 30%, rgb(191 219 254 / 0.34), rgb(100 116 139 / 0.12) 45%, transparent 72%);
+}
+
+.assistant-model-logo-motion--luna.is-streaming::before {
+	animation-name: assistant-logo-lunar-glow;
+}
+
+.assistant-model-logo-motion--luna::after {
+	z-index: 2;
+	inset: 2px;
+	border-radius: 50%;
+	background: linear-gradient(90deg, rgb(4 8 15 / 0.78), rgb(15 23 42 / 0.42) 34%, transparent 63%);
+	box-shadow: inset 0 0 4px rgb(2 6 23 / 0.5);
+}
+
+.assistant-model-logo-motion--luna.is-streaming::after {
+	animation-name: assistant-logo-luna-terminator;
+	animation-direction: var(--model-logo-sweep-direction, normal);
+}
+
+/* Gemini: the diamond gets a softly shifting prismatic aura. */
+.assistant-model-logo-motion--gemini.is-streaming {
+	animation-name: assistant-logo-gemini-float;
+}
+
+.assistant-model-logo-motion--gemini.is-streaming .assistant-model-logo-rotor {
+	animation-name: assistant-logo-gemini-spin;
+}
+
+.assistant-model-logo-motion--gemini::before {
+	inset: -6px;
+	background: conic-gradient(
+		from 35deg,
+		rgb(129 140 248 / 0),
+		rgb(129 140 248 / 0.28),
+		rgb(56 189 248 / 0.24),
+		rgb(192 132 252 / 0.26),
+		rgb(129 140 248 / 0)
+	);
+	filter: blur(3px);
+}
+
+.assistant-model-logo-motion--gemini.is-streaming::before {
+	animation-name: assistant-logo-prismatic-halo;
+}
+
+.assistant-model-logo-motion--gemini::after {
+	inset: -10px;
+	background:
+		radial-gradient(circle at 16% 28%, rgb(125 211 252 / 0.95) 0 1.2px, transparent 1.8px),
+		radial-gradient(circle at 84% 22%, rgb(216 180 254 / 0.95) 0 1px, transparent 1.7px),
+		radial-gradient(circle at 76% 82%, rgb(96 165 250 / 0.9) 0 1.35px, transparent 2px),
+		radial-gradient(circle at 24% 76%, rgb(196 181 253 / 0.88) 0 0.9px, transparent 1.6px);
+}
+
+.assistant-model-logo-motion--gemini.is-streaming::after {
+	animation-name: assistant-logo-gemini-sparkles;
+}
+
+/* Generic OpenAI knot: restrained breathing and a rare full knot turn. */
+.assistant-model-logo-motion--gpt.is-streaming {
+	animation-name: assistant-logo-gpt-breathe;
+}
+
+.assistant-model-logo-motion--gpt.is-streaming .assistant-model-logo-rotor {
+	animation-name: assistant-logo-gpt-knot-turn;
+}
+
+.assistant-model-logo-motion--gpt::before {
+	inset: -4px;
+	border: 1px solid rgb(100 116 139 / 0.2);
+}
+
+.assistant-model-logo-motion--gpt.is-streaming::before {
+	animation-name: assistant-logo-ring-breathe;
+}
+
+/* Local and unknown marks get intentionally quieter fallbacks. */
+.assistant-model-logo-motion--local.is-streaming {
+	animation-name: assistant-logo-local-hop;
+}
+
+.assistant-model-logo-motion--local.is-streaming .assistant-model-logo-rotor {
+	animation-name: assistant-logo-local-block-turn;
+}
+
+.assistant-model-logo-motion--other.is-streaming {
+	animation-name: assistant-logo-generic-breathe;
+}
+
+.assistant-model-logo-motion--other.is-streaming .assistant-model-logo-rotor {
+	animation-name: assistant-logo-generic-turn;
+}
+
+@keyframes assistant-logo-claude-breathe {
+	0%, 100% { transform: scale(0.995); filter: saturate(0.99); }
+	50% { transform: scale(1.015); filter: saturate(1.04) drop-shadow(0 0 2px rgb(220 107 64 / 0.16)); }
+}
+
+@keyframes assistant-logo-claude-slow-spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+@keyframes assistant-logo-claude-opus-spin {
+	0% { transform: rotate(0deg); }
+	47.5% { transform: rotate(171deg); }
+	51.5% { transform: rotate(545deg); }
+	100% { transform: rotate(720deg); }
+}
+
+@keyframes assistant-logo-claude-ray-pulse-haiku {
+	0%, 0.55%, 2.1%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+	0.85% { transform: scaleY(0.97) scaleX(0.995); opacity: 0.98; }
+	1.3% { transform: scaleY(var(--model-logo-claude-ray-target, 1.07)) scaleX(1.006); opacity: 1; }
+}
+
+@keyframes assistant-logo-claude-ray-pulse-sonnet {
+	0%, 1.35%, 5.05%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+	2.05% { transform: scaleY(0.96) scaleX(0.993); opacity: 0.98; }
+	3.15% { transform: scaleY(var(--model-logo-claude-ray-target, 1.16)) scaleX(1.008); opacity: 1; }
+}
+
+@keyframes assistant-logo-claude-ray-pulse-opus {
+	0%, 1.9%, 7.25%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+	2.95% { transform: scaleY(0.95) scaleX(0.992); opacity: 0.98; }
+	4.55% { transform: scaleY(var(--model-logo-claude-ray-target, 1.28)) scaleX(1.01); opacity: 1; }
+}
+
+@keyframes assistant-logo-claude-core-pulse {
+	0%, 100% { transform: scale(0.995); filter: brightness(1); }
+	50% { transform: scale(1.015); filter: brightness(1.025); }
+}
+
+@keyframes assistant-logo-sol-breathe {
+	0%, 100% { transform: scale(0.97); filter: saturate(1.03) brightness(1); }
+	24% { transform: scale(1.1); filter: saturate(1.24) brightness(1.1) drop-shadow(0 0 4px rgb(255 153 31 / 0.34)); }
+	48% { transform: scale(1.02); filter: saturate(1.12) brightness(1.05); }
+	70% { transform: scale(1.13); filter: saturate(1.32) brightness(1.14) drop-shadow(0 0 7px rgb(255 126 20 / 0.44)); }
+	76% { transform: scale(1.04); filter: saturate(1.16) brightness(1.07); }
+	84% { transform: scale(1.16); filter: saturate(1.4) brightness(1.2) drop-shadow(0 0 10px rgb(255 109 16 / 0.52)); }
+}
+
+@keyframes assistant-logo-sol-spin {
+	0% { transform: rotate(0deg); }
+	42% { transform: rotate(70deg); }
+	48% { transform: rotate(310deg); }
+	81% { transform: rotate(460deg); }
+	88% { transform: rotate(700deg); }
+	100% { transform: rotate(720deg); }
+}
+
+@keyframes assistant-logo-solar-corona {
+	0%, 100% { opacity: 0.28; transform: scale(0.82); }
+	28% { opacity: 0.62; transform: scale(1.16); }
+	52% { opacity: 0.38; transform: scale(0.94); }
+	70% { opacity: 0.76; transform: scale(1.32); }
+	80% { opacity: 0.42; transform: scale(0.92); }
+	87% { opacity: 0.72; transform: scale(1.35); }
+}
+
+@keyframes assistant-logo-solar-ray {
+	0%, 100% { opacity: 0.22; transform: scale(0.84) rotate(0deg); }
+	22% { opacity: 0.58; transform: scale(1.12) rotate(14deg); }
+	46% { opacity: 0.34; transform: scale(0.98) rotate(34deg); }
+	68% { opacity: 0.72; transform: scale(1.26) rotate(66deg); }
+	75% { opacity: 0.4; transform: scale(0.94) rotate(82deg); }
+	86% { opacity: 0.68; transform: scale(1.32) rotate(110deg); }
+}
+
+@keyframes assistant-logo-terra-float {
+	0%, 100% { transform: translateY(0) scale(1); }
+	27% { transform: translateY(calc(0px - var(--model-logo-travel, 2px))) scale(1.04); }
+	58% { transform: translateY(1px) scale(0.99); }
+	80% { transform: translateY(-1px) scale(1.03); }
+}
+
+@keyframes assistant-logo-terra-surface-pan {
+	/* One calm lap at the established 16–22 second pace. */
+	0% { transform: translateX(0); animation-timing-function: linear; }
+	41% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	/* A hand-spun globe impulse: eight complete revolutions begin at a dramatic
+	   whip and take progressively longer until the surface coasts down. The
+	   duplicate panorama makes each -100px -> 0 reset visually seamless. */
+	41.01% { transform: translateX(0); animation-timing-function: linear; }
+	41.71% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	41.72% { transform: translateX(0); animation-timing-function: linear; }
+	42.52% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	42.53% { transform: translateX(0); animation-timing-function: linear; }
+	43.53% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	43.54% { transform: translateX(0); animation-timing-function: linear; }
+	44.84% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	44.85% { transform: translateX(0); animation-timing-function: linear; }
+	46.65% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	46.66% { transform: translateX(0); animation-timing-function: linear; }
+	49.26% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	49.27% { transform: translateX(0); animation-timing-function: linear; }
+	53.07% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	53.08% { transform: translateX(0); animation-timing-function: cubic-bezier(0.08, 0.72, 0.28, 1); }
+	59% { transform: translateX(-100px); animation-timing-function: steps(1, jump-end); }
+	/* Settle back into the same baseline axial rotation. */
+	59.01% { transform: translateX(0); animation-timing-function: linear; }
+	100% { transform: translateX(-100px); }
+}
+
+@keyframes assistant-logo-terra-aura {
+	0%, 100% { opacity: 0.14; transform: scale(0.94); }
+	48% { opacity: 0.34; transform: scale(1.08); }
+}
+
+@keyframes assistant-logo-terra-sparkle-a {
+	0%, 13%, 100% { opacity: 0.08; transform: scale(0.62); }
+	22% { opacity: 0.9; transform: scale(1.38); }
+	31% { opacity: 0.12; transform: scale(0.72); }
+}
+
+@keyframes assistant-logo-terra-sparkle-b {
+	0%, 39%, 100% { opacity: 0.1; transform: scale(0.7); }
+	49% { opacity: 0.82; transform: scale(1.28); }
+	59% { opacity: 0.14; transform: scale(0.68); }
+}
+
+@keyframes assistant-logo-terra-sparkle-c {
+	0%, 62%, 100% { opacity: 0.07; transform: scale(0.58); }
+	72% { opacity: 0.88; transform: scale(1.42); }
+	83% { opacity: 0.12; transform: scale(0.76); }
+}
+
+@keyframes assistant-logo-terra-sparkle-d {
+	0%, 24%, 100% { opacity: 0.09; transform: scale(0.66); }
+	34% { opacity: 0.68; transform: scale(1.2); }
+	45% { opacity: 0.12; transform: scale(0.7); }
+	78% { opacity: 0.78; transform: scale(1.3); }
+	88% { opacity: 0.1; transform: scale(0.64); }
+}
+
+@keyframes assistant-logo-luna-orbit {
+	0%, 100% { transform: translate(0, 0) scale(0.99); filter: brightness(0.98); }
+	24% { transform: translate(var(--model-logo-travel, 2px), -1px) scale(1.04); }
+	51% { transform: translate(1px, var(--model-logo-travel, 2px)) scale(1); filter: brightness(1.06); }
+	76% { transform: translate(calc(0px - var(--model-logo-travel, 2px)), -1px) scale(1.05); }
+}
+
+@keyframes assistant-logo-luna-tumble {
+	0% { transform: rotate(-8deg); }
+	39% { transform: rotate(18deg); }
+	46% { transform: rotate(378deg); }
+	78% { transform: rotate(350deg); }
+	100% { transform: rotate(352deg); }
+}
+
+@keyframes assistant-logo-luna-terminator {
+	0%, 100% { opacity: 0.62; transform: translateX(-72%) rotate(-4deg); }
+	45%, 55% { opacity: 0.82; transform: translateX(8%) rotate(2deg); }
+	92% { opacity: 0.66; transform: translateX(72%) rotate(5deg); }
+}
+
+@keyframes assistant-logo-gemini-float {
+	0%, 100% { transform: scale(0.98) translateY(0); filter: saturate(1); }
+	32% { transform: scale(1.09) translateY(calc(0px - var(--model-logo-travel, 2px))); filter: saturate(1.18); }
+	57% { transform: scale(1.01) translateY(0); filter: saturate(1.05); }
+	81% { transform: scale(1.07) translateY(1px); filter: saturate(1.15); }
+}
+
+@keyframes assistant-logo-gemini-spin {
+	0% { transform: rotate(0deg); }
+	43% { transform: rotate(28deg); }
+	50% { transform: rotate(388deg); }
+	76% { transform: rotate(374deg); }
+	100% { transform: rotate(360deg); }
+}
+
+@keyframes assistant-logo-prismatic-halo {
+	0%, 100% { opacity: 0.22; transform: scale(0.82) rotate(0deg); }
+	48% { opacity: 0.7; transform: scale(1.16) rotate(170deg); }
+	72% { opacity: 0.38; transform: scale(0.98) rotate(260deg); }
+}
+
+@keyframes assistant-logo-gemini-sparkles {
+	0%, 58%, 78%, 100% { opacity: 0; transform: scale(0.72) rotate(-12deg); }
+	64% { opacity: 0.96; transform: scale(1.08) rotate(3deg); }
+	69% { opacity: 0.72; transform: scale(0.96) rotate(9deg); }
+	73% { opacity: 1; transform: scale(1.16) rotate(15deg); }
+}
+
+@keyframes assistant-logo-gpt-breathe {
+	0%, 100% { transform: scale(0.98); }
+	42% { transform: scale(1.06); }
+	70% { transform: scale(1.01); }
+}
+
+@keyframes assistant-logo-gpt-knot-turn {
+	0% { transform: rotate(0deg); }
+	52% { transform: rotate(15deg); }
+	60% { transform: rotate(375deg); }
+	100% { transform: rotate(360deg); }
+}
+
+@keyframes assistant-logo-local-hop {
+	0%, 100% { transform: translateY(0) scale(1); }
+	35% { transform: translateY(calc(0px - var(--model-logo-travel, 2px))) scale(1.04); }
+	43% { transform: translateY(0) scale(0.98); }
+	71% { transform: translateY(-1px) scale(1.02); }
+}
+
+@keyframes assistant-logo-local-block-turn {
+	0%, 45% { transform: rotate(0deg); }
+	51% { transform: rotate(90deg); }
+	57%, 100% { transform: rotate(0deg); }
+}
+
+@keyframes assistant-logo-generic-breathe {
+	0%, 100% { transform: scale(0.98) translateY(0); }
+	50% { transform: scale(1.05) translateY(-1px); }
+}
+
+@keyframes assistant-logo-generic-turn {
+	0%, 58% { transform: rotate(0deg); }
+	66% { transform: rotate(360deg); }
+	100% { transform: rotate(360deg); }
+}
+
+@keyframes assistant-logo-halo-breathe {
+	0%, 100% { opacity: 0.18; transform: scale(0.84); }
+	50% { opacity: var(--model-logo-halo-peak, 0.64); transform: scale(var(--model-logo-halo-scale, 1.16)); }
+}
+
+@keyframes assistant-logo-lunar-glow {
+	0%, 100% { opacity: 0.2; transform: translate(-1px, -1px) scale(0.86); }
+	46% { opacity: 0.72; transform: translate(2px, 1px) scale(1.14); }
+}
+
+@keyframes assistant-logo-ring-breathe {
+	0%, 100% { opacity: 0.12; transform: scale(0.86); }
+	50% { opacity: 0.52; transform: scale(1.14); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.assistant-model-logo-motion.is-streaming,
+	.assistant-model-logo-motion.is-streaming .assistant-model-logo-rotor,
+	.assistant-model-logo-motion.is-streaming .animated-claude-mark .claude-ray,
+	.assistant-model-logo-motion.is-streaming .animated-claude-mark .claude-core,
+	.assistant-model-logo-motion--terra.is-streaming .animated-terra-surface-strip,
+	.assistant-model-logo-motion--terra.is-streaming .animated-terra-sparkle,
+	.assistant-model-logo-motion.is-streaming::before,
+	.assistant-model-logo-motion.is-streaming::after {
+		animation: none !important;
+		filter: none !important;
+	}
+
+	.assistant-model-logo-motion.is-streaming,
+	.assistant-model-logo-motion.is-streaming .assistant-model-logo-rotor {
+		transform: none !important;
+	}
+
+	.assistant-model-logo-motion.is-streaming::before,
+	.assistant-model-logo-motion.is-streaming::after {
+		animation: none !important;
+	}
+}
+
+/* --- Electron-modal helpers (no Tailwind available in this renderer) --- */
+.celestial-model-logo {
+	transform: scale(1.35);
+	transform-origin: center;
+}
+.model-logo-badge {
+	background: transparent;
+	padding: 0;
+}
+.model-logo-badge.model-logo-badge--dark {
+	background: #000;
+	padding: 2px;
+	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.model-logo-badge-mark {
+	width: 2rem;
+	height: 2rem;
+	border-radius: 9999px;
+	object-fit: cover;
+}
+.model-logo-badge-fallback {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	color: #fff;
+}

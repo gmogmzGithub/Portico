@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-mode="simple">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portico — Engineering Handbook</title>
+<meta name="description" content="An explorable engineering handbook for Portico: features, architecture, and the agentic loop — with a Simple ⇄ Technical depth toggle.">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-head">
+      <a class="logo" href="#/">
+        <span class="mark"></span>
+        <span class="t"><b>Portico AI&nbsp;Chat</b><span>Engineering Handbook</span></span>
+      </a>
+    </div>
+    <div class="side-search"><input id="search" type="search" placeholder="Search areas…" autocomplete="off" spellcheck="false"></div>
+    <nav class="tree" id="tree"></nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="tb-spacer"></div>
+      <div class="modeseg" id="modeseg" role="tablist" aria-label="Depth">
+        <span class="pill" id="modepill"></span>
+        <button data-mode="simple" role="tab">Simple</button>
+        <button data-mode="technical" role="tab">Technical</button>
+      </div>
+      <button class="iconbtn" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+    </header>
+    <div class="scroll" id="scroll"></div>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<script src="assets/content.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

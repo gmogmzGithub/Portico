@@ -1,0 +1,9 @@
+skill_name: workspace-analyst
+domain: data-platform
+topic: idash
+description: Loads an idash workspace into session context and answers data questions by reusing or adapting existing workspace queries
+owner: data-platform
+is_public: true
+required_scopes:
+  - workforce.data_platform.data_asset_metadata.read
+  - workforce.data_platform.query.execute

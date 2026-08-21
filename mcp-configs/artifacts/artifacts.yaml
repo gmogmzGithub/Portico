@@ -1,0 +1,30 @@
+name: "Artifacts MCP Server"
+id: "artifacts"
+display_name: "Artifacts"
+deployment_type: "docker"
+experimental: false
+is_core: true
+always_enabled: false
+user_installed: false
+description: "Create, manage, and view web application artifacts from Agent VMs with versioning and live preview"
+use_cases:
+  - "Create live preview artifacts from running web applications"
+  - "Version control for web app development with snapshots"
+  - "Open artifact previews in Electron side panel"
+  - "Restore previous versions of artifacts"
+  - "Export artifacts as downloadable archives"
+  - "Manage artifact lifecycle (create, start, stop, delete)"
+tool_rename_mapping:
+  close_artifact: "Close Artifact"
+  create_artifact: "Create Artifact"
+  create_artifact_version: "Create Artifact Version"
+  delete_artifact: "Delete Artifact"
+  download_artifact: "Download Artifact"
+  get_artifact_running_versions: "Get Artifact Running Versions"
+  get_artifact_status: "Get Artifact Status"
+  list_artifacts: "List Artifacts"
+  open_artifact: "Open Artifact"
+  restore_artifact_version: "Restore Artifact Version"
+  switch_artifact_version: "Switch Artifact Version"
+
+required_env_vars: []

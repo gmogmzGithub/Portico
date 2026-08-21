@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /electron-app
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /electron-app/mcp-server
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /llm-debug-monitor
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /tools/test-plan
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: cargo
+    directory: /src/core-mcp-rust
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: cargo
+    directory: /src/mcp-orc-rust
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: cargo
+    directory: /src/bifrost-bridge-rust
+    schedule:
+      interval: weekly

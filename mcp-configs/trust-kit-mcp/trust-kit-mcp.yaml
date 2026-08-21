@@ -1,0 +1,41 @@
+name: Trust Kit MCP Server
+id: trust-kit-mcp
+display_name: Trust Kit
+deployment_type: docker
+description: Trust Kit MCP server providing Monarch event access, Waldo Jobs data, Advertiser Data, and Trust Kit-specific tools for investigations
+guided_setup_description: Access Monarch events and Trust Kit investigation tools
+user_installed: false
+is_core: false
+oauth:
+  requires_user_authorization: true
+required_env_vars:
+  - name: waldoapikey
+    placeholder: "Paste your Waldo API key"
+    description: "Waldo API key"
+    sensitive: true
+use_cases:
+  - Investigate trust and safety signals
+  - Query Monarch events for an entity
+  - Access Trust Kit-specific lookup tools
+  - Use with Trust-kit skills
+tool_rename_mapping:
+  Aceexecutecypher: "Ace Execute Cypher"
+  Acegetschema: "Ace Get Schema"
+  Acetranslatequery: "Ace Translate Query"
+  Aggregatejobs: "Aggregate Jobs"
+  Describemonarcheventschema: "Describe Monarch Event Schema"
+  Getadvertiserdata: "Get Advertiser Data"
+  Getadvertiserlinksinset: "Get Advertiser Links in Set"
+  Getadvertisermoderationinfo: "Get Advertiser Moderation Info"
+  Getadvertisermoderationruledetails: "Get Advertiser Moderation Rule Details"
+  Getjobdetails: "Get Job Details"
+  Getjobreports: "Get Job Reports"
+  Getjobstatus: "Get Job Status"
+  Getjobvisibility: "Get Job Visibility"
+  Getmonarchevents: "Get Monarch Events"
+  Getparentcompanylinks: "Get Parent Company Links"
+  Getruledefinitions: "Get Rule Definitions"
+  Getsupportedjobsearchlucenefieldnames: "Get Supported Job Search Lucene Field Names"
+  Getwaldorules: "Get Waldo Rules"
+  Listmonarcheventtypes: "List Monarch Event Types"
+  Searchjobs: "Search Jobs"
