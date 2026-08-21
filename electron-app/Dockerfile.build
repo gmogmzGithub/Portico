@@ -6,7 +6,7 @@ COPY .npmrc /etc/npmrc
 
 # Configure npm and nvm to point to Cloudsmith
 ENV NPM_CONFIG_GLOBALCONFIG=/etc/npmrc
-ENV NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+ENV NVM_NODEJS_ORG_MIRROR=https://nodejs.org/dist
 
 # Install required build dependencies for electron-builder
 RUN apt-get update && apt-get install -y \
