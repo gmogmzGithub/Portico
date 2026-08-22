@@ -31,9 +31,9 @@
   "devDependencies": {
     "@electron/notarize": "^2.5.0",
     "@playwright/test": "^1.57.0",
-    "electron": "^39.5.1",
+    "electron": "^43.4.1",
     "electron-builder": "^26.3.0",
-    "esbuild": "^0.27.3"
+    "esbuild": "^0.28.2"
   },
   "build": {
     "appId": "dev.portico.workbench",
@@ -165,7 +165,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "^0.0.51",
-    "chrome-devtools-mcp": "0.26.0",
+    "chrome-devtools-mcp": "1.7.0",
     "electron-prompt": "^1.7.0",
     "express": "^5.1.0",
     "js-yaml": "^4.1.1",

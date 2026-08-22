@@ -86,7 +86,6 @@ PROJECT_ROOT, PROJECT_ROOT_SOURCE = resolve_project_root()
 
 SEVERITY = {"INFO": 0, "GREEN": 0, "YELLOW": 1, "RED": 2}
 EXIT_BY_SEVERITY = {0: 0, 1: 1, 2: 2}
-INTERNAL_NPM_HOSTS = {"npm.artifacts.example.invalid", "dl.artifacts.example.invalid"}
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 HTTP_AUTH_REJECTION_STATUSES = {401, 403}
 HTTP_AUTH_REDIRECT_STATUSES = {302, 303, 307, 308}
@@ -578,7 +577,10 @@ def parse_static_secret_targets(env_entries):
 
 
 def is_scoped_broker_token_env_key(key, static_secret_token_envs):
-    return key == "portico_OAUTH_ACCESS_TOKEN_BROKER_TOKEN" or key in static_secret_token_envs
+    return key in {
+        "portico_OAUTH_ACCESS_TOKEN_BROKER_TOKEN",
+        "portico_SCHEDULER_BRIDGE_STATUS_TOKEN",
+    } or key in static_secret_token_envs
 
 
 def is_broker_materialized_file_pointer(value, static_secret_targets):
@@ -601,9 +603,14 @@ def is_loopback_host(host):
     return False
 
 
-def is_portico_npm_registry(registry):
+def is_allowed_npm_registry(registry):
     parsed = urlparse(registry.strip())
-    return parsed.hostname in INTERNAL_NPM_HOSTS
+    return (
+        parsed.scheme == "https"
+        and bool(parsed.hostname)
+        and parsed.username is None
+        and parsed.password is None
+    )
 
 
 def discover_sensitive_required_env_vars():
@@ -931,31 +938,32 @@ def mounted_path_for_container_path(mounts, container_path):
     return best
 
 
-def disallowed_url_host(value, allowed_hosts):
+def unsafe_package_url(value):
     if isinstance(value, str):
         try:
             parsed = urlparse(value)
         except Exception:
             return None
-        if parsed.scheme in {"http", "https"} and parsed.hostname and parsed.hostname not in allowed_hosts:
-            return parsed.hostname
+        if parsed.scheme in {"http", "https"} and parsed.hostname:
+            if parsed.scheme != "https" or parsed.username is not None or parsed.password is not None:
+                return value
     return None
 
 
-def first_disallowed_lock_resolved_host(value, allowed_hosts):
+def first_unsafe_lock_resolved_url(value):
     if isinstance(value, list):
         for entry in value:
-            host = first_disallowed_lock_resolved_host(entry, allowed_hosts)
-            if host:
-                return host
+            unsafe_url = first_unsafe_lock_resolved_url(entry)
+            if unsafe_url:
+                return unsafe_url
     if isinstance(value, dict):
-        host = disallowed_url_host(value.get("resolved"), allowed_hosts)
-        if host:
-            return host
+        unsafe_url = unsafe_package_url(value.get("resolved"))
+        if unsafe_url:
+            return unsafe_url
         for entry in value.values():
-            host = first_disallowed_lock_resolved_host(entry, allowed_hosts)
-            if host:
-                return host
+            unsafe_url = first_unsafe_lock_resolved_url(entry)
+            if unsafe_url:
+                return unsafe_url
     return None
 
 
@@ -1043,9 +1051,9 @@ def audit_managed_node_config(container, mounts):
                 except Exception:
                     audit.report("RED", f"{name}: managed Node MCP {server_id} package-lock.json is not valid JSON")
                     continue
-                disallowed_host = first_disallowed_lock_resolved_host(package_lock, INTERNAL_NPM_HOSTS)
-                if disallowed_host:
-                    audit.report("RED", f"{name}: managed Node MCP {server_id} package-lock resolved URL references non-Portico host {disallowed_host}")
+                unsafe_url = first_unsafe_lock_resolved_url(package_lock)
+                if unsafe_url:
+                    audit.report("RED", f"{name}: managed Node MCP {server_id} package-lock contains an insecure or credential-bearing resolved URL")
             audit.info(f"  managed Node audit: {name}: {server_id} uses prepared package {package_name}")
 
 
@@ -1234,8 +1242,8 @@ def audit_npm(container):
     if not registry:
         audit.report("YELLOW", f"{name}: npm registry could not be resolved")
         return
-    if not is_portico_npm_registry(registry):
-        audit.report("RED", f"{name}: npm registry is not an Portico registry ({registry})")
+    if not is_allowed_npm_registry(registry):
+        audit.report("RED", f"{name}: npm registry must use HTTPS without embedded credentials ({registry})")
         return
 
     install_script = r'''
@@ -1248,9 +1256,6 @@ printf '{}\n' > package.json
 log="$tmp/npm-install.log"
 npm_install_status=0
 NPM_CONFIG_CACHE="$tmp/.npm" npm install --ignore-scripts --no-audit --no-fund --package-lock-only is-number@7.0.0 >"$log" 2>&1 || npm_install_status=$?
-if grep -R -E 'https?://(registry\.npmjs\.(org|com))' "$tmp" >/dev/null 2>&1; then
-  exit 42
-fi
 if [ "$npm_install_status" -eq 0 ]; then
   exit 40
 fi
@@ -1261,13 +1266,11 @@ exit 41
 '''
     result = run_cmd([DOCKER_BIN, "exec", cid, "sh", "-lc", install_script])
     if result.returncode == 40:
-        audit.report("RED", f"{name}: runtime npm install probe unexpectedly completed with registry {registry}")
-    elif result.returncode == 42:
-        audit.report("RED", f"{name}: npm install probe observed public npm registry traffic")
+        audit.info(f"  npm audit: {name}: configured HTTPS registry is reachable ({registry}); managed package validation remains the acquisition control")
     elif result.returncode == 43:
-        audit.info(f"  npm audit: {name}: runtime install denied by Portico registry {registry} (expected no runtime npm credentials)")
+        audit.info(f"  npm audit: {name}: runtime install denied by configured registry {registry} (no runtime npm credentials)")
     else:
-        audit.report("YELLOW", f"{name}: runtime npm install probe was inconclusive against Portico registry {registry}")
+        audit.report("YELLOW", f"{name}: runtime npm install probe was inconclusive against configured registry {registry}")
 
 
 def default_runtime_secret_cache_dir():

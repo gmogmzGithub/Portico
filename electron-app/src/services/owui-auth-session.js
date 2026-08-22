@@ -1,4 +1,4 @@
-const setupAuth = require("./setup-auth");
+const currentUser = require("./current-user");
 const {
   OPEN_WEBUI_HOME_URL,
   postHumanSession,
@@ -27,23 +27,21 @@ function isOwuiUiUrl(rawUrl) {
 }
 
 async function ensureSetupSession() {
-  let session;
-  try {
-    session = await setupAuth.getAuthorizedSession();
-  } catch (_error) {
-    const result = await setupAuth.startSetupAuth();
-    if (!result?.success) {
-      throw new Error(result?.error || "Okta login is required for OWUI");
-    }
-    session = await setupAuth.getAuthorizedSession();
+  let result = await currentUser.get();
+  if (!result?.success || !result?.authenticated || !result?.sessionSummary) {
+    result = await currentUser.ensureAuthenticated();
   }
+  if (!result?.success || !result?.authenticated || !result?.sessionSummary) {
+    throw new Error(result?.error || "A Portico identity is required for OWUI");
+  }
+  let session = result.sessionSummary;
   // PORTICO-414: OWUI seeding requires an email; try the silent userinfo backfill
   // before letting buildHumanSessionPayload fail the view load. Proceed
   // either way — the payload builder still fails closed if unrepaired.
   if (!session?.user?.email) {
-    const repair = await setupAuth.repairSessionIdentity().catch(() => null);
+    const repair = await currentUser.repairIdentity().catch(() => null);
     if (repair?.repaired === true) {
-      session = await setupAuth.getAuthorizedSession();
+      session = repair.sessionSummary;
     }
   }
   return session;

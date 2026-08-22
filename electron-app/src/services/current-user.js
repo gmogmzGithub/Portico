@@ -12,6 +12,15 @@ const {
 const { normalizePlausibleEmail } = require("./setup-auth-shared");
 const setupAuth = require("./setup-auth");
 
+const LOCAL_SESSION_SUMMARY = Object.freeze({
+  user: Object.freeze({
+    id: "local-user",
+    name: "Local User",
+    email: "local-user@portico.invalid",
+    preferredUsername: "local-user",
+  }),
+});
+
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -42,6 +51,43 @@ function buildIdentitySyncFailure(result = {}, error) {
   };
 }
 
+function resolveIdentityMode(env = process.env) {
+  const explicitMode = String(env.PORTICO_IDENTITY_MODE || "")
+    .trim()
+    .toLowerCase();
+  if (explicitMode) {
+    if (explicitMode === "local") {
+      return "local";
+    }
+    if (explicitMode === "oidc" && isNonEmptyString(env.SETUP_AUTH_ISSUER)) {
+      return "oidc";
+    }
+    return "invalid";
+  }
+  return isNonEmptyString(env.SETUP_AUTH_ISSUER) ? "oidc" : "local";
+}
+
+function buildLocalIdentityResult(source = "local") {
+  return {
+    success: true,
+    authenticated: true,
+    sessionSummary: {
+      user: { ...LOCAL_SESSION_SUMMARY.user },
+    },
+    source,
+  };
+}
+
+function buildIdentityModeFailure() {
+  return {
+    success: false,
+    authenticated: false,
+    sessionSummary: null,
+    error: "The configured identity mode is unavailable.",
+    errorCode: "identity_mode_invalid",
+  };
+}
+
 function createCurrentUserService(deps = {}) {
   const logger = deps.logger || console;
   const setupAuthService = deps.setupAuth || setupAuth;
@@ -61,6 +107,17 @@ function createCurrentUserService(deps = {}) {
   const chmod = deps.chmod || fsPromises.chmod.bind(fsPromises);
   const mkdir = deps.mkdir || fsPromises.mkdir.bind(fsPromises);
   const existsSync = deps.existsSync || fs.existsSync.bind(fs);
+  const identityMode = deps.identityMode || resolveIdentityMode(deps.env);
+
+  function identityResult(source) {
+    if (identityMode === "local") {
+      return buildLocalIdentityResult(source);
+    }
+    if (identityMode === "invalid") {
+      return buildIdentityModeFailure();
+    }
+    return null;
+  }
 
   function audit(event, details = {}) {
     const payload = {
@@ -154,7 +211,9 @@ function createCurrentUserService(deps = {}) {
 
   async function get() {
     const startedAt = Date.now();
-    const result = await setupAuthService.getCachedSessionSummary();
+    const result =
+      identityResult("local") ||
+      (await setupAuthService.getCachedSessionSummary());
     const synchronized = await syncIdentityForResult(result);
     audit("identity_reconciliation", {
       ...synchronized,
@@ -165,7 +224,8 @@ function createCurrentUserService(deps = {}) {
 
   async function ensureAuthenticated() {
     const startedAt = Date.now();
-    const result = await setupAuthService.startSetupAuth();
+    const result =
+      identityResult("local") || (await setupAuthService.startSetupAuth());
     const synchronized = await syncIdentityForResult(result);
     audit("identity_reconciliation", {
       ...synchronized,
@@ -176,7 +236,16 @@ function createCurrentUserService(deps = {}) {
 
   async function repairIdentity() {
     const startedAt = Date.now();
-    const result = await setupAuthService.repairSessionIdentity();
+    const localResult = identityResult("local");
+    const result = localResult
+      ? {
+          ...localResult,
+          repaired: false,
+          reason: localResult.authenticated
+            ? "local_identity"
+            : localResult.errorCode,
+        }
+      : await setupAuthService.repairSessionIdentity();
     audit("identity_repair", {
       source: result?.source || result?.reason || null,
       success: result?.repaired === true,
@@ -189,10 +258,28 @@ function createCurrentUserService(deps = {}) {
   }
 
   async function clearError() {
+    const localResult = identityResult("local");
+    if (localResult) {
+      return {
+        phase: localResult.authenticated ? "authenticated" : "error",
+        ...localResult,
+      };
+    }
     return setupAuthService.clearSetupAuthError();
   }
 
   function status() {
+    const localResult = identityResult("local");
+    if (localResult) {
+      return {
+        phase: localResult.authenticated ? "authenticated" : "error",
+        inProgress: false,
+        message: null,
+        error: localResult.error || null,
+        errorCode: localResult.errorCode || null,
+        ...localResult,
+      };
+    }
     return setupAuthService.getSetupAuthStatus();
   }
 
@@ -210,6 +297,9 @@ module.exports = {
   ...createCurrentUserService(),
   createCurrentUserService,
   _test: {
+    buildIdentityModeFailure,
+    buildLocalIdentityResult,
     buildIdentitySyncFailure,
+    resolveIdentityMode,
   },
 };

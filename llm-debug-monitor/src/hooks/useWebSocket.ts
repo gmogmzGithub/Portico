@@ -172,7 +172,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       clearTimeout(timeoutId);
       disconnect();
     };
-  }, [enabled, sessionId, chatId]); // Only reconnect when session/chat changes
+  }, [connect, disconnect, enabled]);
 
   return {
     isConnected,

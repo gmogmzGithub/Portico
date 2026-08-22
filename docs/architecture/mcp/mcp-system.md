@@ -705,9 +705,9 @@ required_env_vars: []                # Empty - env vars embedded in fragment
     "schema_version": 1,
     "server_id": "chrome-devtools",
     "package_manager": "npm",
-    "requested_spec": "chrome-devtools-mcp@0.26.0",
+    "requested_spec": "chrome-devtools-mcp@1.7.0",
     "package_name": "chrome-devtools-mcp",
-    "requested_range": "0.26.0",
+    "requested_range": "1.7.0",
     "runtime_args": ["--autoConnect"],
     "bin": "chrome-devtools-mcp"
   }

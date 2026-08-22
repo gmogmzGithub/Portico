@@ -295,7 +295,7 @@ for directory in sorted(dirs):
 PY
 }
 
-get_target_harbor_docker_images() {
+get_target_registry_docker_images() {
     python3 - "$TEMP_CONFIG_PATH" <<'PY'
 import json
 import sys
@@ -329,7 +329,15 @@ flags_with_values = {
     "--add-host",
 }
 
-def extract_harbor_image(server_cfg):
+def is_registry_qualified_image(image):
+    if not isinstance(image, str) or "/" not in image:
+        return False
+    registry = image.split("/", 1)[0]
+    if registry in {"docker.io", "index.docker.io", "registry-1.docker.io"}:
+        return False
+    return registry == "localhost" or "." in registry or ":" in registry
+
+def extract_registry_image(server_cfg):
     if server_cfg.get("command") != "docker":
         return None
 
@@ -363,7 +371,7 @@ def extract_harbor_image(server_cfg):
         if arg.startswith("-"):
             continue
 
-        if arg.startswith("harbor.example.invalid/"):
+        if is_registry_qualified_image(arg):
             return platform, arg
         return None
 
@@ -372,7 +380,7 @@ def extract_harbor_image(server_cfg):
 images = set()
 servers = config.get("mcpServers") or {}
 for server_cfg in servers.values():
-    image = extract_harbor_image(server_cfg)
+    image = extract_registry_image(server_cfg)
     if image:
         images.add(image)
 
@@ -381,30 +389,30 @@ for platform, image in sorted(images):
 PY
 }
 
-refresh_harbor_docker_images() {
-    echo "Refreshing Harbor Docker images referenced by config..."
+refresh_registry_docker_images() {
+    echo "Refreshing registry Docker images referenced by config..."
     local image_rows=""
 
-    if ! image_rows="$(get_target_harbor_docker_images)"; then
-        echo "ERROR: failed to determine Harbor Docker images from config"
+    if ! image_rows="$(get_target_registry_docker_images)"; then
+        echo "ERROR: failed to determine registry Docker images from config"
         return 1
     fi
 
     if [ -z "$image_rows" ]; then
-        echo "  No Harbor Docker images referenced in config"
+        echo "  No registry Docker images referenced in config"
         return 0
     fi
 
     while IFS="$(printf '\t')" read -r platform image; do
         [ -n "$image" ] || continue
 
-        echo "  Pulling Harbor image: $image${platform:+ (platform: $platform)}"
+        echo "  Pulling registry image: $image${platform:+ (platform: $platform)}"
         if [ "$platform" = "default" ]; then
             if docker pull "$image"; then
                 continue
             fi
             if docker image inspect "$image" >/dev/null 2>&1; then
-                echo "  Harbor pull failed for $image; continuing with cached local image"
+                echo "  Registry pull failed for $image; continuing with cached local image"
                 continue
             fi
         else
@@ -412,12 +420,12 @@ refresh_harbor_docker_images() {
                 continue
             fi
             if docker image inspect --platform "$platform" "$image" >/dev/null 2>&1; then
-                echo "  Harbor pull failed for $image on $platform; continuing with cached local image"
+                echo "  Registry pull failed for $image on $platform; continuing with cached local image"
                 continue
             fi
         fi
 
-        echo "  Harbor pull failed for $image${platform:+ on $platform} and no usable local image was found"
+        echo "  Registry pull failed for $image${platform:+ on $platform} and no usable local image was found"
         return 1
     done <<EOF
 $image_rows
@@ -531,7 +539,7 @@ rust|rust-full)
 esac
 
 run_presync
-refresh_harbor_docker_images
+refresh_registry_docker_images
 
 # ============================================================================
 # GENERIC RUNTIME MCP INSTALLATION

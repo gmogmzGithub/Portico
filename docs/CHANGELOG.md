@@ -47,6 +47,10 @@ Tracks work landed on the main branch since the last named release.
   scheduled-task terminal failures.
 
 ### Fixed
+- Clean-checkout local setup now uses public npm metadata, provider-neutral
+  core MCP defaults, local identity, and an overridable gitignored model catalog.
+- The model bridge recognizes public Claude provider IDs behind Portico's Atlas
+  aliases, preserving adaptive-thinking request semantics.
 - First-time OAuth setup (e.g. Slack) no longer dead-ends on a
   `connection refused` / `authorization required` loop: the single-server
   wizard now runs in bootstrap mode (no access-token broker) so it can

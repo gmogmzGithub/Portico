@@ -103,8 +103,8 @@ cat >"$fixture/mcp_toggles.json" <<'JSON'
 {"docker-node":true}
 JSON
 cat >"$fixture/electron-app/.npmrc" <<'NPMRC'
-registry=https://npm.artifacts.example.invalid/harbor/
-//npm.artifacts.example.invalid/harbor/:_authToken=packaged-test-token
+registry=https://registry.npmjs.org/
+//registry.npmjs.org/:_authToken=packaged-test-token
 NPMRC
 cat >"$fixture/electron-app/build-info.json" <<'JSON'
 {"buildNumber":"dev-build"}
@@ -116,6 +116,13 @@ source "$REPO_ROOT/src/scripts/mcp-orc-backend.sh"
 source "$REPO_ROOT/src/scripts/mcp-orc-cli.sh"
 
 unset portico_MANAGED_NODE_NPMRC NPM_CONFIG_GLOBALCONFIG npm_config_globalconfig
+
+ambient_npmrc="$TMP_DIR/ambient-global.npmrc"
+cat >"$ambient_npmrc" <<'NPMRC'
+registry=https://ambient.example.com/npm/
+//ambient.example.com/npm/:_authToken=ambient-test-token
+NPMRC
+export NPM_CONFIG_GLOBALCONFIG="$ambient_npmrc"
 
 CAPTURED_NPMRC="$TMP_DIR/captured.npmrc"
 
@@ -160,10 +167,13 @@ run_preparer
 assert_preparer_contract
 grep -q 'packaged-test-token' "$CAPTURED_NPMRC" \
   || fail "packaged electron-app/.npmrc should be used when root .npmrc is absent"
+if grep -q 'ambient-test-token' "$CAPTURED_NPMRC"; then
+  fail "global npm config must not override the packaged project config"
+fi
 
 cat >"$fixture/.npmrc" <<'NPMRC'
-registry=https://npm.artifacts.example.invalid/harbor/
-//npm.artifacts.example.invalid/harbor/:_authToken=root-test-token
+registry=https://registry.npmjs.org/
+//registry.npmjs.org/:_authToken=root-test-token
 NPMRC
 run_preparer
 assert_preparer_contract
@@ -172,11 +182,14 @@ grep -q 'root-test-token' "$CAPTURED_NPMRC" \
 if grep -q 'packaged-test-token' "$CAPTURED_NPMRC"; then
   fail "packaged npm config must not override an available root .npmrc"
 fi
+if grep -q 'ambient-test-token' "$CAPTURED_NPMRC"; then
+  fail "global npm config must not override an available root .npmrc"
+fi
 
 explicit_npmrc="$TMP_DIR/explicit.npmrc"
 cat >"$explicit_npmrc" <<'NPMRC'
-registry=https://npm.artifacts.example.invalid/harbor/
-//npm.artifacts.example.invalid/harbor/:_authToken=explicit-test-token
+registry=https://packages.example.com/npm/
+//packages.example.com/npm/:_authToken=explicit-test-token
 NPMRC
 run_preparer "$explicit_npmrc"
 assert_preparer_contract
@@ -189,8 +202,8 @@ fi
 rm -f "$fixture/.npmrc" "$fixture/electron-app/.npmrc"
 global_npmrc="$TMP_DIR/global.npmrc"
 cat >"$global_npmrc" <<'NPMRC'
-registry=https://npm.artifacts.example.invalid/harbor/
-//npm.artifacts.example.invalid/harbor/:_authToken=global-test-token
+registry=https://registry.npmjs.org/
+//registry.npmjs.org/:_authToken=global-test-token
 NPMRC
 : >"$LOG_FILE"
 rm -f "$CAPTURED_NPMRC"
@@ -205,6 +218,7 @@ grep -q 'global-test-token' "$CAPTURED_NPMRC" \
   || fail "global npm config fallback should remain supported"
 
 rm -f "$global_npmrc"
+unset NPM_CONFIG_GLOBALCONFIG npm_config_globalconfig
 : >"$LOG_FILE"
 rm -f "$CAPTURED_NPMRC"
 if PATH="$FAKE_BIN_DIR:/usr/bin:/bin" \
@@ -222,22 +236,31 @@ if [ -e "$fixture/open-webui-data/managed-node-mcp-package-acquisition/.docker-p
 fi
 
 cat >"$fixture/electron-app/.npmrc" <<'NPMRC'
-registry=https://registry.npmjs.org/
-//registry.npmjs.org/:_authToken=external-test-token
+registry=https://packages.example.com/npm/
+//packages.example.com/npm/:_authToken=external-test-token
+NPMRC
+run_preparer
+assert_preparer_contract
+grep -q 'external-test-token' "$CAPTURED_NPMRC" \
+  || fail "an alternate HTTPS npm registry should be supported"
+
+cat >"$fixture/electron-app/.npmrc" <<'NPMRC'
+registry=http://registry.npmjs.org/
 NPMRC
 : >"$LOG_FILE"
+rm -f "$CAPTURED_NPMRC"
 if PATH="$FAKE_BIN_DIR:/usr/bin:/bin" \
   LOG_FILE="$LOG_FILE" \
   CAPTURED_NPMRC="$CAPTURED_NPMRC" \
   portico_MANAGED_NODE_PREPARER_IMAGE="portico-mcp-orc-rust:test" \
   run_mcp_orc_docker_managed_node_preparer "$fixture" --enabled-only --deployment-type docker; then
-  fail "external npm registry should fail closed"
+  fail "an insecure npm registry should fail closed"
 fi
 if [ -s "$LOG_FILE" ]; then
-  fail "invalid npm registry should fail before inspecting or pulling the preparer image"
+  fail "insecure npm registry should fail before inspecting or pulling the preparer image"
 fi
 if [ -e "$fixture/open-webui-data/managed-node-mcp-package-acquisition/.docker-preparer" ]; then
-  fail "invalid npm registry validation should remove temporary credentials"
+  fail "insecure npm registry validation should remove temporary credentials"
 fi
 
-echo "PASS: Docker managed Node preparer uses packaged npm fallback, strict precedence, and temporary credentials"
+echo "PASS: Docker managed Node preparer uses provider-neutral HTTPS registries, strict precedence, and temporary credentials"
