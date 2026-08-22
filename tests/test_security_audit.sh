@@ -293,13 +293,13 @@ write_green_fixture() {
     mkdir -p "$managed_store/demo-server/package/node_modules/demo-server"
     printf '%s\n' '{"name":"demo-server","version":"1.0.0","bin":{"demo-server":"bin/server.js"}}' \
         >"$managed_store/demo-server/package/node_modules/demo-server/package.json"
-    printf '%s\n' '{"packages":{"node_modules/demo-server":{"resolved":"https://npm.artifacts.example.invalid/harbor/demo-server/-/demo-server-1.0.0.tgz","funding":{"url":"https://github.com/sponsors/example"}}}}' \
+    printf '%s\n' '{"packages":{"node_modules/demo-server":{"resolved":"https://registry.npmjs.org/demo-server/-/demo-server-1.0.0.tgz","funding":{"url":"https://github.com/sponsors/example"}}}}' \
         >"$managed_store/demo-server/package/package-lock.json"
     printf '%s\n' '{"mcpServers":{"demo-server":{"command":"__portico_managed_node_package__","args":[],"managed_node_package":{"server_id":"demo-server","package_name":"demo-server","install_dir":"/app/open-webui-data/managed-node-mcp-packages/demo-server/package"}}}}' \
         >"$managed_config"
     printf 'c1\nc2\ncproxy\n' >"$scenario/ps"
-    printf 'https://npm.artifacts.example.invalid/\n' >"$scenario/registry-c1"
-    printf 'https://npm.artifacts.example.invalid/\n' >"$scenario/registry-c2"
+    printf 'https://registry.npmjs.org/\n' >"$scenario/registry-c1"
+    printf 'https://registry.npmjs.org/\n' >"$scenario/registry-c2"
     touch "$scenario/install-auth-denied-c1"
     touch "$scenario/install-auth-denied-c2"
 
@@ -373,6 +373,7 @@ probe = {
             "portico_OAUTH_ACCESS_TOKEN_BROKER_URL=http://host.docker.internal:8891/secrets/oauth/access-token",
             "portico_OAUTH_ACCESS_TOKEN_SERVER_ID=demo-server",
             "portico_OAUTH_ACCESS_TOKEN_BROKER_TOKEN=scoped-oauth-token",
+            "portico_SCHEDULER_BRIDGE_STATUS_TOKEN=scoped-status-token",
             "portico_STATIC_SECRET_BROKER_URL=http://host.docker.internal:8891/secrets/static-secret",
             "portico_STATIC_SECRET_TARGETS=demo-server|sourcegraph_token|/dev/shm/portico-runtime-secrets/sourcegraph_token|portico_STATIC_SECRET_TOKEN_DEMO_SERVER_SOURCEGRAPH_TOKEN|",
             "portico_STATIC_SECRET_TOKEN_DEMO_SERVER_SOURCEGRAPH_TOKEN=scoped-static-token",
@@ -425,7 +426,7 @@ write_red_fixture() {
     printf 'PORTICO_LLM_API_KEY=env-file-secret-do-not-print\n' >"$project/.env.runtime"
     printf '%s\n' '{"mcpServers":{"raw-node":{"command":"npx","args":["-y","demo-server@1.0.0"]}}}' >"$raw_mcp_config"
     printf 'c1\n' >"$scenario/ps"
-    printf 'https://registry.npmjs.org/\n' >"$scenario/registry-c1"
+    printf 'http://user:password@registry.npmjs.org/\n' >"$scenario/registry-c1"
 
     "$TEST_PYTHON_BIN" - "$scenario/inspect.json" "$runtime_secret" "$token_root" "$raw_mcp_config" <<'PY'
 import json
@@ -647,10 +648,11 @@ test_green_posture() {
     assert_not_contains "$output" "| --- |" "tables should not use rough markdown separator rows"
     assert_contains "$output" "/run/secrets/owui_auth_bridge_secret" "secret mount target must be listed"
     assert_contains "$output" "Audit notes:" "non-container audit details must be separated from container tables"
-    assert_contains "$output" "runtime install denied by Portico registry" "runtime npm install denial must be treated as expected no-credentials posture"
+    assert_contains "$output" "runtime install denied by configured registry" "runtime npm install denial must be treated as expected no-credentials posture"
     assert_not_contains "$output" "raw sensitive env key WEBUI_AUTH" "WEBUI_AUTH must be treated as a non-secret control flag"
     assert_not_contains "$output" "raw sensitive env key ENABLE_PASSWORD_AUTH" "password-auth control flags must be treated as non-secret controls"
     assert_not_contains "$output" "raw sensitive env key portico_OAUTH_ACCESS_TOKEN_BROKER_TOKEN" "scoped OAuth broker token env must be allowed"
+    assert_not_contains "$output" "raw sensitive env key portico_SCHEDULER_BRIDGE_STATUS_TOKEN" "scoped scheduling status token env must be allowed"
     assert_not_contains "$output" "raw sensitive env key portico_STATIC_SECRET_TOKEN_DEMO_SERVER_SOURCEGRAPH_TOKEN" "scoped static-secret broker token env must be allowed"
     assert_not_contains "$output" "raw sensitive env key portico_STATIC_SECRET_BROKER_URL" "static-secret broker URL must be treated as non-secret routing config"
     assert_not_contains "$output" "raw sensitive env key portico_STATIC_SECRET_TARGETS" "static-secret target manifest must be treated as non-secret routing config"
@@ -731,13 +733,13 @@ test_red_posture() {
     assert_contains "$output" "open-webui-data/runtime-secrets/stale_secret" "stale runtime secret cache files must be permission-audited"
     assert_contains "$output" "legacy OAuth token store mount at /root/.mcpo" "legacy OAuth mounts must be RED"
     assert_contains "$output" "legacy OAuth token/client file present; migrate OAuth state to Electron safeStorage" "legacy OAuth token files must be RED with migration guidance"
-    assert_contains "$output" "npm registry is not an Portico registry" "public npm registry must be rejected"
+    assert_contains "$output" "npm registry must use HTTPS without embedded credentials" "insecure credential-bearing npm registry must be rejected"
     assert_contains "$output" ".env.runtime: sensitive key names present: PORTICO_LLM_API_KEY" ".env.runtime leak must be RED"
     assert_not_contains "$output" "raw-env-secret-do-not-print" "audit output must not print raw env values"
     assert_not_contains "$output" "env-file-secret-do-not-print" "audit output must not print .env values"
     assert_not_contains "$output" "slack-env-secret-do-not-print" "audit output must not print Slack token env values"
     assert_not_contains "$output" "plaintext-token-do-not-print" "audit output must not print OAuth values"
-    [ ! -f "$scenario/install-attempt-c1" ] || fail "public npm registry must skip the install probe"
+    [ ! -f "$scenario/install-attempt-c1" ] || fail "invalid npm registry must skip the install probe"
 }
 
 test_legacy_oauth_store_requires_migration() {

@@ -18,5 +18,5 @@ services:
       - ELECTRON_BUILDER_CACHE=/root/.cache/electron-builder
       - NODE_ENV=production
       - NPM_CONFIG_GLOBALCONFIG=/app/.npmrc
-      - NVM_NODEJS_ORG_MIRROR=https://token:Pzmbc8Up1BHnPx1y@generic.cloudsmith.io/portico/nodejs-dist-proxy/nodejs
+      - NVM_NODEJS_ORG_MIRROR=https://nodejs.org/dist
     command: sh -c "npm install && npm run build || true"

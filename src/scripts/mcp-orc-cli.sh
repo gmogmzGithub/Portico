@@ -208,10 +208,16 @@ write_managed_node_preparer_npmrc() {
     elif [ -f "$project_root/electron-app/.npmrc" ]; then
       primary_source="$project_root/electron-app/.npmrc"
     fi
-    [ -n "$primary_source" ] && sources=("$primary_source")
-    for source in "${NPM_CONFIG_GLOBALCONFIG:-}" "${npm_config_globalconfig:-}"; do
-      [ -n "$source" ] && sources+=("$source")
-    done
+    if [ -n "$primary_source" ]; then
+      sources=("$primary_source")
+    else
+      for source in "${NPM_CONFIG_GLOBALCONFIG:-}" "${npm_config_globalconfig:-}"; do
+        [ -n "$source" ] || continue
+        if [ "${sources[0]:-}" != "$source" ]; then
+          sources+=("$source")
+        fi
+      done
+    fi
   fi
 
   if [ "${#sources[@]}" -gt 0 ]; then
@@ -251,7 +257,7 @@ validate_managed_node_preparer_npmrc() {
       if (key != "registry" && key !~ /^@[^:[:space:]]+:registry$/) next
       saw_registry = 1
       value = trim(substr($0, separator + 1))
-      if (value !~ /^https:\/\/npm\.artifacts\.portico\.tech(\/|$)/) {
+      if (value !~ /^https:\/\/[^\/@[:space:]]+([\/:]|$)/ || value ~ /^https:\/\/[^\/]*@/) {
         invalid_registry = 1
       }
     }
@@ -271,7 +277,7 @@ validate_managed_node_preparer_npmrc() {
       >&2
   else
     printf '%s\n' \
-      "package_prepare_failed: managed Node package preparation requires an HTTPS npm registry hosted at npm.artifacts.example.invalid" \
+      "package_prepare_failed: managed Node package preparation requires a valid HTTPS npm registry without embedded credentials" \
       >&2
   fi
   return 1

@@ -16,13 +16,6 @@ use tokio::process::Command as TokioCommand;
 pub const MANAGED_NODE_SENTINEL_COMMAND: &str = "__portico_managed_node_package__";
 pub const MANAGED_NODE_PACKAGE_KEY: &str = "managed_node_package";
 
-const INTERNAL_NPM_REGISTRY_HOSTS: &[&str] = &["npm.artifacts.example.invalid"];
-const INTERNAL_NPM_ARTIFACT_HOSTS: &[&str] = &["dl.artifacts.example.invalid"];
-const INTERNAL_NPM_HARBOR_PATH: &str = "/harbor";
-const INTERNAL_NPM_PROXY_PATH: &str = "/npm";
-const INTERNAL_NPM_HARBOR_AUTH_PREFIX: &str = "//npm.artifacts.example.invalid/harbor/";
-const INTERNAL_NPM_PROXY_AUTH_PREFIX: &str = "//npm.artifacts.example.invalid/npm/";
-
 #[derive(Debug, Serialize)]
 struct ManagedNodePreparationStatus {
     version: u8,
@@ -626,9 +619,31 @@ fn prepare_package(project_root: &Path, config: &mut ManagedNodePackageConfig) -
         .as_ref()
         .map(PathBuf::from)
         .unwrap_or_else(|| runtime_server_root.join("package"));
+    let acquisition_root = managed_package_acquisition_root(project_root);
+    if acquisition_root == store_root || acquisition_root.starts_with(&store_root) {
+        bail!(
+            "managed Node package acquisition directory must not live inside the runtime package store: {}",
+            acquisition_root.display()
+        );
+    }
+    let acquisition_server_root = acquisition_root.join(sanitize_server_id(&config.server_id));
+    let cache_dir = acquisition_server_root.join("npm-cache");
+    let home_dir = acquisition_server_root.join("home");
+    let tmp_dir = acquisition_server_root.join("tmp");
+    fs::create_dir_all(&tmp_dir)?;
+    let npmrc_guard = TempNpmrc::new(write_temp_npmrc(
+        project_root,
+        &tmp_dir,
+        &config.package_name,
+    )?);
+    let npmrc_path = npmrc_guard.path().to_path_buf();
+    validate_npm_registries(&npmrc_path)?;
+    let npm_registry = effective_npm_registry(&npmrc_path, &config.package_name)?;
+    let replace_registry_host = replace_registry_host_mode(&npm_registry);
+    let allowed_domains = managed_package_allowed_domains(&npmrc_path)?;
+
     let package_json = package_dir(&install_root, &config.package_name).join("package.json");
     if package_json.is_file() {
-        let allowed_domains = managed_package_internal_domains();
         if let Some(disallowed_host) =
             first_disallowed_package_lock_host(&install_root, &allowed_domains)
         {
@@ -682,32 +697,9 @@ fn prepare_package(project_root: &Path, config: &mut ManagedNodePackageConfig) -
             npm_bin_raw,
         )
     };
-    let acquisition_root = managed_package_acquisition_root(project_root);
-    if acquisition_root == store_root || acquisition_root.starts_with(&store_root) {
-        bail!(
-            "managed Node package acquisition directory must not live inside the runtime package store: {}",
-            acquisition_root.display()
-        );
-    }
-    let acquisition_server_root = acquisition_root.join(sanitize_server_id(&config.server_id));
-    let cache_dir = acquisition_server_root.join("npm-cache");
-    let home_dir = acquisition_server_root.join("home");
-    let tmp_dir = acquisition_server_root.join("tmp");
     fs::create_dir_all(&install_root)?;
     fs::create_dir_all(&cache_dir)?;
     fs::create_dir_all(&home_dir)?;
-    fs::create_dir_all(&tmp_dir)?;
-
-    let npmrc_guard = TempNpmrc::new(write_temp_npmrc(
-        project_root,
-        &tmp_dir,
-        &config.package_name,
-    )?);
-    let npmrc_path = npmrc_guard.path().to_path_buf();
-    validate_internal_npm_registries(&npmrc_path)?;
-    let npm_registry = effective_npm_registry(&npmrc_path, &config.package_name)?;
-    let replace_registry_host = replace_registry_host_mode(&npm_registry);
-    let allowed_domains = managed_package_allowed_domains(&npmrc_path)?;
     let node_path_shim_dir = create_managed_node_path_shim(&tmp_dir, &node_for_srt)?;
     let settings_path = tmp_dir.join("managed-node-install-srt-settings.json");
     write_private_json(
@@ -1293,7 +1285,6 @@ fn write_temp_npmrc(project_root: &Path, tmp_dir: &Path, package_name: &str) -> 
             content.push('\n');
         }
     }
-    content = normalize_managed_npmrc(&content);
     let replace_registry_host = configured_npm_registry(&content, package_name)
         .as_deref()
         .map(replace_registry_host_mode)
@@ -1309,15 +1300,21 @@ fn write_temp_npmrc(project_root: &Path, tmp_dir: &Path, package_name: &str) -> 
 fn npm_config_source_paths(project_root: &Path) -> Vec<PathBuf> {
     let project_npmrc = project_root.join(".npmrc");
     let packaged_npmrc = project_root.join("electron-app").join(".npmrc");
-    let mut sources = vec![if project_npmrc.is_file() {
-        project_npmrc
-    } else {
-        packaged_npmrc
-    }];
+    if project_npmrc.is_file() {
+        return vec![project_npmrc];
+    }
+    if packaged_npmrc.is_file() {
+        return vec![packaged_npmrc];
+    }
+
+    let mut sources = Vec::new();
     for key in ["NPM_CONFIG_GLOBALCONFIG", "npm_config_globalconfig"] {
         if let Ok(value) = env::var(key) {
             if !value.trim().is_empty() {
-                sources.push(PathBuf::from(value));
+                let path = PathBuf::from(value);
+                if !sources.contains(&path) {
+                    sources.push(path);
+                }
             }
         }
     }
@@ -1333,7 +1330,7 @@ fn effective_npm_registry(npmrc_path: &Path, package_name: &str) -> Result<Strin
     if parsed.scheme() != "https" || parsed.host_str().is_none() {
         bail!("invalid npm registry URL '{registry}'");
     }
-    validate_internal_npm_registry(&registry)?;
+    validate_npm_registry(&registry)?;
     Ok(registry)
 }
 
@@ -1366,81 +1363,30 @@ fn configured_npm_registry(content: &str, package_name: &str) -> Option<String> 
     scoped_registry.or(default_registry)
 }
 
-fn validate_internal_npm_registries(npmrc_path: &Path) -> Result<()> {
+fn validate_npm_registries(npmrc_path: &Path) -> Result<()> {
     for (key, registry) in registry_entries_from_npmrc(npmrc_path) {
-        validate_internal_npm_registry(&registry)
+        validate_npm_registry(&registry)
             .with_context(|| format!("npm config key '{key}' is not allowed"))?;
     }
     Ok(())
 }
 
-fn validate_internal_npm_registry(registry: &str) -> Result<()> {
+fn validate_npm_registry(registry: &str) -> Result<()> {
     let parsed = url::Url::parse(registry)
         .with_context(|| format!("invalid npm registry URL '{registry}'"))?;
-    let host = parsed
-        .host_str()
-        .ok_or_else(|| anyhow!("invalid npm registry URL '{registry}'"))?;
-    if parsed.scheme() != "https" || !INTERNAL_NPM_REGISTRY_HOSTS.contains(&host) {
+    if parsed.scheme() != "https" || parsed.host_str().is_none() {
+        bail!("managed Node package preparation requires a valid HTTPS npm registry; got {registry}");
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
         bail!(
-            "managed Node package preparation requires Portico npm registry {}; got {registry}",
-            INTERNAL_NPM_REGISTRY_HOSTS.join(", ")
+            "managed Node package preparation does not allow credentials embedded in an npm registry URL; use npm auth configuration instead"
         );
     }
     Ok(())
 }
 
-fn replace_registry_host_mode(registry: &str) -> &'static str {
-    if let Ok(parsed) = url::Url::parse(registry) {
-        if parsed.host_str() == Some("npm.artifacts.example.invalid")
-            && parsed.path().trim_end_matches('/') == INTERNAL_NPM_PROXY_PATH
-        {
-            return "npmjs";
-        }
-    }
+fn replace_registry_host_mode(_registry: &str) -> &'static str {
     "always"
-}
-
-fn normalize_managed_npmrc(content: &str) -> String {
-    let had_trailing_newline = content.ends_with('\n');
-    let mut normalized = content
-        .lines()
-        .map(normalize_managed_npmrc_line)
-        .collect::<Vec<_>>()
-        .join("\n");
-    if had_trailing_newline {
-        normalized.push('\n');
-    }
-    normalized
-}
-
-fn normalize_managed_npmrc_line(line: &str) -> String {
-    let trimmed = line.trim();
-    if trimmed.is_empty() || trimmed.starts_with('#') {
-        return line.to_string();
-    }
-    let Some((raw_key, raw_value)) = line.split_once('=') else {
-        return line.to_string();
-    };
-    let key = raw_key.trim();
-    let value = raw_value.trim();
-
-    if key == "registry" || key.ends_with(":registry") {
-        if let Ok(mut registry) = url::Url::parse(value) {
-            if registry.scheme() == "https"
-                && registry.host_str() == Some("npm.artifacts.example.invalid")
-                && registry.path().trim_end_matches('/') == INTERNAL_NPM_HARBOR_PATH
-            {
-                registry.set_path("/npm/");
-                return format!("{raw_key}={registry}");
-            }
-        }
-    }
-
-    if let Some(suffix) = key.strip_prefix(INTERNAL_NPM_HARBOR_AUTH_PREFIX) {
-        return format!("{INTERNAL_NPM_PROXY_AUTH_PREFIX}{suffix}={raw_value}");
-    }
-
-    line.to_string()
 }
 
 fn set_npm_config_line(content: &mut String, line: &str) {
@@ -1540,23 +1486,11 @@ fn managed_package_install_sandbox_settings(
 }
 
 fn managed_package_allowed_domains(npmrc_path: &Path) -> Result<Vec<String>> {
-    validate_internal_npm_registries(npmrc_path)?;
+    validate_npm_registries(npmrc_path)?;
     let mut allowed_domains = registry_domains_from_npmrc(npmrc_path)?;
-    allowed_domains.extend(managed_package_internal_domains());
     allowed_domains.sort();
     allowed_domains.dedup();
     Ok(allowed_domains)
-}
-
-fn managed_package_internal_domains() -> Vec<String> {
-    let mut allowed_domains = INTERNAL_NPM_REGISTRY_HOSTS
-        .iter()
-        .chain(INTERNAL_NPM_ARTIFACT_HOSTS.iter())
-        .map(|domain| (*domain).to_string())
-        .collect::<Vec<_>>();
-    allowed_domains.sort();
-    allowed_domains.dedup();
-    allowed_domains
 }
 
 fn registry_domains_from_npmrc(npmrc_path: &Path) -> Result<Vec<String>> {
@@ -1851,23 +1785,23 @@ mod tests {
     }
 
     #[test]
-    fn cloudsmith_npm_registry_uses_npmjs_tarball_rewrite_mode() {
+    fn registry_tarball_rewrite_is_provider_neutral() {
         assert_eq!(
-            replace_registry_host_mode("https://npm.artifacts.example.invalid/npm/"),
-            "npmjs"
+            replace_registry_host_mode("https://registry.npmjs.org/"),
+            "always"
         );
         assert_eq!(
-            replace_registry_host_mode("https://npm.artifacts.example.invalid/harbor/"),
+            replace_registry_host_mode("https://packages.example.com/npm/"),
             "always"
         );
     }
 
     #[test]
-    fn normalizes_harbor_registry_and_auth_scope_for_managed_install() {
-        let mut normalized = normalize_managed_npmrc(concat!(
-            "registry=https://npm.artifacts.example.invalid/harbor/\n",
-            "@demo:registry=https://npm.artifacts.example.invalid/harbor/\n",
-            "//npm.artifacts.example.invalid/harbor/:_authToken=fake-token\n",
+    fn preserves_configured_registry_and_auth_scope_for_managed_install() {
+        let mut normalized = String::from(concat!(
+            "registry=https://packages.example.com/npm/\n",
+            "@demo:registry=https://packages.example.com/scoped/\n",
+            "//packages.example.com/npm/:_authToken=fake-token\n",
             "replace-registry-host=always\n"
         ));
         let registry = configured_npm_registry(&normalized, "@demo/server").unwrap();
@@ -1879,13 +1813,11 @@ mod tests {
             ),
         );
 
-        assert_eq!(registry, "https://npm.artifacts.example.invalid/npm/");
-        assert!(normalized.contains("registry=https://npm.artifacts.example.invalid/npm/\n"));
-        assert!(normalized.contains("@demo:registry=https://npm.artifacts.example.invalid/npm/\n"));
-        assert!(normalized.contains("//npm.artifacts.example.invalid/npm/:_authToken=fake-token\n"));
-        assert!(normalized.contains("replace-registry-host=npmjs\n"));
-        assert!(!normalized.contains("npm.artifacts.example.invalid/harbor"));
-        assert!(!normalized.contains("replace-registry-host=always"));
+        assert_eq!(registry, "https://packages.example.com/scoped/");
+        assert!(normalized.contains("registry=https://packages.example.com/npm/\n"));
+        assert!(normalized.contains("@demo:registry=https://packages.example.com/scoped/\n"));
+        assert!(normalized.contains("//packages.example.com/npm/:_authToken=fake-token\n"));
+        assert!(normalized.contains("replace-registry-host=always\n"));
     }
 
     #[test]
@@ -1914,35 +1846,46 @@ mod tests {
     }
 
     #[test]
-    fn rejects_non_portico_npm_registry_config() {
+    fn accepts_provider_neutral_https_npm_registry_config() {
         let temp = tempdir().unwrap();
         let npmrc = temp.path().join(".npmrc");
         fs::write(
             &npmrc,
             concat!(
-                "registry=https://npm.artifacts.example.invalid/npm/\n",
-                "@evil:registry=https://registry.npmjs.org/\n"
+                "registry=https://registry.npmjs.org/\n",
+                "@demo:registry=https://packages.example.com/npm/\n"
             ),
         )
         .unwrap();
 
-        let error = validate_internal_npm_registries(&npmrc).unwrap_err();
-        let error_chain = format!("{error:#}");
-
-        assert!(error_chain.contains("Portico npm registry"));
-        assert!(error_chain.contains("@evil:registry"));
+        validate_npm_registries(&npmrc).unwrap();
     }
 
     #[test]
-    fn effective_registry_rejects_public_npm_fallback() {
+    fn rejects_insecure_or_credentialed_npm_registry_config() {
+        for registry in [
+            "http://registry.npmjs.org/",
+            "https://user:secret@packages.example.com/npm/",
+        ] {
+            let error = validate_npm_registry(registry).unwrap_err();
+            let error_chain = format!("{error:#}");
+            assert!(
+                error_chain.contains("HTTPS npm registry")
+                    || error_chain.contains("credentials embedded")
+            );
+        }
+    }
+
+    #[test]
+    fn effective_registry_accepts_public_npm() {
         let temp = tempdir().unwrap();
         let npmrc = temp.path().join(".npmrc");
         fs::write(&npmrc, "registry=https://registry.npmjs.org/\n").unwrap();
 
-        let error = effective_npm_registry(&npmrc, "demo-server").unwrap_err();
-        let error_chain = format!("{error:#}");
-
-        assert!(error_chain.contains("Portico npm registry"));
+        assert_eq!(
+            effective_npm_registry(&npmrc, "demo-server").unwrap(),
+            "https://registry.npmjs.org/"
+        );
     }
 
     #[test]
@@ -2037,9 +1980,9 @@ mod tests {
             schema_version: 1,
             server_id: "chrome-devtools".to_string(),
             package_manager: "npm".to_string(),
-            requested_spec: "chrome-devtools-mcp@0.26.0".to_string(),
+            requested_spec: "chrome-devtools-mcp@1.7.0".to_string(),
             package_name: "chrome-devtools-mcp".to_string(),
-            requested_range: "0.26.0".to_string(),
+            requested_range: "1.7.0".to_string(),
             resolved_version: None,
             resolved_integrity: None,
             runtime_args: vec!["--autoConnect".to_string()],
@@ -2299,8 +2242,8 @@ printf 'console.log("ok")\n' > "$prefix/node_modules/demo-server/bin/server.js"
         fs::write(
             root.join(".npmrc"),
             concat!(
-                "registry=https://npm.artifacts.example.invalid/harbor/\n",
-                "//npm.artifacts.example.invalid/harbor/:_authToken=fake-test-token\n",
+                "registry=https://registry.npmjs.org/\n",
+                "//registry.npmjs.org/:_authToken=fake-test-token\n",
                 "replace-registry-host=always\n"
             ),
         )
@@ -2335,20 +2278,16 @@ done
 [ -n "$prefix" ] || exit 20
 [ -f "$userconfig" ] || exit 21
 	[ -n "$cache" ] || exit 26
-	[ "$registry" = "https://npm.artifacts.example.invalid/npm/" ] || exit 22
-	grep -q '^registry=https://npm.artifacts.example.invalid/npm/$' "$userconfig" || exit 23
-	grep -q '^//npm.artifacts.example.invalid/npm/:_authToken=fake-test-token$' "$userconfig" || exit 24
-	grep -q '^replace-registry-host=npmjs$' "$userconfig" || exit 25
-	if grep -q 'npm.artifacts.example.invalid/harbor' "$userconfig"; then
-	  exit 27
-	fi
+	[ "$registry" = "https://registry.npmjs.org/" ] || exit 22
+	grep -q '^registry=https://registry.npmjs.org/$' "$userconfig" || exit 23
+	grep -q '^//registry.npmjs.org/:_authToken=fake-test-token$' "$userconfig" || exit 24
+	grep -q '^replace-registry-host=always$' "$userconfig" || exit 25
 	mkdir -p "$prefix/node_modules/demo-server/bin"
 	mkdir -p "$cache/_logs"
 	printf '{{"name":"demo-server","version":"1.0.0","bin":{{"demo-server":"bin/server.js"}}}}\n' > "$prefix/node_modules/demo-server/package.json"
-	printf '{{"packages":{{"node_modules/demo-server":{{"resolved":"https://npm.artifacts.example.invalid/npm/demo-server/-/demo-server-1.0.0.tgz"}}}}}}\n' > "$prefix/package-lock.json"
+	printf '{{"packages":{{"node_modules/demo-server":{{"resolved":"https://registry.npmjs.org/demo-server/-/demo-server-1.0.0.tgz"}}}}}}\n' > "$prefix/package-lock.json"
 printf '%s\n' \
-  '84 http fetch GET 200 https://npm.artifacts.example.invalid/npm/npm 1697ms' \
-  '1367 http fetch GET 200 https://dl.artifacts.example.invalid/signed/npm/demo-server-1.0.0.tgz 4045ms' \
+  '84 http fetch GET 200 https://registry.npmjs.org/npm 1697ms' \
   '1541 notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0' \
   > "$cache/_logs/2026-06-17T01_03_23_996Z-debug-0.log"
 "#,
@@ -2382,8 +2321,8 @@ printf '%s\n' \
 
         assert!(log.is_file());
         let npm_args = fs::read_to_string(&log).unwrap();
-        assert!(npm_args.contains("--registry https://npm.artifacts.example.invalid/npm/"));
-        assert!(npm_args.contains("--replace-registry-host=npmjs"));
+        assert!(npm_args.contains("--registry https://registry.npmjs.org/"));
+        assert!(npm_args.contains("--replace-registry-host=always"));
         let npm_node_path = fs::read_to_string(&node_path_log).unwrap();
         assert!(
             npm_node_path.contains("managed-node-mcp-package-acquisition"),
@@ -2709,13 +2648,18 @@ printf '%s\n' \
     }
 
     #[test]
-    fn prepare_rejects_cached_public_package_lock_resolved_host() {
+    fn prepare_rejects_cached_unconfigured_package_lock_resolved_host() {
         let _guard = crate::test_env_lock();
         let temp = tempdir().unwrap();
         let root = temp.path().join("project");
         let server_id = "cached-public-lock";
         let server_dir = root.join("mcp-configs").join(server_id);
         fs::create_dir_all(&server_dir).unwrap();
+        fs::write(
+            root.join(".npmrc"),
+            "registry=https://registry.npmjs.org/\n",
+        )
+        .unwrap();
         fs::write(
             server_dir.join(format!("{server_id}.fragment")),
             json!({
@@ -2746,7 +2690,7 @@ printf '%s\n' \
         .unwrap();
         fs::write(
             install_root.join("package-lock.json"),
-            r#"{"packages":{"node_modules/demo-server":{"resolved":"https://registry.npmjs.org/demo-server/-/demo-server-1.0.0.tgz"}}}"#,
+            r#"{"packages":{"node_modules/demo-server":{"resolved":"https://packages.evil.invalid/demo-server/-/demo-server-1.0.0.tgz"}}}"#,
         )
         .unwrap();
         env::set_var("portico_MANAGED_NODE_MCP_PACKAGES_DIR", &store);
@@ -2763,7 +2707,7 @@ printf '%s\n' \
         let error_chain = format!("{error:#}");
 
         assert!(error_chain.contains("cached managed Node package"));
-        assert!(error_chain.contains("package-lock URL host 'registry.npmjs.org'"));
+        assert!(error_chain.contains("package-lock URL host 'packages.evil.invalid'"));
         assert!(
             !install_root.exists(),
             "invalid cached package must be removed before retry"
@@ -2801,6 +2745,11 @@ printf '%s\n' \
         fs::write(
             server_dir.join(format!("{server_id}.yaml")),
             "name: docker-demo\nid: docker-demo\ndeployment_type: docker\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join(".npmrc"),
+            "registry=https://registry.npmjs.org/\n",
         )
         .unwrap();
 
@@ -2952,7 +2901,7 @@ printf '%s\n' \
     }
 
     #[test]
-    fn docker_deployment_prepare_rejects_public_registry_before_npm_runs() {
+    fn docker_deployment_prepare_rejects_insecure_registry_before_npm_runs() {
         let _guard = crate::test_env_lock();
         let temp = tempdir().unwrap();
         let root = temp.path().join("project");
@@ -2974,8 +2923,8 @@ printf '%s\n' \
             r#"{"docker-node-demo":true}"#,
         )
         .unwrap();
-        let public_npmrc = temp.path().join("public.npmrc");
-        fs::write(&public_npmrc, "registry=https://registry.npmjs.org/\n").unwrap();
+        let insecure_npmrc = temp.path().join("insecure.npmrc");
+        fs::write(&insecure_npmrc, "registry=http://registry.npmjs.org/\n").unwrap();
 
         let bin_dir = temp.path().join("bin");
         fs::create_dir_all(&bin_dir).unwrap();
@@ -3010,7 +2959,7 @@ printf '%s\n' \
         env::set_var("portico_MANAGED_NODE_SRT_CLI_JS", &cli_js);
         env::set_var("HOST_NODE_PATH", &node);
         env::set_var("portico_MANAGED_NODE_NPM_BIN", &npm);
-        env::set_var("portico_MANAGED_NODE_NPMRC", &public_npmrc);
+        env::set_var("portico_MANAGED_NODE_NPMRC", &insecure_npmrc);
         env::set_var(
             "portico_MANAGED_NODE_MCP_PACKAGES_DIR",
             temp.path().join("store"),
@@ -3022,7 +2971,7 @@ printf '%s\n' \
         let error_chain = format!("{error:#}");
 
         assert!(error_chain.contains("package_prepare_failed:docker-node-demo"));
-        assert!(error_chain.contains("Portico npm registry"));
+        assert!(error_chain.contains("HTTPS npm registry"));
         assert!(!npm_log.exists());
 
         env::remove_var("portico_MANAGED_NODE_SRT_CLI");
@@ -3063,6 +3012,11 @@ printf '%s\n' \
         fs::write(
             server_dir.join(format!("{server_id}.yaml")),
             "name: host-demo\nid: host-demo\ndeployment_type: host\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join(".npmrc"),
+            "registry=https://registry.npmjs.org/\n",
         )
         .unwrap();
         let package_dir = root
@@ -3183,27 +3137,38 @@ printf '%s\n' \
     }
 
     #[test]
-    fn managed_package_allowlist_includes_internal_artifact_download_host() {
+    fn managed_package_allowlist_uses_only_configured_registry_hosts() {
         let temp = tempdir().unwrap();
         let npmrc = temp.path().join(".npmrc");
-        fs::write(&npmrc, "registry=https://npm.artifacts.example.invalid/npm/\n").unwrap();
+        fs::write(
+            &npmrc,
+            concat!(
+                "registry=https://registry.npmjs.org/\n",
+                "@demo:registry=https://packages.example.com/npm/\n"
+            ),
+        )
+        .unwrap();
 
         let allowed = managed_package_allowed_domains(&npmrc).unwrap();
 
-        assert!(allowed.contains(&"npm.artifacts.example.invalid".to_string()));
-        assert!(allowed.contains(&"dl.artifacts.example.invalid".to_string()));
-        assert!(!allowed.contains(&"registry.npmjs.com".to_string()));
+        assert_eq!(
+            allowed,
+            vec![
+                "packages.example.com".to_string(),
+                "registry.npmjs.org".to_string()
+            ]
+        );
     }
 
     #[test]
-    fn managed_package_allowlist_rejects_public_registry_hosts() {
+    fn managed_package_allowlist_rejects_insecure_registry_hosts() {
         let temp = tempdir().unwrap();
         let npmrc = temp.path().join(".npmrc");
-        fs::write(&npmrc, "registry=https://registry.npmjs.org/\n").unwrap();
+        fs::write(&npmrc, "registry=http://registry.npmjs.org/\n").unwrap();
 
         let error = managed_package_allowed_domains(&npmrc).unwrap_err();
         let error_chain = format!("{error:#}");
 
-        assert!(error_chain.contains("Portico npm registry"));
+        assert!(error_chain.contains("HTTPS npm registry"));
     }
 }

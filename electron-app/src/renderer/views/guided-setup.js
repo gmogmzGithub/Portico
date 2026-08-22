@@ -77,11 +77,13 @@ const guidedSetupDebugState = {
 };
 
 const BASIC_CURATED_SERVER_IDS = Object.freeze([
-  'mcp-atlassian',
-  'data-plat-mcp',
-  'glean',
-  'google_workspace',
-  'slack',
+  'agent-vm',
+  'artifacts',
+  'mcp-assistant',
+  'scheduling',
+  'skills',
+  'subagents',
+  'web-tools',
 ]);
 const { isContractorEmail, CONTRACTOR_EMAIL_SUFFIX } = require('../../services/user-identity');
 const CONTRACTOR_GUIDED_SETUP_DISABLED_SERVER_ID = 'data-plat-mcp';
@@ -616,34 +618,29 @@ function bindGuidedSetupDebugDrawer() {
 
 const BASIC_CURATED_ICON_GROUPS = Object.freeze([
   {
-    label: 'Glean',
-    serverIds: ['glean'],
-    tooltip: 'Company knowledge at your fingertips.',
-    assetPath: `${HELLO_LOGO_ASSET_BASE}/glean.png`,
+    label: 'Workspaces',
+    serverIds: ['agent-vm'],
+    tooltip: 'Run code and work with files in isolated local workspaces.',
   },
   {
-    label: 'Google Workspace',
-    serverIds: ['google_workspace'],
-    tooltip: 'Read and write access across all Google products!',
-    assetPath: `${HELLO_LOGO_ASSET_BASE}/google-workspace.png`,
+    label: 'Artifacts',
+    serverIds: ['artifacts'],
+    tooltip: 'Create, preview, and version local artifacts.',
   },
   {
-    label: 'Atlassian',
-    serverIds: ['mcp-atlassian'],
-    tooltip: 'Read and write to JIRA and Confluence.',
-    assetPath: `${HELLO_LOGO_ASSET_BASE}/atlassian.png`,
+    label: 'Skills',
+    serverIds: ['skills'],
+    tooltip: 'Discover and run reusable agent skills.',
   },
   {
-    label: 'Portico',
-    serverIds: ['data-plat-mcp'],
-    tooltip: "Access to Portico's Data Platform.",
-    assetPath: `${HELLO_LOGO_ASSET_BASE}/portico.png`,
+    label: 'Agents',
+    serverIds: ['subagents'],
+    tooltip: 'Build and coordinate specialized local agents.',
   },
   {
-    label: 'Slack',
-    serverIds: ['slack'],
-    tooltip: 'Read and send messages across your Slack workspace.',
-    assetPath: `${HELLO_LOGO_ASSET_BASE}/slack.png`,
+    label: 'Web tools',
+    serverIds: ['web-tools'],
+    tooltip: 'Use opt-in web capabilities from the assistant.',
   },
 ]);
 
@@ -1500,7 +1497,13 @@ async function continueAfterModeSelection() {
     }
 
     let vpnResult = null;
-    if (window.electronAPI?.checkVpnConnectivity) {
+    // The public basic path uses only locally built core services. Registry
+    // connectivity belongs to optional packaged/provider integrations and
+    // must never block a local-first setup.
+    if (
+      setupState.onboardingMode !== 'basic' &&
+      window.electronAPI?.checkVpnConnectivity
+    ) {
       try {
         vpnResult = await window.electronAPI.checkVpnConnectivity();
       } catch (error) {
