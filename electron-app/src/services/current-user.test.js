@@ -59,6 +59,7 @@ test("current user get syncs authenticated identity into the existing env file",
   let writtenContent = null;
 
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => "/tmp/project",
     existsSync: (candidatePath) => candidatePath === envPath,
     readFile: async () =>
@@ -137,6 +138,7 @@ test("identity reconciliation cannot erase a key restored after its initial read
 
   let readCount = 0;
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => projectRoot,
     existsSync: (candidatePath) => candidatePath === envPath,
     readFile: async (candidatePath, encoding) => {
@@ -165,6 +167,7 @@ test("current user ensureAuthenticated surfaces login failures without touching 
   let writeAttempts = 0;
 
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => "/tmp/project",
     existsSync: () => false,
     readFile: async () => "",
@@ -211,6 +214,7 @@ test("current user get surfaces identity sync failures", async () => {
   const envPath = path.join("/tmp/project", ".env");
 
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => "/tmp/project",
     existsSync: (candidatePath) => candidatePath === envPath,
     readFile: async () => "PORTICO_USER_ID=legacy\n",
@@ -261,6 +265,7 @@ test("current user get surfaces identity sync failures", async () => {
 test("current user redacts interactive identity-sync exception details", async () => {
   const { createCurrentUserService } = loadCurrentUserModule();
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => "/tmp/project",
     existsSync: () => false,
     mkdir: async () => undefined,
@@ -316,6 +321,7 @@ test("repairIdentity delegates to setup auth and audits the outcome without reco
   };
 
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => "/tmp/project",
     logger: {
       info: (line) => {
@@ -348,6 +354,7 @@ test("repairIdentity audits an unrepairable session with its reason as the safe 
   const auditLines = [];
 
   const service = createCurrentUserService({
+    identityMode: "oidc",
     getProjectRoot: () => "/tmp/project",
     logger: {
       info: (line) => {
@@ -383,6 +390,7 @@ test("identity audits record email presence as a boolean, never the address", as
   const auditLines = [];
   const makeService = (email) =>
     createCurrentUserService({
+      identityMode: "oidc",
       getProjectRoot: () => "/tmp/project",
       existsSync: () => true,
       readFile: async () => "",
@@ -417,4 +425,64 @@ test("identity audits record email presence as a boolean, never the address", as
   assert.equal(payloads[1].emailAvailable, false);
   assert.equal(payloads[1].authenticated, true);
   assert.doesNotMatch(JSON.stringify(payloads), /jdoe@portico\.com/);
+});
+
+test("public checkout uses a stable local identity when OIDC is not configured", async () => {
+  const { createCurrentUserService, _test } = loadCurrentUserModule();
+  assert.equal(_test.resolveIdentityMode({}), "local");
+
+  let synchronized = null;
+  const service = createCurrentUserService({
+    identityMode: "local",
+    getProjectRoot: () => "/tmp/project",
+    existsSync: () => false,
+    mkdir: async () => {},
+    writeEnvFile: async (_path, content) => {
+      synchronized = content;
+    },
+    setupAuth: {
+      async getCachedSessionSummary() {
+        throw new Error("local identity must not consult OIDC cache");
+      },
+      async startSetupAuth() {
+        throw new Error("local identity must not start an OIDC flow");
+      },
+    },
+  });
+
+  const result = await service.ensureAuthenticated();
+  assert.equal(result.success, true);
+  assert.equal(result.authenticated, true);
+  assert.equal(result.source, "local");
+  assert.equal(result.sessionSummary.user.id, "local-user");
+  assert.equal(result.sessionSummary.user.email, "local-user@portico.invalid");
+  assert.match(synchronized, /^PORTICO_USER_ID='local-user'$/m);
+  assert.match(synchronized, /^PORTICO_USER_NAME='Local User'$/m);
+  assert.equal(service.status().phase, "authenticated");
+});
+
+test("OIDC identity is opt-in and rejects incomplete or unknown modes", () => {
+  const { _test } = loadCurrentUserModule();
+
+  assert.equal(
+    _test.resolveIdentityMode({
+      SETUP_AUTH_ISSUER: "https://identity.example.com/oauth2/default",
+    }),
+    "oidc",
+  );
+  assert.equal(
+    _test.resolveIdentityMode({
+      PORTICO_IDENTITY_MODE: "oidc",
+      SETUP_AUTH_ISSUER: "https://identity.example.com/oauth2/default",
+    }),
+    "oidc",
+  );
+  assert.equal(
+    _test.resolveIdentityMode({ PORTICO_IDENTITY_MODE: "oidc" }),
+    "invalid",
+  );
+  assert.equal(
+    _test.resolveIdentityMode({ PORTICO_IDENTITY_MODE: "something-else" }),
+    "invalid",
+  );
 });

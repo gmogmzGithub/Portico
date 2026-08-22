@@ -126,8 +126,7 @@ COPY docker/mcpo-core-rust-group-entrypoint.sh ./mcpo-core-rust-group-entrypoint
 COPY docker/render-mcpo-multi-supervisor.py ./render-mcpo-multi-supervisor.py
 RUN chmod +x start-mcpo.sh mcpo-multi-server-entrypoint.sh mcpo-core-rust-group-entrypoint.sh
 
-COPY mcp-configs/slack/slack-mcp-server-linux-arm64 /app/mcp-servers/slack/slack-mcp-server-linux-arm64
-COPY mcp-configs/slack/slack-mcp-server-linux-amd64 /app/mcp-servers/slack/slack-mcp-server-linux-amd64
+COPY mcp-configs/slack/ /app/mcp-servers/slack/
 # Slack OAuth credentials are delivered at runtime via Docker secrets
 # (SLACK_OAUTH_CLIENT_{ID,SECRET}_FILE -> /run/secrets/...), not baked into
 # the image. The bundled_credentials.py shim was removed intentionally so no
@@ -143,9 +142,12 @@ RUN set -e; \
       amd64) SLACK_BINARY="/app/mcp-servers/slack/slack-mcp-server-linux-amd64" ;; \
       *) echo "Unsupported build architecture for Slack MCP binary: $build_arch" >&2; exit 1 ;; \
     esac; \
-    [ -f "$SLACK_BINARY" ] || { echo "Missing Slack MCP binary: $SLACK_BINARY" >&2; exit 1; }; \
-    cp "$SLACK_BINARY" /app/mcp-servers/slack-mcp-server; \
-    chmod +x /app/mcp-servers/slack-mcp-server
+    if [ -f "$SLACK_BINARY" ]; then \
+      cp "$SLACK_BINARY" /app/mcp-servers/slack-mcp-server; \
+      chmod +x /app/mcp-servers/slack-mcp-server; \
+    else \
+      echo "Optional Slack MCP binary is not bundled; rebuild it explicitly before enabling Slack" >&2; \
+    fi
 
 EXPOSE 8000
 EXPOSE 3834

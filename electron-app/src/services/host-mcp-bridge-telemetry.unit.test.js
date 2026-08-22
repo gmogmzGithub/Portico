@@ -53,7 +53,7 @@ test("bridge telemetry payload is stable, token-shaped, and redacted", () => {
   assert.equal(payload.runtime_path, "portico_app");
   assert.equal(payload.script_action, "enable_bridge");
   assert.equal(payload.bridge_ready, "true");
-  assert.equal(payload.configured_client_ids, "workbench,cursor");
+  assert.equal(payload.configured_client_ids, "cursor,workbench");
   assert.equal(payload.selected_client_count, "2");
   assert.equal(payload.app_version, "9.8.7");
   assert.equal(payload.build_channel, "pre_beta");

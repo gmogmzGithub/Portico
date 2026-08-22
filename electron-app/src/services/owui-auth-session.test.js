@@ -3,21 +3,21 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-function loadAuthSessionWithMocks({ setupAuth, bridgeClient }) {
+function loadAuthSessionWithMocks({ currentUser, bridgeClient }) {
   const targetPath = require.resolve("./owui-auth-session");
-  const setupPath = require.resolve("./setup-auth");
+  const currentUserPath = require.resolve("./current-user");
   const bridgePath = require.resolve("./owui-auth-bridge-client");
   const previous = {
     target: require.cache[targetPath],
-    setup: require.cache[setupPath],
+    currentUser: require.cache[currentUserPath],
     bridge: require.cache[bridgePath],
   };
   delete require.cache[targetPath];
-  require.cache[setupPath] = {
-    id: setupPath,
-    filename: setupPath,
+  require.cache[currentUserPath] = {
+    id: currentUserPath,
+    filename: currentUserPath,
     loaded: true,
-    exports: setupAuth,
+    exports: currentUser,
   };
   require.cache[bridgePath] = {
     id: bridgePath,
@@ -32,8 +32,8 @@ function loadAuthSessionWithMocks({ setupAuth, bridgeClient }) {
       delete require.cache[targetPath];
       if (previous.target) require.cache[targetPath] = previous.target;
       else delete require.cache[targetPath];
-      if (previous.setup) require.cache[setupPath] = previous.setup;
-      else delete require.cache[setupPath];
+      if (previous.currentUser) require.cache[currentUserPath] = previous.currentUser;
+      else delete require.cache[currentUserPath];
       if (previous.bridge) require.cache[bridgePath] = previous.bridge;
       else delete require.cache[bridgePath];
     },
@@ -51,9 +51,12 @@ test("ensureOwuiHumanSessionForUrl waits and returns a handoff bootstrap URL", a
     },
   };
   const { loaded, restore } = loadAuthSessionWithMocks({
-    setupAuth: {
-      getAuthorizedSession: async () => session,
-      startSetupAuth: async () => ({ success: true }),
+    currentUser: {
+      get: async () => ({
+        success: true,
+        authenticated: true,
+        sessionSummary: session,
+      }),
     },
     bridgeClient: {
       OPEN_WEBUI_HOME_URL: "http://localhost:3789",
@@ -85,11 +88,14 @@ test("ensureOwuiHumanSessionForUrl waits and returns a handoff bootstrap URL", a
 
 test("ensureOwuiHumanSessionForUrl fails closed when OWUI readiness/auth seeding fails", async () => {
   const { loaded, restore } = loadAuthSessionWithMocks({
-    setupAuth: {
-      getAuthorizedSession: async () => ({
-        user: { id: "user-1", email: "user@example.com" },
+    currentUser: {
+      get: async () => ({
+        success: true,
+        authenticated: true,
+        sessionSummary: {
+          user: { id: "user-1", email: "user@example.com" },
+        },
       }),
-      startSetupAuth: async () => ({ success: true }),
     },
     bridgeClient: {
       OPEN_WEBUI_HOME_URL: "http://localhost:3789",
@@ -126,11 +132,14 @@ test("verified OWUI auth seed is reused for the same setup user", async () => {
     },
   };
   const { loaded, restore } = loadAuthSessionWithMocks({
-    setupAuth: {
-      getAuthorizedSession: async () => ({
-        user: { id: "user-1", email: "user@example.com" },
+    currentUser: {
+      get: async () => ({
+        success: true,
+        authenticated: true,
+        sessionSummary: {
+          user: { id: "user-1", email: "user@example.com" },
+        },
       }),
-      startSetupAuth: async () => ({ success: true }),
     },
     bridgeClient: {
       OPEN_WEBUI_HOME_URL: "http://localhost:3789",

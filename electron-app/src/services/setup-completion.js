@@ -351,13 +351,28 @@ function inspectRuntimeInstallationState({ projectRoot }) {
   const { llmGatewayMode } = resolveRuntimeModes(projectRoot, process.env);
   result.llmGatewayMode = llmGatewayMode || "bifrost";
 
+  const buildInfoPath = path.join(projectRoot, "electron-app", "build-info.json");
   const requiredPaths = [
     path.join(projectRoot, "docker-compose.yml"),
     path.join(projectRoot, "docker-compose.advanced.yml"),
-    path.join(projectRoot, "cloudsmith.env"),
-    path.join(projectRoot, "electron-app", "build-info.json"),
+    buildInfoPath,
     path.join(projectRoot, "src", "scripts", "docker-compose.sh"),
   ];
+
+  // Cloudsmith metadata is a packaged-release concern. Public local builds use
+  // the images produced by the documented installer and intentionally have no
+  // release entitlement file.
+  if (fs.existsSync(buildInfoPath)) {
+    try {
+      const buildInfo = readJsonFile(buildInfoPath);
+      if (buildInfo?.buildNumber !== "dev-build") {
+        requiredPaths.push(path.join(projectRoot, "cloudsmith.env"));
+      }
+    } catch (_error) {
+      // The existing build-info requirement and downstream build validation
+      // will surface malformed metadata without inventing a release boundary.
+    }
+  }
 
   result.missingPaths = requiredPaths.filter((requiredPath) => !fs.existsSync(requiredPath));
   if (result.missingPaths.length > 0) {

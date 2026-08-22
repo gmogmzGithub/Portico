@@ -310,7 +310,7 @@ function CacheBreakpointPanel({
 function RawInputPanel({ request }: { request: LLMRequest }) {
   const rawInputViews = useMemo(
     () => buildRawInputViews(request),
-    [request.model, request.raw_payload, request.transformed_payloads],
+    [request],
   );
   const defaultViewId = rawInputViews[0]?.id ?? "pre-bridge";
   const [viewId, setViewId] = useState(defaultViewId);
@@ -422,7 +422,7 @@ export function RequestInspector({ request }: RequestInspectorProps) {
 
   const breakpointData = useMemo(
     () => buildRequestInspectorBreakpointData(request),
-    [request.messages, request.tools, request.transformed_payloads],
+    [request],
   );
 
   const displayMessages = breakpointData.displayMessages;

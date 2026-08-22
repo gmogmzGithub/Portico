@@ -18,6 +18,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PKG_SCRIPT="$PROJECT_ROOT/src/scripts/slim-openwebui-package-json.cjs"
 SRC_SCRIPT="$PROJECT_ROOT/src/scripts/slim-openwebui-frontend.cjs"
 DOCKERFILE="$PROJECT_ROOT/Dockerfile.open-webui-patched"
+NPMRC="$PROJECT_ROOT/.npmrc"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -25,6 +26,12 @@ fail() {
 }
 
 command -v node >/dev/null 2>&1 || fail "node is required for this test"
+[ -f "$NPMRC" ] || fail "the Open WebUI Docker build requires a repository .npmrc"
+grep -Fxq 'registry=https://registry.npmjs.org/' "$NPMRC" \
+  || fail "the repository npm config must use the public npm registry by default"
+if grep -Eqi '(_auth|token|password)[[:space:]]*=' "$NPMRC"; then
+  fail "the repository npm config must not contain credentials"
+fi
 
 tmp_dir="$(mktemp -d)"
 cleanup() {

@@ -342,6 +342,17 @@ test_compose_no_longer_delivers_slack_oauth_client_secret() {
     done
 }
 
+test_model_catalog_mount_supports_local_provider_configuration() {
+    local compose_file="$PROJECT_ROOT/docker-compose.yml"
+
+    assert_file_contains "$compose_file" \
+        '${PORTICO_MODEL_CATALOG_PATH:-./model_catalog.yaml}:/app/model_catalog.yaml:ro' \
+        "base compose must allow an ignored, local model catalog without changing the public default"
+    assert_file_contains "$PROJECT_ROOT/.gitignore" \
+        "model_catalog.local.yaml" \
+        "local model catalogs can contain private endpoints and must never be committed"
+}
+
 test_slack_uses_oauth_file_ingress() {
     local file="$PROJECT_ROOT/mcp-configs/slack/slack.fragment"
     assert_file_contains "$file" \
@@ -363,6 +374,7 @@ test_slack_uses_oauth_file_ingress() {
 
 test_slack_rebuild_is_explicit_and_public() {
     local rebuild="$PROJECT_ROOT/mcp-configs/slack/rebuild-slack-mcp-server.sh"
+    local runtime_dockerfile="$PROJECT_ROOT/Dockerfile.mcp-orc-rust"
 
     assert_file_contains "$rebuild" \
         "SLACK_MCP_UPSTREAM_REPO" \
@@ -431,6 +443,46 @@ test_slack_rebuild_is_explicit_and_public() {
         fail "public checkout must not carry a prebuilt Slack binary"
     [ ! -e "$PROJECT_ROOT/mcp-configs/slack/slack-mcp-server-linux-arm64" ] || \
         fail "public checkout must not carry a prebuilt Slack binary"
+    assert_file_contains "$runtime_dockerfile" \
+        "COPY mcp-configs/slack/ /app/mcp-servers/slack/" \
+        "runtime images must accept the credential-free public Slack source directory"
+    refute_file_contains "$runtime_dockerfile" \
+        "COPY mcp-configs/slack/slack-mcp-server-linux-arm64" \
+        "runtime image builds must not require an optional prebuilt Slack binary"
+    assert_file_contains "$runtime_dockerfile" \
+        'if [ -f "$SLACK_BINARY" ]; then' \
+        "runtime image builds must install a locally rebuilt Slack binary only when present"
+    assert_file_contains "$PROJECT_ROOT/mcp_toggles.json" \
+        '"slack": false' \
+        "the optional Slack integration must be disabled in a public checkout"
+}
+
+test_public_checkout_defaults_to_provider_neutral_core_servers() {
+    node - "$PROJECT_ROOT/mcp_toggles.json" <<'NODE'
+const fs = require("fs");
+
+const toggles = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const coreServers = new Set([
+  "agent-vm",
+  "artifacts",
+  "mcp-assistant",
+  "scheduling",
+  "skills",
+  "subagents",
+  "web-tools",
+]);
+const unexpected = Object.entries(toggles)
+  .filter(([id, enabled]) => enabled !== coreServers.has(id))
+  .map(([id, enabled]) => `${id}=${enabled}`)
+  .sort();
+
+if (unexpected.length > 0) {
+  process.stderr.write(
+    `FAIL: public MCP defaults must enable only provider-neutral core servers: ${unexpected.join(", ")}\n`,
+  );
+  process.exit(1);
+}
+NODE
 }
 
 test_debug_monitor_uses_token_file_secret() {
@@ -2047,6 +2099,7 @@ test_compose_never_delivers_project_env_file
 test_compose_no_longer_delivers_slack_oauth_client_secret
 test_slack_uses_oauth_file_ingress
 test_slack_rebuild_is_explicit_and_public
+test_public_checkout_defaults_to_provider_neutral_core_servers
 test_debug_monitor_uses_token_file_secret
 test_generated_compose_routes_sensitive_required_env_vars_as_secrets
 test_generated_compose_routes_sensitive_runtime_files_as_secrets

@@ -1251,31 +1251,38 @@ test("guided setup helper exports derive prereq policy and normalize auth-relate
 test("guided setup helper exports validate the basic bundle and can reset MCP server loading on failure", async () => {
   await withGuidedSetupHarness(async ({ loaded, setupState, electronApi }) => {
     setupState.mcpServers = [
-      { id: "mcp-atlassian" },
-      { id: "data-plat-mcp" },
-      { id: "glean" },
-      { id: "google_workspace" },
-      { id: "slack" },
+      { id: "agent-vm" },
+      { id: "artifacts" },
+      { id: "mcp-assistant" },
+      { id: "scheduling" },
+      { id: "skills" },
+      { id: "subagents" },
+      { id: "web-tools" },
       { id: "ownership-mcp" },
       { id: "teamworks-mcp" },
     ];
-    assert.deepEqual(loaded._test.validateBasicBundleSelection(), [0, 1, 2, 3, 4]);
+    assert.deepEqual(
+      loaded._test.validateBasicBundleSelection(),
+      [0, 1, 2, 3, 4, 5, 6],
+    );
 
     setupState.mcpServers = [
-      { id: "mcp-atlassian", required_env_vars: [{ name: "TOKEN" }] },
-      { id: "data-plat-mcp" },
-      { id: "glean" },
-      { id: "google_workspace" },
-      { id: "slack" },
+      { id: "agent-vm", required_env_vars: [{ name: "TOKEN" }] },
+      { id: "artifacts" },
+      { id: "mcp-assistant" },
+      { id: "scheduling" },
+      { id: "skills" },
+      { id: "subagents" },
+      { id: "web-tools" },
       { id: "ownership-mcp" },
       { id: "teamworks-mcp" },
     ];
     assert.throws(
       () => loaded._test.validateBasicBundleSelection(),
-      /unsupported integrations: mcp-atlassian/,
+      /unsupported integrations: agent-vm/,
     );
 
-    setupState.mcpServers = [{ id: "mcp-atlassian" }];
+    setupState.mcpServers = [{ id: "agent-vm" }];
     assert.throws(
       () => loaded._test.validateBasicBundleSelection(),
       /missing integrations:/,
@@ -2233,6 +2240,27 @@ test("continueAfterModeSelection resumes prereqs after a successful VPN check wh
   });
 });
 
+test("basic local setup never blocks on private registry connectivity", async () => {
+  await withGuidedSetupHarness(async ({
+    loaded,
+    setupState,
+    bootstrapPrereqCalls,
+    electronApi,
+  }) => {
+    setupState.onboardingMode = "basic";
+    setupState.prereqReadiness = { readyForAuth: false };
+
+    await withNoopTimeout(async () => {
+      await loaded._test.continueAfterModeSelection();
+      await flushMicrotasks();
+    });
+
+    assert.equal(electronApi.vpnCheckCalls, 0);
+    assert.deepEqual(bootstrapPrereqCalls, [{ shouldResume: false }]);
+    assert.equal(setupState.currentStage, "prerequisites");
+  });
+});
+
 test("power mode server selection preserves prior choices and hydrates every explicitly enabled toggle", async () => {
   await withGuidedSetupHarness(async ({
     loaded,
@@ -2287,11 +2315,13 @@ test("advanceAfterPrerequisites loads the basic bundle and proceeds directly to 
     electronApi.loadMcpServers = async () => ({
       success: true,
       data: [
-        { id: "mcp-atlassian", name: "Atlassian" },
-        { id: "data-plat-mcp", name: "Data Platform" },
-        { id: "glean", name: "Glean" },
-        { id: "google_workspace", name: "Google Workspace" },
-        { id: "slack", name: "Slack" },
+        { id: "agent-vm", name: "Workspaces" },
+        { id: "artifacts", name: "Artifacts" },
+        { id: "mcp-assistant", name: "MCP Assistant" },
+        { id: "scheduling", name: "Scheduling" },
+        { id: "skills", name: "Skills" },
+        { id: "subagents", name: "Subagents" },
+        { id: "web-tools", name: "Web Tools" },
         { id: "ownership-mcp", name: "Ownership" },
         { id: "teamworks-mcp", name: "Teamworks" },
       ],
@@ -2300,7 +2330,7 @@ test("advanceAfterPrerequisites loads the basic bundle and proceeds directly to 
     await loaded._test.advanceAfterPrerequisites();
 
     assert.equal(setupState.completedSteps.prerequisites, true);
-    assert.deepEqual(setupState.selectedServers, [0, 1, 2, 3, 4]);
+    assert.deepEqual(setupState.selectedServers, [0, 1, 2, 3, 4, 5, 6]);
     assert.equal(proceedToConfigurationCalls.length, 1);
     assert.equal(setupState.currentStage, "welcome");
   });
@@ -2324,11 +2354,13 @@ test("contractor guided setup sync marks Data Platform as wizard-disabled and re
     electronApi.loadMcpServers = async () => ({
       success: true,
       data: [
-        { id: "mcp-atlassian", name: "Atlassian" },
-        { id: "data-plat-mcp", name: "Data Platform" },
-        { id: "glean", name: "Glean" },
-        { id: "google_workspace", name: "Google Workspace" },
-        { id: "slack", name: "Slack" },
+        { id: "agent-vm", name: "Workspaces" },
+        { id: "artifacts", name: "Artifacts" },
+        { id: "mcp-assistant", name: "MCP Assistant" },
+        { id: "scheduling", name: "Scheduling" },
+        { id: "skills", name: "Skills" },
+        { id: "subagents", name: "Subagents" },
+        { id: "web-tools", name: "Web Tools" },
         { id: "ownership-mcp", name: "Ownership" },
         { id: "teamworks-mcp", name: "Teamworks" },
       ],
@@ -2341,7 +2373,7 @@ test("contractor guided setup sync marks Data Platform as wizard-disabled and re
       setupState.guidedSetupDisabledTooltips["data-plat-mcp"],
       /Unavailable during guided setup for contractor accounts/,
     );
-    assert.deepEqual(setupState.selectedServers, [0, 2, 3, 4]);
+    assert.deepEqual(setupState.selectedServers, [0, 1, 2, 3, 4, 5, 6]);
     assert.equal(proceedToConfigurationCalls.length, 1);
   });
 });
@@ -2365,10 +2397,13 @@ test("contractor helpers only match the contractor domain suffix", async () => {
         user: { email: "sof_bshorokh@contractor.example.invalid" },
       }),
       [
-        "mcp-atlassian",
-        "glean",
-        "google_workspace",
-        "slack",
+        "agent-vm",
+        "artifacts",
+        "mcp-assistant",
+        "scheduling",
+        "skills",
+        "subagents",
+        "web-tools",
       ],
     );
   });
@@ -2503,10 +2538,11 @@ test("guided setup helper exports wire scroll, tooltip, input-field, and hello-s
 
     setupState.savedOnboardingMode = "power";
     setupState.mcpServers = [
-      { id: "glean", icon: "/glean.svg" },
-      { id: "google_workspace", icon: "/google.svg" },
-      { id: "mcp-atlassian", icon: "/atlassian.svg" },
-      { id: "data-plat-mcp", icon: "/portico.svg" },
+      { id: "agent-vm", icon: "/workspaces.svg" },
+      { id: "artifacts", icon: "/artifacts.svg" },
+      { id: "skills", icon: "/skills.svg" },
+      { id: "subagents", icon: "/agents.svg" },
+      { id: "web-tools", icon: "/web.svg" },
     ];
     loaded._test.setAuthenticatedSetupSession({
       user: { preferredUsername: "Taylor Lane" },
@@ -2514,7 +2550,7 @@ test("guided setup helper exports wire scroll, tooltip, input-field, and hello-s
 
     loaded._test.renderHelloStage();
     assert.equal(elements.get("hello-title").textContent, "Hello, Taylor!");
-    assert.match(elements.get("hello-basic-logo-strip").innerHTML, /glean\.svg/);
+    assert.match(elements.get("hello-basic-logo-strip").innerHTML, /workspaces\.svg/);
     assert.equal(elements.get("hello-power-option").getAttribute("aria-pressed"), "true");
     assert.equal(elements.get("hello-mode-error").style.display, "none");
     assert.equal(

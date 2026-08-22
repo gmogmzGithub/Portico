@@ -481,3 +481,24 @@ test("missing required runtime files forces guided setup again", () => {
   assert.equal(result.reason, "runtime-file-missing");
   assert.match(result.reasonMessage, /src\/scripts\/docker-compose\.sh/);
 });
+
+test("public dev runtime does not require Cloudsmith release metadata", () => {
+  const root = makeTempDir();
+  const projectRoot = path.join(root, "project");
+  writeEnv(projectRoot);
+  writeRuntimeFiles(projectRoot);
+  fs.rmSync(path.join(projectRoot, "cloudsmith.env"));
+  fs.writeFileSync(
+    path.join(projectRoot, "electron-app", "build-info.json"),
+    '{"buildNumber":"dev-build"}\n',
+    "utf8",
+  );
+
+  const result = validateSetupCompletionPrerequisites({
+    projectRoot,
+    platform: "linux",
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.runtime.isComplete, true);
+});

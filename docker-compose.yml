@@ -12,7 +12,7 @@ services:
     ports:
       - "127.0.0.1:4583:4000"
     volumes:
-      - ./model_catalog.yaml:/app/model_catalog.yaml:ro
+      - ${PORTICO_MODEL_CATALOG_PATH:-./model_catalog.yaml}:/app/model_catalog.yaml:ro
       - bifrost-data:/app/data
       - "${PORTICO_COST_REPORTING_HOST_DIR:-./open-webui-data/reporting}:/app/reporting"
     environment:

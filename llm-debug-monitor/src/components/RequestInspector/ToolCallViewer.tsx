@@ -147,12 +147,14 @@ export function ToolCallViewer({
 
   // Reset expanded states when tools change (keep collapsed by default)
   useEffect(() => {
-    const newServerStates: Record<string, boolean> = {};
-    serverGroups.forEach((group) => {
-      newServerStates[group.serverId] =
-        expandedServers[group.serverId] ?? false;
+    setExpandedServers((previousStates) => {
+      const newServerStates: Record<string, boolean> = {};
+      serverGroups.forEach((group) => {
+        newServerStates[group.serverId] =
+          previousStates[group.serverId] ?? false;
+      });
+      return newServerStates;
     });
-    setExpandedServers(newServerStates);
     setExpandedTools({});
   }, [serverGroups]);
 

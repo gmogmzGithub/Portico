@@ -15,7 +15,7 @@ export function isPorticoContextXml(content: string): boolean {
  */
 export function prettifyXml(xml: string, indent: string = '  '): string {
   // Remove existing whitespace between tags
-  let formatted = xml.replace(/>\s*</g, '><');
+  const formatted = xml.replace(/>\s*</g, '><');
 
   // Track nesting level
   let level = 0;
@@ -136,9 +136,7 @@ export function tokenizeXml(xml: string): XmlToken[] {
       while (i < xml.length && xml[i] !== '>' && !(xml[i] === '/' && xml[i + 1] === '>')) {
         // Capture whitespace between attributes (preserve spacing)
         if (/\s/.test(xml[i])) {
-          let whitespace = '';
           while (i < xml.length && /\s/.test(xml[i])) {
-            whitespace += xml[i];
             i++;
           }
           // Add space token if there's more content coming (not at end of tag)

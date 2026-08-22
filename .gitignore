@@ -28,6 +28,10 @@ health-status/
 # Model system-prompt dumps written by local runs.
 backup/
 mcpo-configs-generated/
+.mcp-config-hash
+.startup-hash.json
+MCP_BRIDGE.pid
+model_catalog.local.yaml
 mcp-configs/slack/users_seed_v1.json.gz
 mcp-configs/slack/channels_seed_v1.json.gz
 artifact-snapshots/

@@ -346,7 +346,10 @@ fn is_atlas_sonnet_46_model(model: &str) -> bool {
 // the full effort range including xhigh.
 fn is_atlas_sonnet_5_model(model: &str) -> bool {
     let lower = model.to_lowercase();
-    lower.contains("atlas-sonnet-5") || lower.contains("atlas sonnet 5")
+    lower.contains("atlas-sonnet-5")
+        || lower.contains("atlas sonnet 5")
+        || lower.contains("claude-sonnet-5")
+        || lower.contains("claude sonnet 5")
 }
 
 // Matches Atlas Opus 5 only ("atlas-opus-4-5"/"atlas opus 4.5" do not
@@ -1674,6 +1677,7 @@ mod tests {
 
         assert!(is_atlas_sonnet_5_model("Atlas Sonnet 5"));
         assert!(is_atlas_sonnet_5_model("us.anthropic.atlas-sonnet-5"));
+        assert!(is_atlas_sonnet_5_model("us.anthropic.claude-sonnet-5"));
         assert!(is_atlas_sonnet_5_model(
             "bedrock/converse_like/us.anthropic.atlas-sonnet-5"
         ));
