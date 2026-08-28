@@ -11,7 +11,7 @@ base64 = "0.22"
 bytes = "1.10"
 futures-util = "0.3"
 hex = "0.4"
-hmac = "0.12"
+hmac = "0.13"
 http = "1"
 regex = "1.11"
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
