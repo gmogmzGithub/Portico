@@ -30,7 +30,7 @@ mime_guess = "2.0"
 percent-encoding = "2.3"
 redis = "1.0.4"
 regex = "1.11"
-rmcp = { version = "1.1.0", default-features = false, features = ["base64", "client", "macros", "server", "transport-child-process", "transport-io"] }
+rmcp = { version = "3.1.4", default-features = false, features = ["base64", "client", "macros", "server", "transport-child-process", "transport-io"] }
 rustix = { version = "1.1", features = ["fs"] }
 reqwest = { version = "0.13.2", default-features = false, features = ["json", "rustls"] }
 serde = { version = "1.0", features = ["derive"] }
