@@ -164,7 +164,7 @@
     }
   },
   "dependencies": {
-    "@anthropic-ai/sandbox-runtime": "^0.0.51",
+    "@anthropic-ai/sandbox-runtime": "^0.0.73",
     "chrome-devtools-mcp": "1.7.0",
     "electron-prompt": "^1.7.0",
     "express": "^5.1.0",
